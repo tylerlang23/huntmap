@@ -18,7 +18,7 @@ convert() { # $1 = source file or folder, $2 = county label (optional), $3 = out
 # ---- 1. the state's open parcel compilation (opt-in counties) ----
 STATE_URL="${STATE_URL:-https://operations.gis.data.mn.gov/api/publicdownload/download/511/plan_parcels_open.gpkg}"
 echo "Downloading the state open parcel dataset"
-curl -fL --retry 3 --retry-delay 10 -A "$UA" -o open.bin "$STATE_URL"
+curl -fsSL --retry 3 --retry-delay 10 -A "$UA" -o open.bin "$STATE_URL"
 ls -lh open.bin
 rm -rf open && mkdir open
 if unzip -tq open.bin >/dev/null 2>&1; then unzip -q -o open.bin -d open; else mv open.bin open/plan_parcels_open.gpkg; fi
@@ -32,7 +32,7 @@ FILES=(state.geojsonl)
 
 # ---- 2. extra counties listed in scripts/counties.txt ----
 while IFS='|' read -r NAME URL; do
-  NAME="$(echo "$NAME" | xargs)"; URL="$(echo "${URL:-}" | xargs)"
+  NAME="$(printf '%s' "$NAME" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g')"; URL="$(printf '%s' "${URL:-}" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g')"
   [ -n "$NAME" ] && [ -n "$URL" ] && [[ "$NAME" != \#* ]] || continue
   SLUG="$(echo "$NAME" | tr '[:upper:] ' '[:lower:]_')"
   (
@@ -44,7 +44,7 @@ while IFS='|' read -r NAME URL; do
       URL="$(python3 -c 'import sys,urllib.parse as u; print(u.urljoin(sys.argv[1], sys.argv[2]))' "$URL" "$HREF")"
     fi
     echo "Downloading $NAME County: $URL"
-    curl -fL --retry 2 -A "$UA" -o "$SLUG.zip" "$URL"
+    curl -fsSL --retry 2 -A "$UA" -o "$SLUG.zip" "$URL"
     rm -rf "$SLUG" && mkdir "$SLUG" && unzip -q -o "$SLUG.zip" -d "$SLUG"
     S="$(find "$SLUG" -iname '*parcel*.shp' | head -1)"; [ -n "$S" ] || S="$(find "$SLUG" -iname '*.shp' | head -1)"
     [ -n "$S" ] || S="$(find "$SLUG" -type d -iname '*.gdb' | head -1)"; [ -n "$S" ] || S="$(find "$SLUG" -iname '*.gpkg' | head -1)"
