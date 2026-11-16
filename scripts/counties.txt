@@ -2,4 +2,4 @@
 # One per line:  County name | link
 # The link can point straight at a .zip (shapefile or geodatabase), or at a web folder
 # listing, in which case the first .zip with "parcel" in its name is used.
-McLeod | http://www.co.mcleod.mn.us/ftp/GIS/
+McLeod | https://cms7files.revize.com/mcleodcountymn/ftp/GIS/Parcels/Parcels.zip
