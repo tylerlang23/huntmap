@@ -15,16 +15,19 @@ convert() { # $1 = source file or folder, $2 = county label (optional), $3 = out
   ogr2ogr -f GeoJSONSeq /vsistdout/ "$src" "$layer" -t_srs EPSG:4326 -skipfailures -nlt PROMOTE_TO_MULTI 2>/dev/null | python3 "$ROOT/scripts/slim.py" "${2:-}" > "$3"
 }
 
-# ---- 1. the state's open parcel compilation (59 counties) ----
-BASE="https://resources.gisdata.mn.gov/pub/gdrs/data/pub/us_mn_state_mngeo/plan_parcels_open"
+# ---- 1. the state's open parcel compilation (opt-in counties) ----
+STATE_URL="${STATE_URL:-https://operations.gis.data.mn.gov/api/publicdownload/download/511/plan_parcels_open.gpkg}"
 echo "Downloading the state open parcel dataset"
-curl -fL --retry 3 -A "$UA" -o open.zip "$BASE/gpkg_plan_parcels_open.zip" || curl -fL --retry 3 -A "$UA" -o open.zip "$BASE/fgdb_plan_parcels_open.zip"
-rm -rf open && mkdir open && unzip -q -o open.zip -d open
+curl -fL --retry 3 --retry-delay 10 -A "$UA" -o open.bin "$STATE_URL"
+ls -lh open.bin
+rm -rf open && mkdir open
+if unzip -tq open.bin >/dev/null 2>&1; then unzip -q -o open.bin -d open; else mv open.bin open/plan_parcels_open.gpkg; fi
 SRC="$(find open -iname '*.gpkg' | head -1)"; [ -n "$SRC" ] || SRC="$(find open -type d -iname '*.gdb' | head -1)"
 [ -n "$SRC" ] || { echo "No geopackage or geodatabase found in the state download"; exit 1; }
+ogrinfo -ro -q "$SRC" || true
 convert "$SRC" "" state.geojsonl
 note "State open data: $(wc -l < state.geojsonl) parcels"
-rm -rf open open.zip
+rm -rf open open.bin
 FILES=(state.geojsonl)
 
 # ---- 2. extra counties listed in scripts/counties.txt ----
