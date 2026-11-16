@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hunt Map</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0f1412">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hunt Map">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@3/dist/pmtiles.js"></script>
+<style>
+:root{--bg:#0f1412;--glass:rgba(24,30,27,.78);--panel:rgba(22,28,25,.92);--solid:#171d1a;--field:#0e1311;--line:rgba(255,255,255,.12);--tx:#f3f5f2;--mut:#9aa69f;--acc:#ff7a1a;--acc2:#ffb26b;--blue:#3b9bff;--bad:#ff6b5e;
+ --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--tab:58px}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;overflow:hidden;position:fixed;inset:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
+#map{position:absolute;inset:0}
+button,select,input,textarea{font:inherit;color:inherit;-webkit-appearance:none;appearance:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+button{cursor:pointer;touch-action:manipulation}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);border:.5px solid var(--line);box-shadow:0 4px 18px rgba(0,0,0,.35)}
+/* top row */
+.top{position:absolute;top:calc(var(--st) + 8px);left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);display:flex;gap:8px;z-index:5;max-width:520px}
+.search{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:46px;border-radius:14px;padding:0 12px;color:var(--mut)}
+.search input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--tx);font-size:16px;padding:0}
+.search input::placeholder{color:var(--mut)}
+.chip{height:46px;border-radius:14px;padding:0 12px;display:flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;font-size:15px}
+.chip svg{width:20px;height:20px;transition:transform .3s}
+/* right control stack */
+.stack{position:absolute;right:calc(var(--sr) + 10px);top:calc(var(--st) + 64px);z-index:5;border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.stack button{width:56px;height:52px;background:none;border:0;border-bottom:.5px solid var(--line);display:grid;place-items:center;color:var(--tx);font-size:10px;font-weight:700;letter-spacing:0;gap:0;padding:5px 0 3px}
+.stack button:last-child{border-bottom:0}
+.stack button span{display:block;margin-top:-2px;color:var(--mut)}
+.stack button.on{color:var(--acc)}.stack button.on span{color:var(--acc)}
+.loc{position:absolute;right:calc(var(--sr) + 10px);bottom:calc(var(--tab) + var(--sb) + 34px);z-index:5;width:52px;height:52px;border-radius:50%;color:var(--blue);display:grid;place-items:center}
+.loc svg{width:24px;height:24px}.loc.on{background:var(--blue);color:#fff;border-color:transparent}.loc.on svg path{fill:currentColor}
+/* tab bar */
+.bar{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;padding:0 calc(var(--sr) + 4px) var(--sb) calc(var(--sl) + 4px);border-width:.5px 0 0;border-radius:0;box-shadow:none}
+.bar button{flex:1;height:var(--tab);background:none;border:0;padding:6px 0 4px;font-size:10.5px;font-weight:600;color:var(--mut);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.bar button svg{width:25px;height:25px}
+.bar button.on{color:var(--acc)}
+/* sheet */
+.sheet{position:absolute;left:0;right:0;bottom:calc(var(--tab) + var(--sb));z-index:6;background:var(--panel);-webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4);border-top:.5px solid var(--line);border-radius:20px 20px 0 0;max-height:62%;overflow:auto;padding:6px calc(var(--sr) + 16px) 20px calc(var(--sl) + 16px);display:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-shadow:0 -8px 30px rgba(0,0,0,.4)}
+.sheet.open{display:block}
+.sheet::before{content:"";display:block;width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.25);margin:2px auto 8px}
+@media(min-width:820px){.sheet{left:12px;right:auto;width:410px;bottom:84px;top:70px;max-height:none;border:.5px solid var(--line);border-radius:20px}.bar{left:12px;right:auto;width:410px;bottom:12px;border-width:.5px;border-radius:18px;padding-bottom:0}.top{max-width:410px;left:12px}}
+.sheet h2{margin:0 0 10px;font-size:20px;font-weight:700;letter-spacing:-.01em;display:flex;justify-content:space-between;align-items:center}
+.sheet h3{margin:20px 0 6px;font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);font-weight:600}
+.x{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:0;font-size:19px;line-height:1;color:var(--mut);display:grid;place-items:center;padding:0 0 2px}
+.row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:.5px solid var(--line);min-height:46px}
+.row:last-child{border-bottom:0}.row .g{flex:1;min-width:0}.row small,.mut{color:var(--mut);font-size:13px}
+.sw{width:14px;height:14px;border-radius:4px;flex:none}
+input[type=checkbox]{width:50px;height:30px;border-radius:15px;background:rgba(255,255,255,.16);position:relative;flex:none;transition:background .2s;margin:0}
+input[type=checkbox]::after{content:"";position:absolute;top:2px;left:2px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:transform .2s}
+input[type=checkbox]:checked{background:var(--acc)}input[type=checkbox]:checked::after{transform:translateX(20px)}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:rgba(255,255,255,.1);border:0;border-radius:12px;padding:0 16px;font-weight:600;font-size:15.5px;text-decoration:none;color:var(--tx)}
+.btn:active{opacity:.7}
+.btn.p{background:var(--acc);color:#1a0d02}
+.btn.s{min-height:36px;padding:0 12px;font-size:14px;border-radius:10px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.fld{display:block;margin:10px 0}.fld span{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
+.fld input,.fld select,.fld textarea{width:100%;background:var(--field);border:.5px solid var(--line);border-radius:12px;padding:11px 12px;font-size:16px;outline:0}
+.fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%239aa69f' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:12px;padding-right:36px}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--acc)}
+.seg{display:flex;background:rgba(255,255,255,.1);border-radius:11px;padding:2px;margin-bottom:6px}.seg button{flex:1;background:none;border:0;padding:8px;border-radius:9px;font-weight:600;font-size:15px}.seg button.on{background:#5a625d;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.note{background:var(--field);border-radius:12px;padding:11px 12px;font-size:13.5px;color:var(--mut);margin:10px 0;line-height:1.45}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--tab) + var(--sb) + 16px);z-index:9;padding:10px 16px;border-radius:22px;font-size:14.5px;font-weight:500;display:none;max-width:86%;text-align:center}
+.modebar{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--st) + 64px);z-index:7;background:var(--acc);color:#1a0d02;border-radius:22px;padding:6px 6px 6px 14px;font-weight:700;font-size:14.5px;display:none;gap:6px;align-items:center;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.modebar span{margin-right:4px}
+.modebar button{background:rgba(0,0,0,.82);color:#fff;border:0;border-radius:16px;height:32px;padding:0 12px;font-size:13.5px;font-weight:600}
+.hotchip{position:absolute;left:calc(var(--sl) + 10px);top:calc(var(--st) + 64px);z-index:5;display:none;background:#e01e37;color:#fff;border:0;border-radius:20px;height:38px;padding:0 14px;font-weight:700;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.wp{width:30px;height:30px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);border:2.5px solid #fff;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.6);cursor:pointer}
+.wp i{transform:rotate(45deg);font-style:normal;font-weight:800;font-size:13px;color:#fff}
+.hs{width:30px;height:30px;border-radius:50%;background:#e01e37;border:2.5px solid #fff;color:#fff;font-weight:800;font-size:14px;display:grid;place-items:center;box-shadow:0 0 0 5px rgba(224,30,55,.3),0 2px 6px rgba(0,0,0,.5);cursor:pointer;flex:none}
+.ml{background:rgba(10,12,11,.85);color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:11px;padding:2px 8px;font-size:13px;font-weight:700;white-space:nowrap;pointer-events:none}.ml.tot{background:var(--acc);color:#1a0d02;border-color:#1a0d02;font-size:14px}
+.me{width:24px;height:24px;position:relative}
+.me:before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 7px rgba(59,155,255,.25),0 1px 4px rgba(0,0,0,.5)}
+.me .hd{position:absolute;left:50%;top:-16px;margin-left:-8px;border:8px solid transparent;border-bottom:14px solid var(--blue);border-top:0;display:none}
+.maplibregl-popup-content{background:var(--solid);color:var(--tx);border-radius:16px;padding:14px 16px 12px;max-width:300px;border:.5px solid var(--line);font:inherit;font-size:15px;box-shadow:0 8px 28px rgba(0,0,0,.5)}
+.maplibregl-popup-close-button{color:var(--mut);font-size:22px;padding:2px 10px;right:2px;top:2px}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip{border-top-color:var(--solid)}.maplibregl-popup-anchor-top .maplibregl-popup-tip{border-bottom-color:var(--solid)}.maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:var(--solid)}.maplibregl-popup-anchor-right .maplibregl-popup-tip{border-left-color:var(--solid)}
+.pp h4{margin:1px 0 3px;font-size:17px;font-weight:700;letter-spacing:-.01em;padding-right:18px}.pp .k{color:var(--mut);font-size:13px;line-height:1.4}.pp .k:first-child{font-weight:700;font-size:11.5px;letter-spacing:.05em}.pp hr{border:0;border-top:.5px solid var(--line);margin:10px 0}
+.pp a,.sheet a:not(.btn){color:#7cc4ff}
+.pp .btns{margin:10px 0 2px}
+.disc{position:absolute;left:calc(var(--sl) + 10px);bottom:calc(var(--tab) + var(--sb) + 6px);z-index:4;font-size:10px;color:rgba(255,255,255,.8);text-shadow:0 0 3px #000,0 0 3px #000;max-width:62%;pointer-events:none}
+.maplibregl-ctrl-bottom-left{bottom:calc(var(--tab) + var(--sb) + 20px);left:calc(var(--sl) + 2px)}.maplibregl-ctrl-bottom-right{display:none}
+.maplibregl-ctrl-scale{background:rgba(0,0,0,.45);color:#fff;border-color:#fff;font-size:10px}
+.hr{display:flex;gap:8px;overflow-x:auto;padding:8px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none}.hr::-webkit-scrollbar{display:none}
+.hr div{flex:none;text-align:center;font-size:12.5px;background:var(--field);border:1.5px solid transparent;border-radius:12px;padding:7px 8px;min-width:56px;font-weight:600}.hr div.on{border-color:var(--acc);color:var(--acc2)}
+.hr svg{width:20px;height:20px;display:block;margin:3px auto}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="top">
+  <label class="search glass"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" placeholder="Search a place or lat, lng" enterkeyhint="search" autocomplete="off" autocorrect="off"></label>
+  <button class="chip glass" id="windChip" aria-label="Wind"><svg viewBox="0 0 24 24" id="windArrow"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#7cc4ff"/></svg><span id="windTxt">Wind</span></button>
+</div>
+<div class="stack glass">
+  <button id="fBase" aria-label="Switch basemap"><svg class="i" viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Sat</span></button>
+  <button id="f3d" aria-label="3D terrain"><svg class="i" viewBox="0 0 24 24"><path d="M2.5 19l6.5-11 4 6.5 2.2-3.2L21.5 19z"/></svg><span>3D</span></button>
+  <button id="fCmp" aria-label="Compass mode"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg><span>Compass</span></button>
+</div>
+<div class="modebar" id="modebar"><span id="modeTxt"></span><button data-act="mode-undo" id="modeUndo">Undo</button><button data-act="mode-clear" id="modeClear">Clear</button><button data-act="mode-done">Done</button></div>
+<button class="loc glass" id="fLoc" aria-label="Go to my location"><svg viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.6l7 2.4 2.4 7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+<button class="hotchip" id="hotChip" data-act="hot-clear">Clear hot spots &times;</button>
+<div class="sheet" id="sheet"></div>
+<nav class="bar glass" id="bar">
+  <button data-p="layers"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>Layers</button>
+  <button data-p="mark"><svg class="i" viewBox="0 0 24 24"><path d="M12 21.5s7-6.4 7-11.5a7 7 0 10-14 0c0 5.100 7 11.500 7 11.500z"/><circle cx="12" cy="10" r="2.6"/></svg>Mark</button>
+  <button data-p="measure"><svg class="i" viewBox="0 0 24 24"><path d="M3 16.500L16.500 3l4.500 4.500L7.500 21z"/><path d="M7 12.500l2 2M10 9.500l2 2M13 6.500l2 2"/></svg>Measure</button>
+  <button data-p="track"><svg class="i" viewBox="0 0 24 24"><circle cx="5.500" cy="18.500" r="2.500"/><circle cx="18.500" cy="5.500" r="2.500"/><path d="M8 18.500h7.500a3.500 3.500 0 000-7h-7a3.500 3.500 0 010-7H16"/></svg>Track</button>
+  <button data-p="hot"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.800"/><path d="M12 1.500v4M12 18.500v4M1.500 12h4M18.500 12h4"/></svg>Hot spots</button>
+  <button data-p="saved"><svg class="i" viewBox="0 0 24 24"><path d="M6.500 3h11v18l-5.500-4.200L6.500 21z"/></svg>Saved</button>
+</nav>
+<div class="toast glass" id="toast"></div>
+<div class="disc">Boundaries are approximate, not a survey. Data may be out of date.</div>
+<script>
+/* ---------- Hunt Map core: geometry + habitat scoring (no DOM) ---------- */
+const HM = {};
+(function () {
+  const R = 6378137, D2R = Math.PI / 180;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const sat = v => clamp(v, 0, 1);
+  const near = (d, r) => sat(1 - d / r);
+  HM.clamp = clamp;
+  HM.lon2x = l => R * l * D2R;
+  HM.lat2y = l => R * Math.log(Math.tan(Math.PI / 4 + l * D2R / 2));
+  HM.x2lon = x => x / R / D2R;
+  HM.y2lat = y => (2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) / D2R;
+  HM.hav = (a, b) => {
+    const dLat = (b[1] - a[1]) * D2R, dLon = (b[0] - a[0]) * D2R;
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * D2R) * Math.cos(b[1] * D2R) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  };
+  HM.dest = (p, brg, d) => {
+    const b = brg * D2R, dr = d / R, la1 = p[1] * D2R, lo1 = p[0] * D2R;
+    const la2 = Math.asin(Math.sin(la1) * Math.cos(dr) + Math.cos(la1) * Math.sin(dr) * Math.cos(b));
+    const lo2 = lo1 + Math.atan2(Math.sin(b) * Math.sin(dr) * Math.cos(la1), Math.cos(dr) - Math.sin(la1) * Math.sin(la2));
+    return [lo2 / D2R, la2 / D2R];
+  };
+  HM.lineLen = pts => { let s = 0; for (let i = 1; i < pts.length; i++) s += HM.hav(pts[i - 1], pts[i]); return s; };
+  // local flat projection (meters) around an origin
+  HM.local = o => { const k = Math.cos(o[1] * D2R); return p => [(p[0] - o[0]) * D2R * R * k, (p[1] - o[1]) * D2R * R]; };
+  HM.polyAcres = pts => {
+    if (pts.length < 3) return 0;
+    const f = HM.local(pts[0]); let a = 0;
+    for (let i = 0; i < pts.length; i++) { const p = f(pts[i]), q = f(pts[(i + 1) % pts.length]); a += p[0] * q[1] - q[0] * p[1]; }
+    return Math.abs(a) / 2 / 4046.8564;
+  };
+  HM.segDist = (p, a, b) => {
+    const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy;
+    let t = l2 ? ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2 : 0; t = sat(t);
+    return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+  };
+  HM.compass = d => ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'][Math.round((((d % 360) + 360) % 360) / 22.5) % 16];
+
+  /* ---- NLCD palette -> simplified classes ----
+     1 water 2 developed 3 barren 4 deciduous/mixed forest 5 evergreen 6 shrub
+     7 grassland 8 pasture/hay 9 crops 10 woody wetland 11 emergent wetland */
+  const PAL = [
+    [70, 107, 159, 1], [209, 222, 248, 3], [222, 197, 197, 2], [217, 146, 130, 2], [235, 0, 0, 2], [171, 0, 0, 2],
+    [179, 172, 159, 3], [104, 171, 95, 4], [28, 95, 44, 5], [181, 197, 143, 4], [204, 184, 121, 6], [223, 223, 194, 7],
+    [220, 217, 57, 8], [171, 108, 40, 9], [184, 217, 235, 10], [108, 159, 184, 11]
+  ];
+  HM.classify = rgba => {
+    const n = rgba.length / 4, cls = new Uint8Array(n), cache = new Map(); let unk = 0;
+    for (let i = 0; i < n; i++) {
+      const r = rgba[4 * i], g = rgba[4 * i + 1], b = rgba[4 * i + 2], a = rgba[4 * i + 3];
+      if (a < 128) { unk++; continue; }
+      const key = (r << 16) | (g << 8) | b; let c = cache.get(key);
+      if (c === undefined) {
+        let best = 1e9; c = 0;
+        for (const p of PAL) { const d = (p[0] - r) ** 2 + (p[1] - g) ** 2 + (p[2] - b) ** 2; if (d < best) { best = d; c = p[3]; } }
+        if (best > 1800) c = 0; cache.set(key, c);
+      }
+      if (!c) unk++; cls[i] = c;
+    }
+    return { cls, unknownFrac: unk / n };
+  };
+
+  HM.dist = (mask, W, H, cell) => {
+    const N = W * H, d = new Float32Array(N), INF = 1e7, D = 1.4142;
+    for (let i = 0; i < N; i++) d[i] = mask[i] ? 0 : INF;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x; let v = d[i];
+      if (x > 0) v = Math.min(v, d[i - 1] + 1);
+      if (y > 0) { v = Math.min(v, d[i - W] + 1); if (x > 0) v = Math.min(v, d[i - W - 1] + D); if (x < W - 1) v = Math.min(v, d[i - W + 1] + D); }
+      d[i] = v;
+    }
+    for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) {
+      const i = y * W + x; let v = d[i];
+      if (x < W - 1) v = Math.min(v, d[i + 1] + 1);
+      if (y < H - 1) { v = Math.min(v, d[i + W] + 1); if (x < W - 1) v = Math.min(v, d[i + W + 1] + D); if (x > 0) v = Math.min(v, d[i + W - 1] + D); }
+      d[i] = v * cell;
+    }
+    return d;
+  };
+  HM.boxMean = (src, W, H, r) => {
+    const I = new Float64Array((W + 1) * (H + 1)), out = new Float32Array(W * H);
+    for (let y = 0; y < H; y++) { let row = 0; for (let x = 0; x < W; x++) { row += src[y * W + x]; I[(y + 1) * (W + 1) + x + 1] = I[y * (W + 1) + x + 1] + row; } }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const x0 = Math.max(0, x - r), x1 = Math.min(W, x + r + 1), y0 = Math.max(0, y - r), y1 = Math.min(H, y + r + 1);
+      out[y * W + x] = (I[y1 * (W + 1) + x1] - I[y0 * (W + 1) + x1] - I[y1 * (W + 1) + x0] + I[y0 * (W + 1) + x0]) / ((x1 - x0) * (y1 - y0));
+    }
+    return out;
+  };
+  // slope (deg) and aspect (compass deg the slope faces); row 0 = north
+  HM.terrain = (dem, W, H, cell) => {
+    const N = W * H, slope = new Float32Array(N), aspect = new Float32Array(N);
+    if (!dem) return { slope, aspect };
+    const z = HM.boxMean(dem, W, H, 1);
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      const i = y * W + x, dzdx = (z[i + 1] - z[i - 1]) / (2 * cell), dzdy = (z[i - W] - z[i + W]) / (2 * cell);
+      slope[i] = Math.atan(Math.hypot(dzdx, dzdy)) / D2R;
+      aspect[i] = ((Math.atan2(-dzdx, -dzdy) / D2R) + 360) % 360;
+    }
+    return { slope, aspect };
+  };
+
+  HM.MODES = {
+    deer: { label: 'Whitetail deer', phases: { early: 'Early season (Sept to mid Oct)', prerut: 'Pre-rut (late Oct)', rut: 'Rut (November)', late: 'Late season (Dec and snow)' } },
+    turkey: { label: 'Wild turkey', phases: { spring: 'Spring (Apr to May)', fall: 'Fall' } },
+    pheasant: { label: 'Pheasant', phases: { early: 'Opener through November', late: 'Late season and snow' } },
+    waterfowl: { label: 'Ducks and geese', phases: { early: 'Early season', late: 'Late season and freeze-up' } }
+  };
+  HM.defaultPhase = (sp, m) => {
+    if (sp === 'deer') return m === 11 ? 'rut' : m === 10 ? 'prerut' : (m >= 8 && m <= 9) ? 'early' : 'late';
+    if (sp === 'turkey') return (m >= 3 && m <= 6) ? 'spring' : 'fall';
+    if (sp === 'pheasant') return (m === 10 || m === 11) ? 'early' : 'late';
+    return (m === 9 || m === 10) ? 'early' : 'late';
+  };
+
+  HM.score = o => {
+    const { W, H, cell, cls, dem, species, phase, mask, publicOnly } = o, N = W * H;
+    const windFrom = o.windFrom == null ? null : o.windFrom;
+    const { slope, aspect } = HM.terrain(dem, W, H, cell);
+    const lee = new Float32Array(N), south = new Float32Array(N), bench = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const s = slope[i];
+      south[i] = sat(Math.cos((aspect[i] - 180) * D2R)) * sat(s / 6);
+      if (windFrom != null) lee[i] = sat(Math.cos((aspect[i] - (windFrom + 180)) * D2R)) * sat(s / 4);
+      bench[i] = s > 2 && s < 18 ? 1 - Math.abs(s - 8) / 10 : 0;
+    }
+    const m = set => { const lut = new Uint8Array(16), out = new Uint8Array(N); set.forEach(c => lut[c] = 1); if (cls) for (let i = 0; i < N; i++) out[i] = lut[cls[i]]; return out; };
+    const d = set => HM.dist(m(set), W, H, cell);
+    const rS = Math.max(1, Math.round(110 / cell)), rL = Math.max(2, Math.round(350 / cell));
+    const coverSet = { deer: [4, 5, 6, 10, 11], turkey: [4, 5, 10], pheasant: [7, 8, 11, 6], waterfowl: [1, 11] }[species];
+    const cover = m(coverSet), fS = HM.boxMean(cover, W, H, rS), fL = HM.boxMean(cover, W, H, rL);
+    const dOpen = d([3, 7, 8, 9]), dFood = d([8, 9]), dCrop = d([9]), dWater = d([1]), dDev = d([2]), dForest = d([4, 5, 10]),
+      dLand = d([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    const mode = species + '-' + phase, terrainOnly = !cls;
+    const comps = i => {
+      if (terrainOnly) return [['Leeward slope for the current wind', .4, lee[i]], ['South-facing slope', .3, south[i]], ['Bench or moderate side-hill', .3, bench[i]]];
+      const c = cls[i], cov = cover[i];
+      if (c === 2 || c === 0) return null;
+      switch (mode) {
+        case 'deer-early': if (!cov) return null; return [
+          ['Cover edge beside crops or hay, an evening staging spot', .5, near(dOpen[i], 90) * near(dFood[i], 180)],
+          ['Enough cover nearby to hold bedding', .2, sat(fL[i] / .4)],
+          ['Water within easy reach', .15, near(dWater[i], 300)],
+          ['Leeward slope for the current wind', .15, lee[i]]];
+        case 'deer-prerut': if (!cov) return null; return [
+          ['Narrow strip or point of cover that funnels travel', .45, sat((.7 - fS[i]) / .45) * sat(fL[i] / .22)],
+          ['Field edge where scrapes and rubs show up', .25, near(dOpen[i], 60) * near(dFood[i], 200)],
+          ['Bedding-size cover close by', .2, sat(fL[i] / .4)],
+          ['Creek or slough crossing', .1, near(dWater[i], 60)]];
+        case 'deer-rut': if (!cov) return null; return [
+          ['Pinch point between cover blocks where bucks cruise', .5, sat((.7 - fS[i]) / .45) * sat(fL[i] / .22)],
+          ['Downwind edge of doe bedding cover', .3, sat((fL[i] - .35) / .3) * near(Math.abs(dOpen[i] - 80), 80)],
+          ['Leeward slope for the current wind', .1, lee[i]],
+          ['Creek or slough crossing', .1, near(dWater[i], 60)]];
+        case 'deer-late': if (!cov) return null; { const th = (c === 10 || c === 11 || c === 5 || c === 6) ? 1 : .55; return [
+          ['Thermal cover (cattails, conifers, brush) close to crop fields', .55, th * near(dCrop[i], 300)],
+          ['South-facing slope that catches winter sun', .2, south[i]],
+          ['Big block of cover for security', .25, sat(fL[i] / .5)]]; }
+        case 'turkey-spring': if (c === 1) return null; return [
+          ['Open strut ground tight to timber', .45, (c === 7 || c === 8 || c === 9 ? 1 : 0) * near(dForest[i], 80)],
+          ['Timber near water, typical roost cover', .2, cov * near(dWater[i], 250)],
+          ['South-facing slope that greens up first', .2, south[i]],
+          ['Good amount of timber in the area', .15, sat(fL[i] / .3)]];
+        case 'turkey-fall': if (!cov) return null; return [
+          ['Timber edge beside crop or hay fields', .5, near(dFood[i], 150)],
+          ['Larger block of timber for mast and roosting', .3, sat(fL[i] / .4)],
+          ['Water nearby', .2, near(dWater[i], 300)]];
+        case 'pheasant-early': if (!cov) return null; return [
+          ['Grass or cattails beside crop fields', .6, near(dCrop[i], 200)],
+          ['Large block of nesting and loafing cover', .25, sat(fL[i] / .4)],
+          ['Wetland edge', .15, c === 11 ? 1 : near(dWater[i], 150)]];
+        case 'pheasant-late': if (!(c === 11 || c === 6 || c === 10)) return null; return [
+          ['Heavy winter cover (cattails or brush) close to food', .7, near(dCrop[i], 250)],
+          ['Large cover block that holds birds in snow', .3, sat(fL[i] / .35)]];
+        case 'waterfowl-early': if (!(c === 11 || (c === 1 && dLand[i] <= 45))) return null; return [
+          ['Shallow marsh or shoreline edge', .5, c === 11 ? 1 : near(dLand[i], 45)],
+          ['Crop fields nearby for feeding flights', .3, near(dCrop[i], 500)],
+          ['Smaller water that concentrates birds', .2, sat((.6 - fL[i]) / .5)]];
+        case 'waterfowl-late': if (c !== 1 && c !== 11) return null; return [
+          ['Bigger water that stays open longest', .45, sat(fL[i] / .5) * (c === 1 ? 1 : .5)],
+          ['Crop fields nearby for feeding flights', .4, near(dCrop[i], 600)],
+          ['Shoreline edge to hide a setup', .15, near(dLand[i], 60)]];
+      }
+      return null;
+    };
+    const score = new Float32Array(N); let max = 0;
+    const press = i => terrainOnly ? 1 : .55 + .45 * sat(dDev[i] / 350);
+    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+      const i = y * W + x; if (publicOnly && mask && !mask[i]) continue;
+      const cs = comps(i); if (!cs) continue;
+      let s = 0; for (const c of cs) s += c[1] * c[2];
+      s *= press(i); score[i] = s; if (s > max) max = s;
+    }
+    const idx = []; const thr = Math.max(.3, .6 * max);
+    for (let i = 0; i < N; i++) if (score[i] >= thr) idx.push(i);
+    idx.sort((a, b) => score[b] - score[a]);
+    const picks = [], sep = Math.max(4, Math.round(220 / cell));
+    for (const i of idx) {
+      const x = i % W, y = (i - x) / W;
+      if (picks.some(p => Math.hypot(p.x - x, p.y - y) < sep)) continue;
+      const reasons = comps(i).filter(c => c[2] > .4).sort((a, b) => b[1] * b[2] - a[1] * a[2]).slice(0, 3).map(c => c[0]);
+      picks.push({ x, y, score: score[i], reasons, roadM: terrainOnly || dDev[i] > 4000 ? null : dDev[i] });
+      if (picks.length >= 8) break;
+    }
+    return { score, picks, max, terrainOnly };
+  };
+})();
+</script>
+<script>
+/* ======================= Hunt Map app ======================= */
+const SRC = {
+  wma: 'https://arcgis.metc.state.mn.us/server/rest/services/GDRS/DNR_bdry_wildlife_management_area_boundaries_publicly_accessible/MapServer/0',
+  padus: 'https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/Fee_Managers_PADUS/FeatureServer/0',
+  parcels: 'https://enterprise.gisdata.mn.gov/aghost/rest/services/us_mn_state_mngeo/plan_parcels_open/FeatureServer/1',
+  nlcd: 'https://geo.fas.usda.gov/arcgis2/rest/services/G_Land_Cover/NLCD/MapServer',
+  nlcdWms: 'https://www.mrlc.gov/geoserver/mrlc_display/NLCD_2021_Land_Cover_L48/wms',
+  dem: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
+  overpass: 'https://overpass-api.de/api/interpreter',
+  esri: 'https://server.arcgisonline.com/ArcGIS/rest/services/'
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const toast = (m, ms = 2600) => { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', ms); };
+const fmtDist = m => { const yd = m * 1.09361; return yd < 880 ? Math.round(yd) + ' yd' : (m / 1609.344).toFixed(2) + ' mi'; };
+const dirLink = p => `https://www.google.com/maps/dir/?api=1&destination=${p[1].toFixed(6)},${p[0].toFixed(6)}`;
+const store = { get(k, d) { try { const v = localStorage.getItem('huntmap.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('huntmap.' + k, JSON.stringify(v)); } catch (e) { } } };
+
+const S = {
+  wps: store.get('wps', []), tracks: store.get('tracks', []), on: store.get('on', { wma: true, padus: true, parcels: true, access: false, refs: true, hill: false, nlcd: false }),
+  base: store.get('base', 'sat'), regrid: store.get('regrid', ''), prov: store.get('prov', 'regrid'), mine: [], data: { wma: [], padus: [], parcels: [] }, status: {}, mode: null, measure: [], rec: null, me: null, heading: null,
+  wind: null, windHour: 0, cone: null, hot: { species: 'deer', phase: HM.defaultPhase('deer', new Date().getMonth() + 1), publicOnly: true, picks: [] }
+};
+const WPT = { stand: ['Stand', '#e01e37', 'S'], blind: ['Blind', '#8e44ad', 'B'], sign: ['Rub / scrape', '#d35400', 'R'], bed: ['Bedding', '#16a085', 'Z'], food: ['Food source', '#b7950b', 'F'], cam: ['Trail camera', '#2c3e50', 'C'], access: ['Parking / access', '#2f6fde', 'P'], sight: ['Sighting', '#27ae60', 'D'], other: ['Other', '#566573', '•'] };
+const LAYERS = [
+  { id: 'wma', name: 'MN Wildlife Management Areas', sub: 'MN DNR', min: 8, sw: '#ff9f1c' },
+  { id: 'padus', name: 'Other public land', sub: 'Federal (WPA, refuge), state forest, county: USGS PAD-US', min: 9, sw: '#ff4fa3' },
+  { id: 'parcels', name: 'Parcel lines and owners', sub: 'Private land: owner names where the county publishes them, a county file you add, or a subscription', min: 13.5, sw: '#ffe45c' },
+  { id: 'access', name: 'Parking, gates and trails', sub: 'OpenStreetMap', min: 12, sw: '#4da3ff' },
+  { id: 'refs', name: 'Road and place labels', sub: 'Esri reference', sw: '#fff' },
+  { id: 'hill', name: 'Hillshade', sub: 'Shaded relief from elevation', sw: '#888' },
+  { id: 'nlcd', name: 'Land cover', sub: 'NLCD 2021: timber, crops, wetlands', sw: '#68ab5f' }
+];
+const MAPL = { wma: ['wma-fill', 'wma-line'], padus: ['padus-fill', 'padus-line'], parcels: ['parcels-fill', 'parcels-line', 'parcels-lbl', 'regrid-fill', 'regrid-line', 'regrid-lbl', 'mine-fill', 'mine-line', 'mine-lbl', 'pt-fill', 'pt-line', 'pt-lbl'], access: ['access-ln', 'access-pt'], refs: ['roads', 'places'], hill: ['hill'], nlcd: ['nlcd'] };
+
+const rt = (u, mz, at) => ({ type: 'raster', tiles: [u], tileSize: 256, maxzoom: mz, attribution: at || '' });
+const empty = () => ({ type: 'FeatureCollection', features: [] });
+const map = new maplibregl.Map({
+  container: 'map', hash: true, center: [-94.4531, 44.80198], zoom: 14.2, maxPitch: 75, attributionControl: false,
+  style: {
+    version: 8, glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
+    sources: {
+      sat: rt(SRC.esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', 18, 'Imagery &copy; Esri, Maxar, Earthstar Geographics'),
+      topo: rt('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}', 16, 'USGS The National Map'),
+      roads: rt(SRC.esri + 'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', 18),
+      places: rt(SRC.esri + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', 18),
+      nlcd: rt(SRC.nlcd + '/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png32&transparent=true&layers=show:2&f=image', 22, 'NLCD (USGS/MRLC)'),
+      dem: { type: 'raster-dem', tiles: [SRC.dem], encoding: 'terrarium', tileSize: 256, maxzoom: 14, attribution: 'Elevation: Mapzen/AWS terrain tiles' },
+      dem2: { type: 'raster-dem', tiles: [SRC.dem], encoding: 'terrarium', tileSize: 256, maxzoom: 14 }
+    },
+    layers: [
+      { id: 'bg', type: 'background', paint: { 'background-color': '#14181a' } },
+      { id: 'sat', type: 'raster', source: 'sat' },
+      { id: 'topo', type: 'raster', source: 'topo', layout: { visibility: 'none' } },
+      { id: 'hill', type: 'hillshade', source: 'dem2', layout: { visibility: 'none' }, paint: { 'hillshade-exaggeration': .6, 'hillshade-shadow-color': '#000' } },
+      { id: 'nlcd', type: 'raster', source: 'nlcd', layout: { visibility: 'none' }, paint: { 'raster-opacity': .55 } },
+      { id: 'roads', type: 'raster', source: 'roads' }, { id: 'places', type: 'raster', source: 'places' }
+    ]
+  }
+});
+map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
+map.on('error', e => console.warn('map error', e && e.error && e.error.message));
+
+map.on('load', () => {
+  const add = (id, data) => map.addSource(id, { type: 'geojson', data: data || empty() });
+  ['wma', 'padus', 'parcels', 'access', 'tracks', 'measure', 'cone'].forEach(id => add(id));
+  for (const id of ['padus', 'wma']) {
+    map.addLayer({ id: id + '-fill', type: 'fill', source: id, paint: { 'fill-color': ['get', '_c'], 'fill-opacity': ['case', ['==', ['get', '_closed'], 1], .12, .28] } }, 'roads');
+    map.addLayer({ id: id + '-line', type: 'line', source: id, paint: { 'line-color': ['get', '_c'], 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1, 15, 3], 'line-dasharray': [1, 0] } }, 'roads');
+  }
+  map.addLayer({ id: 'parcels-fill', type: 'fill', source: 'parcels', paint: { 'fill-color': '#fff', 'fill-opacity': 0 } }, 'roads');
+  map.addLayer({ id: 'parcels-line', type: 'line', source: 'parcels', paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 13, .6, 17, 2], 'line-opacity': .9 } }, 'roads');
+  map.addLayer({ id: 'cone', type: 'fill', source: 'cone', paint: { 'fill-color': '#7cc4ff', 'fill-opacity': .35, 'fill-outline-color': '#fff' } });
+  map.addLayer({ id: 'access-ln', type: 'line', source: 'access', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': '#4da3ff', 'line-width': 2.5, 'line-dasharray': [2, 1.5] } });
+  map.addLayer({ id: 'tracks', type: 'line', source: 'tracks', paint: { 'line-color': ['case', ['==', ['get', 'live'], 1], '#ff3b6b', '#35e0c2'], 'line-width': 3 } });
+  map.addLayer({ id: 'measure-ln', type: 'line', source: 'measure', paint: { 'line-color': '#fff', 'line-width': 2.5, 'line-dasharray': [2, 1] } });
+  map.addLayer({ id: 'measure-pt', type: 'circle', source: 'measure', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 5, 'circle-color': '#ff8a1f', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
+  map.addLayer({ id: 'access-pt', type: 'circle', source: 'access', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 7, 'circle-color': ['match', ['get', 'kind'], 'parking', '#2f6fde', 'frontage', '#57d38c', 'gate', '#ff6b5e', '#4da3ff'], 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
+  map.addLayer({ id: 'parcels-lbl', type: 'symbol', source: 'parcels', minzoom: 15, layout: { 'text-field': ['coalesce', ['get', 'owner_name'], ['get', 'tax_name'], ''], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-width': 8 }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
+  add('mine');
+  map.addLayer({ id: 'mine-fill', type: 'fill', source: 'mine', paint: { 'fill-color': '#fff', 'fill-opacity': 0 } }, 'roads');
+  map.addLayer({ id: 'mine-line', type: 'line', source: 'mine', minzoom: 11, paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .4, 17, 2], 'line-opacity': .9 } }, 'roads');
+  map.addLayer({ id: 'mine-lbl', type: 'symbol', source: 'mine', minzoom: 14.5, layout: { 'text-field': ['coalesce', ['get', 'owner_name'], ''], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-width': 8 }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
+  loadMine(); addRegrid(); addBuiltTiles(); applyBase(); LAYERS.forEach(l => applyVis(l.id)); drawWps(); drawTracks(); refresh(); loadWind(); openShared();
+});
+
+/* ---------------- private parcels from a Regrid key (covers counties with no open data) ---------------- */
+function addRegrid() {
+  ['regrid-lbl', 'regrid-line', 'regrid-fill'].forEach(l => map.getLayer(l) && map.removeLayer(l)); if (map.getSource('regrid')) map.removeSource('regrid');
+  if (!S.regrid) return;
+  const lr = S.prov === 'landrecords', tk = encodeURIComponent(S.regrid);
+  map.addSource('regrid', { type: 'vector', tiles: [lr ? 'https://api.landrecords.us/pro:parcel_us@EPSG:3857x2@pbf/{z}/{x}/{y}.pbf?token=' + tk : 'https://tiles.regrid.com/api/v1/parcels/{z}/{x}/{y}.mvt?token=' + tk], minzoom: 10, maxzoom: 16, attribution: lr ? 'Parcels &copy; Land Records' : 'Parcels &copy; Regrid' });
+  map.addLayer({ id: 'regrid-fill', type: 'fill', source: 'regrid', 'source-layer': 'parcels', minzoom: 12, paint: { 'fill-color': '#fff', 'fill-opacity': 0 } }, 'roads');
+  map.addLayer({ id: 'regrid-line', type: 'line', source: 'regrid', 'source-layer': 'parcels', minzoom: 12, paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, .5, 17, 2], 'line-opacity': .9 } }, 'roads');
+  map.addLayer({ id: 'regrid-lbl', type: 'symbol', source: 'regrid', 'source-layer': 'parcels', minzoom: 14.5, layout: { 'text-field': ['coalesce', ['get', 'owner'], ['get', 'ownername'], ''], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-width': 8 }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
+  applyVis('parcels');
+}
+/* ---------------- statewide parcel tiles built into the site (parcels.pmtiles next to index.html) ---------------- */
+async function addBuiltTiles() {
+  if (!window.pmtiles || !/^https?:/.test(location.protocol)) return;
+  try {
+    const url = new URL('parcels.pmtiles', location.href).href, pm = new pmtiles.PMTiles(url), hd = await pm.getHeader();
+    const proto = new pmtiles.Protocol(); proto.add(pm); maplibregl.addProtocol('pmtiles', proto.tile);
+    map.addSource('pt', { type: 'vector', url: 'pmtiles://' + url, attribution: 'Parcels: MnGeo open data and counties' });
+    const mz = Math.max(11, hd.minZoom || 12);
+    map.addLayer({ id: 'pt-fill', type: 'fill', source: 'pt', 'source-layer': 'parcels', minzoom: mz, paint: { 'fill-color': '#fff', 'fill-opacity': 0 } }, 'roads');
+    map.addLayer({ id: 'pt-line', type: 'line', source: 'pt', 'source-layer': 'parcels', minzoom: mz, paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, .4, 17, 2], 'line-opacity': .9 } }, 'roads');
+    map.addLayer({ id: 'pt-lbl', type: 'symbol', source: 'pt', 'source-layer': 'parcels', minzoom: 14.5, layout: { 'text-field': ['coalesce', ['get', 'owner_name'], ''], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-width': 8 }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
+    S.built = true; if (ctl.parcels) ctl.parcels.abort(); S.data.parcels = []; map.getSource('parcels').setData(empty()); applyVis('parcels'); setStatus('parcels', 'Built-in Minnesota parcels');
+  } catch (e) { S.built = false; console.info('no built-in parcel tiles', e && e.message); }
+}
+/* ---------------- county parcel files imported onto this device (IndexedDB) ---------------- */
+const idb = () => new Promise((res, rej) => { const r = indexedDB.open('huntmap', 2); r.onupgradeneeded = () => { const d = r.result; ['parcels', 'ptiles'].forEach(n => d.objectStoreNames.contains(n) || d.createObjectStore(n)); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const idbDo = async (mode, fn, store = 'parcels') => { const db = await idb(); return new Promise((res, rej) => { const tx = db.transaction(store, mode), rq = fn(tx.objectStore(store)); tx.oncomplete = () => res(rq && rq.result); tx.onerror = () => rej(tx.error); }); };
+function drawMine() { const fs = []; S.mine.forEach(s => { for (const f of s.features) fs.push(f); }); if (map.getSource('mine')) map.getSource('mine').setData({ type: 'FeatureCollection', features: fs }); }
+const PACK = 'Built-in parcels';
+async function loadMine() {
+  try { const keys = await idbDo('readonly', s => s.getAllKeys()), vals = await idbDo('readonly', s => s.getAll()); S.mine = keys.map((k, i) => ({ name: k, features: vals[i] })); drawMine(); } catch (e) { console.warn('idb', e); }
+  if (!/^https?:/.test(location.protocol)) return;
+  try { // parcels.json sitting next to index.html = parcels built into the app for everyone who opens it
+    const tag = store.get('packTag', ''), have = S.mine.some(m => m.name === PACK), r = await fetch('parcels.json', have && tag ? { headers: { 'If-None-Match': tag } } : {});
+    if (r.status === 200) { const fc = await r.json(), fs = (fc.features || []).filter(f => f.geometry); if (fs.length) { await idbDo('readwrite', st => st.put(fs, PACK)).catch(() => { }); store.set('packTag', r.headers.get('ETag') || ''); S.mine = S.mine.filter(m => m.name !== PACK); S.mine.push({ name: PACK, features: fs }); drawMine(); } }
+  } catch (e) { }
+}
+function exportPack() {
+  const fs = []; S.mine.forEach(m => m.features.forEach(f => fs.push(f))); if (!fs.length) { toast('Add a county parcel file first'); return; }
+  const el = document.createElement('a'); el.href = URL.createObjectURL(new Blob([JSON.stringify({ type: 'FeatureCollection', features: fs })], { type: 'application/json' })); el.download = 'parcels.json'; document.body.appendChild(el); el.click(); el.remove();
+}
+/* ---- state open parcels: fetched once per map square, then kept on this device ---- */
+const PT_Z = 13, PT_TTL = 120 * 864e5, PF = 'objectid,county_pin,owner_name,owner_more,tax_name,acres_poly,acres_deed,co_name,ctu_name,anumber,st_name,st_pos_typ,section,township,range', ptMem = new Map();
+const t2lon = x => x / 2 ** PT_Z * 360 - 180, t2lat = y => { const n = Math.PI - 2 * Math.PI * y / 2 ** PT_Z; return 180 / Math.PI * Math.atan(.5 * (Math.exp(n) - Math.exp(-n))); };
+const lon2t = l => Math.floor((l + 180) / 360 * 2 ** PT_Z), lat2t = l => { const r = l * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** PT_Z); };
+const tilesFor = b => { const out = []; for (let x = lon2t(b[0]); x <= lon2t(b[2]); x++) for (let y = lat2t(b[3]); y <= lat2t(b[1]); y++) out.push([x, y]); return out; };
+async function parcelTile(x, y, signal) {
+  const key = PT_Z + '/' + x + '/' + y; if (ptMem.has(key)) return ptMem.get(key);
+  let c = null; try { c = await idbDo('readonly', s => s.get(key), 'ptiles'); } catch (e) { }
+  if (c && Date.now() - c.t < PT_TTL) { ptMem.set(key, c.f); return c.f; }
+  try {
+    const box = [t2lon(x), t2lat(y + 1), t2lon(x + 1), t2lat(y)]; let fs = [];
+    for (let pg = 0; pg < 5; pg++) { const j = await arcQuery(SRC.parcels, box, { signal, max: 2000, fields: PF, skip: fs.length || 0 }), got = j.features || []; fs = fs.concat(got); if (!j.exceededTransferLimit || !got.length) break; }
+    idbDo('readwrite', s => s.put({ t: Date.now(), f: fs }, key), 'ptiles').catch(() => { }); ptMem.set(key, fs); return fs;
+  } catch (e) { if (c) { ptMem.set(key, c.f); return c.f; } throw e; }
+}
+async function parcelsFor(box, signal, onStep) {
+  const ts = tilesFor(box), seen = new Set(), out = []; let i = 0, done = 0, err = null;
+  const work = async () => { while (i < ts.length) { const t = ts[i++]; try { for (const f of await parcelTile(t[0], t[1], signal)) { const id = f.properties.objectid; if (!seen.has(id)) { seen.add(id); out.push(f); } } } catch (e) { if (e.name === 'AbortError') throw e; err = e; } done++; onStep && onStep(done, ts.length); } };
+  await Promise.all([work(), work(), work(), work()]); if (err && !out.length) throw err; return out;
+}
+async function saveArea() {
+  const b = viewBox(0), n = tilesFor(b).length; if (n > 400) { toast('That is a big area. Zoom in to about a county or smaller, then save.', 5000); return; }
+  try { const fs = await parcelsFor(b, undefined, (d, t) => toast(`Saving parcels to this device… ${d} of ${t}`, 20000)); toast(fs.length ? `Saved ${fs.length.toLocaleString()} parcels for this area. They now load without a signal.` : 'No free state parcel data in this area.', 6000); } catch (e) { toast('Could not save: ' + e.message, 6000); }
+}
+const loadScript = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('could not load ' + src)); document.head.appendChild(s); });
+function slimParcels(fc, label) {
+  const first = (fc.features.find(f => f.properties) || {}).properties || {}, keys = Object.keys(first);
+  const find = (...res) => { for (const re of res) { const k = keys.find(k => re.test(k)); if (k) return k; } return null; };
+  const kO = find(/^own.*name|^owner_?nam|^ownname/i, /^owner$|^owner1?$/i, /own/i, /tax.*name|taxpayer/i, /^name$/i), kA = find(/deed.*ac|ac.*deed/i, /acre/i), kP = find(/^pin$|^pid$|parcel.?(id|no|num)|prop.?id/i, /pin|pid/i), kAd = find(/site.*add|prop.*add|phys.*add|^address$/i, /situs/i);
+  const rnd = c => typeof c[0] === 'number' ? [Math.round(c[0] * 1e6) / 1e6, Math.round(c[1] * 1e6) / 1e6] : c.map(rnd), out = [];
+  for (const f of fc.features) {
+    const g = f.geometry; if (!g || !/Polygon/.test(g.type)) continue; const p = f.properties || {};
+    out.push({ type: 'Feature', properties: { owner_name: kO ? String(p[kO] == null ? '' : p[kO]).trim() : '', acres_deed: kA ? +p[kA] || 0 : 0, county_pin: kP ? String(p[kP] == null ? '' : p[kP]) : '', st_name: kAd ? String(p[kAd] == null ? '' : p[kAd]).trim() : '', co_name: label, _mine: 1 }, geometry: { type: g.type, coordinates: rnd(g.coordinates) } });
+  }
+  const c0 = out.length && (function d(c) { return typeof c[0] === 'number' ? c : d(c[0]); })(out[0].geometry.coordinates);
+  if (c0 && (Math.abs(c0[0]) > 180 || Math.abs(c0[1]) > 90)) throw new Error('the file is not in latitude/longitude and has no projection (.prj) info');
+  return { features: out, ownerField: kO };
+}
+async function importParcels(file) {
+  const label = file.name.replace(/\.(zip|geojson|json)$/i, '').replace(/[_-]+/g, ' ').slice(0, 30); toast('Reading ' + file.name + '… large files take a minute', 60000);
+  try {
+    let fc;
+    if (/\.zip$/i.test(file.name)) { if (!window.shp) for (const u of ['https://unpkg.com/shpjs@4.0.4/dist/shp.js', 'https://cdn.jsdelivr.net/npm/shpjs@4.0.4/dist/shp.js', 'https://unpkg.com/shpjs@latest/dist/shp.js']) { try { await loadScript(u); if (window.shp) break; } catch (e) { } } if (!window.shp) throw new Error('the shapefile reader could not be downloaded; check your connection'); let r = await window.shp(await file.arrayBuffer()); if (Array.isArray(r)) r = r.filter(x => x.features.some(f => f.geometry && /Polygon/.test(f.geometry.type))).sort((x, y) => y.features.length - x.features.length)[0]; fc = r; }
+    else fc = JSON.parse(await file.text());
+    if (!fc || !fc.features) throw new Error('no parcel shapes found in the file');
+    const s = slimParcels(fc, label); if (!s.features.length) throw new Error('no polygons found');
+    await idbDo('readwrite', st => st.put(s.features, label)); S.mine = S.mine.filter(m => m.name !== label); S.mine.push({ name: label, features: s.features }); drawMine(); S.on.parcels = true; applyVis('parcels');
+    toast(`Added ${s.features.length.toLocaleString()} parcels` + (s.ownerField ? ` with owners from "${s.ownerField}"` : ' (no owner column found)'), 6000); openSheet('layers');
+  } catch (e) { console.warn(e); toast('Import failed: ' + e.message, 7000); }
+}
+/* ---------------- basemap + layer visibility ---------------- */
+function applyBase() {
+  map.setLayoutProperty('sat', 'visibility', S.base === 'sat' ? 'visible' : 'none');
+  map.setLayoutProperty('topo', 'visibility', S.base === 'topo' ? 'visible' : 'none');
+  $('#fBase span').textContent = S.base === 'sat' ? 'Sat' : 'Topo'; store.set('base', S.base);
+}
+function applyVis(id) { (MAPL[id] || []).forEach(l => map.getLayer(l) && map.setLayoutProperty(l, 'visibility', S.on[id] ? 'visible' : 'none')); }
+$('#fBase').onclick = () => { S.base = S.base === 'sat' ? 'topo' : 'sat'; applyBase(); };
+$('#f3d').onclick = e => {
+  const on = !e.currentTarget.classList.contains('on'); e.currentTarget.classList.toggle('on', on);
+  try { map.setTerrain(on ? { source: 'dem', exaggeration: 1.6 } : null); } catch (er) { console.warn(er); }
+  map.easeTo({ pitch: on ? 62 : 0, duration: 700 });
+};
+
+/* ---------------- ArcGIS + Overpass loading ---------------- */
+const loaded = {}, ctl = {};
+function jsonp(url) {
+  return new Promise((res, rej) => {
+    const cb = '__hm' + Date.now() + Math.random().toString(36).slice(2), s = document.createElement('script');
+    const done = () => { delete window[cb]; s.remove(); clearTimeout(t); }, t = setTimeout(() => { done(); rej(new Error('service timed out')); }, 30000);
+    window[cb] = d => { done(); res(d); }; s.onerror = () => { done(); rej(new Error('service unreachable')); }; s.src = url + '&callback=' + cb; document.head.appendChild(s);
+  });
+}
+function esriToGeo(j) {
+  const fs = [];
+  for (const f of j.features || []) {
+    const g = f.geometry; if (!g || !g.rings) continue; const polys = [];
+    for (const r of g.rings) { let ar = 0; for (let k = 0; k < r.length - 1; k++) ar += r[k][0] * r[k + 1][1] - r[k + 1][0] * r[k][1]; if (ar <= 0 || !polys.length) polys.push([r]); else polys[polys.length - 1].push(r); }
+    fs.push({ type: 'Feature', properties: f.attributes || {}, geometry: polys.length === 1 ? { type: 'Polygon', coordinates: polys[0] } : { type: 'MultiPolygon', coordinates: polys } });
+  }
+  return { type: 'FeatureCollection', features: fs, exceededTransferLimit: !!j.exceededTransferLimit };
+}
+const viaJsonp = {};
+async function arcQuery(base, b, o = {}) {
+  const p = new URLSearchParams({ where: o.where || '1=1', geometry: [b[0], b[1], b[2], b[3]].join(','), geometryType: 'esriGeometryEnvelope', inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: o.fields || '*', returnGeometry: 'true', outSR: '4326', geometryPrecision: '6', f: 'geojson' });
+  if (o.max) p.set('resultRecordCount', o.max); if (o.offset) p.set('maxAllowableOffset', o.offset); if (o.skip) { p.set('resultOffset', o.skip); p.set('orderByFields', o.order || 'objectid'); }
+  const host = base.split('/')[2];
+  if (!viaJsonp[host]) {
+    try {
+      const r = await fetch(base + '/query?' + p, { signal: o.signal }); if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json(); if (j.error) throw new Error(j.error.message || 'service error');
+      if (j.properties && j.properties.exceededTransferLimit) j.exceededTransferLimit = true; return j;
+    } catch (e) { if (e.name === 'AbortError') throw e; console.warn('direct request failed, trying script fallback', host, e.message); }
+  }
+  p.set('f', 'json'); const j = await jsonp(base + '/query?' + p); if (j.error) throw new Error(j.error.message || 'service error'); viaJsonp[host] = true; return esriToGeo(j);
+}
+const pick = (pr, names) => { for (const n of names) for (const k in pr) if (k.toLowerCase() === n.toLowerCase() && pr[k] != null && pr[k] !== '') return pr[k]; return null; };
+function tagPublic(f, src, i) {
+  const p = f.properties || (f.properties = {}); p._id = i; p._src = src;
+  if (src === 'wma') { p._name = pick(p, ['name', 'unit_name']) || 'Wildlife Management Area'; p._cat = 'State Wildlife Management Area'; p._mgr = 'MN DNR Wildlife'; p._c = '#ff9f1c'; p._acres = pick(p, ['gis_area_acres', 'acres']); return true; }
+  const name = String(pick(p, ['Unit_Nm', 'Loc_Nm', 'Unit_Name']) || 'Public land'), mt = String(pick(p, ['Mang_Type', 'd_Mang_Typ']) || ''), mn = String(pick(p, ['Mang_Name', 'd_Mang_Nam']) || ''), ds = String(pick(p, ['Loc_Ds', 'd_Des_Tp', 'Des_Tp']) || ''), acc = String(pick(p, ['Pub_Access', 'd_Pub_Acce']) || '');
+  const nk = s => String(s).toLowerCase().replace(/state|wildlife management area|\bwma\b|[^a-z0-9]/g, '');
+  if (S.on.wma && loaded.wma && (/wildlife management area|\bWMA\b/i.test(name + ' ' + ds) || S.data.wma.some(w => nk(w.properties._name) === nk(name)))) return false;
+  p._name = name; p._mgr = pick(p, ['Loc_Mang', 'd_Mang_Nam', 'Mang_Name']) || mn; p._acres = pick(p, ['GIS_Acres']);
+  const fed = /^FED/i.test(mt) || /FWS|USFS|BLM|NPS|USACE|Federal/i.test(mn), st = /^STAT/i.test(mt) || /^S(FW|PR|DNR|LB|DC|DOL)|State/i.test(mn), loc = /^(LOC|DIST|JNT|REG)/i.test(mt) || /CNTY|CITY|County|City|Regional/i.test(mn);
+  p._cat = /waterfowl production/i.test(name + ds) ? 'Waterfowl Production Area (USFWS)' : fed ? 'Federal land' : st ? 'State land' : loc ? 'County or local land' : 'Conservation land (check access)';
+  p._c = fed ? '#ff4fa3' : st ? '#3fa9ff' : loc ? '#b388ff' : '#b8c0c0';
+  p._closed = /^XA|Closed/i.test(acc) ? 1 : 0; p._acc = /^OA|Open/i.test(acc) ? 'Open access' : /^RA|Restrict/i.test(acc) ? 'Restricted access: check rules' : p._closed ? 'Closed to public' : 'Access unknown: verify';
+  return true;
+}
+const setStatus = (id, s) => { S.status[id] = s; const el = document.querySelector(`[data-st="${id}"]`); if (el) el.textContent = s; };
+const viewBox = pad => { const b = map.getBounds(), w = b.getWest(), e = b.getEast(), s = b.getSouth(), n = b.getNorth(), dx = (e - w) * pad, dy = (n - s) * pad; return [w - dx, s - dy, e + dx, n + dy]; };
+const inside = (a, b) => a && b[0] >= a[0] && b[1] >= a[1] && b[2] <= a[2] && b[3] <= a[3];
+async function loadLayer(id) {
+  const L = LAYERS.find(l => l.id === id), z = map.getZoom();
+  if (!S.on[id] || !L.min) return;
+  if (id === 'parcels' && S.built) { setStatus(id, 'Built-in Minnesota parcels'); return; }
+  if (z < L.min) { setStatus(id, 'Zoom in to load'); return; }
+  const tier = Math.floor(z / 2), v = viewBox(0);
+  if (loaded[id] && loaded[id].tier === tier && inside(loaded[id].box, v)) return;
+  if (ctl[id]) ctl[id].abort(); const ac = ctl[id] = new AbortController(), box = viewBox(.35);
+  setStatus(id, 'Loading…');
+  try {
+    if (id === 'access') { const fc = await overpassAccess(box, ac.signal); map.getSource('access').setData(fc); S.accessView = fc; setStatus(id, fc.features.length + ' features'); }
+    else {
+      const tol = (v[2] - v[0]) / 1500, o = { signal: ac.signal, max: 2000, offset: id === 'parcels' ? '' : tol.toFixed(6) };
+            let fs = id === 'parcels' ? await parcelsFor(viewBox(.1), ac.signal) : ((await arcQuery(SRC[id], box, o)).features || []);
+      if (id !== 'parcels') fs = fs.filter((f, i) => tagPublic(f, id, i)); else fs.forEach((f, i) => { f.properties._id = i; });
+      S.data[id] = fs; map.getSource(id).setData({ type: 'FeatureCollection', features: fs });
+      setStatus(id, fs.length ? fs.length + (id === 'parcels' ? ' parcels, kept on this device' : fs.length >= 2000 ? '+ (zoom in for all)' : ' loaded') : id === 'parcels' ? (S.regrid ? 'Using your subscription token here' : 'Not one of the 59 counties in the free state data. Add this county\'s parcel file or a token below.') : 'None in view');
+      if (id === 'wma' && S.on.padus) { delete loaded.padus; loaded.wma = { box, tier }; loadLayer('padus'); }
+    }
+    loaded[id] = { box: id === 'parcels' ? viewBox(.1) : box, tier };
+  } catch (e) { if (e.name !== 'AbortError') { console.warn(id, e); setStatus(id, 'Failed to load: ' + (e.message || 'network')); } }
+}
+let rtimer; function refresh() { clearTimeout(rtimer); rtimer = setTimeout(() => LAYERS.forEach(l => l.min && loadLayer(l.id)), 350); }
+map.on('moveend', refresh);
+
+async function overpass(q, signal) {
+  const r = await fetch(SRC.overpass, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, signal });
+  if (!r.ok) throw new Error('Overpass HTTP ' + r.status); return (await r.json()).elements || [];
+}
+const opBox = b => `${b[1].toFixed(5)},${b[0].toFixed(5)},${b[3].toFixed(5)},${b[2].toFixed(5)}`;
+async function overpassAccess(b, signal) {
+  const bb = opBox(b), els = await overpass(`[out:json][timeout:25];(nwr["amenity"="parking"](${bb});node["barrier"="gate"](${bb});nwr["leisure"="slipway"](${bb});way["highway"~"^(track|path|footway)$"](${bb}););out geom center 600;`, signal);
+  const fs = [];
+  for (const e of els) {
+    const t = e.tags || {}, c = e.type === 'node' ? [e.lon, e.lat] : e.center ? [e.center.lon, e.center.lat] : null;
+    if (t.highway && e.geometry) fs.push({ type: 'Feature', properties: { kind: 'trail', name: t.name || (t.highway === 'track' ? 'Two-track (ownership not verified)' : 'Trail') }, geometry: { type: 'LineString', coordinates: e.geometry.map(g => [g.lon, g.lat]) } });
+    else if (c) fs.push({ type: 'Feature', properties: { kind: t.amenity === 'parking' ? 'parking' : t.barrier ? 'gate' : 'water', name: t.name || (t.amenity === 'parking' ? 'Parking' : t.barrier ? 'Gate' : 'Boat access') }, geometry: { type: 'Point', coordinates: c } });
+  }
+  return { type: 'FeatureCollection', features: fs };
+}
+/* ---- "How do I get in?" for one public unit: parking + places a public road touches the boundary ---- */
+function ringsOf(g) { return g.type === 'Polygon' ? g.coordinates : g.type === 'MultiPolygon' ? g.coordinates.flat() : []; }
+async function findAccess(f) {
+  toast('Looking for parking and road frontage…', 6000);
+  const rings = ringsOf(f.geometry); let w = 180, s = 90, e = -180, n = -90;
+  rings.forEach(r => r.forEach(p => { w = Math.min(w, p[0]); e = Math.max(e, p[0]); s = Math.min(s, p[1]); n = Math.max(n, p[1]); }));
+  const o = [(w + e) / 2, (s + n) / 2], dLat = 300 / 111320, dLon = dLat / Math.cos(o[1] * Math.PI / 180), bb = opBox([w - dLon, s - dLat, e + dLon, n + dLat]);
+  let els; try { els = await overpass(`[out:json][timeout:30];(way["highway"~"^(trunk|primary|secondary|tertiary|unclassified|residential|track)$"](${bb});nwr["amenity"="parking"](${bb}););out geom center 1500;`); } catch (er) { toast('Access lookup failed: ' + er.message); return; }
+  const L = HM.local(o), segs = []; rings.forEach(r => { const st = Math.max(1, Math.ceil(r.length / 1500)); for (let i = st; i < r.length; i += st) segs.push([L(r[i - st]), L(r[i])]); });
+  const dB = p => { let m = 1e9; for (const sg of segs) { const d = HM.segDist(p, sg[0], sg[1]); if (d < m) m = d; } return m; };
+  const out = [], hits = [];
+  for (const el of els) {
+    const t = el.tags || {};
+    if (t.amenity === 'parking') { const c = el.type === 'node' ? [el.lon, el.lat] : el.center && [el.center.lon, el.center.lat]; if (c && dB(L(c)) < 250) out.push({ kind: 'parking', name: t.name || 'Parking area', p: c }); continue; }
+    if (!el.geometry) continue; const g = el.geometry.map(q => [q.lon, q.lat]);
+    for (let i = 1; i < g.length; i++) { const len = HM.hav(g[i - 1], g[i]), k = Math.max(1, Math.ceil(len / 30)); for (let j = 0; j <= k; j++) { const p = [g[i - 1][0] + (g[i][0] - g[i - 1][0]) * j / k, g[i - 1][1] + (g[i][1] - g[i - 1][1]) * j / k]; if (dB(L(p)) < 35) hits.push({ p, name: t.name || t.ref || (t.highway === 'track' ? 'Two-track' : 'Unnamed road'), track: t.highway === 'track' }); } }
+  }
+  for (const h of hits) if (!out.some(q => q.kind !== 'parking' && HM.hav(q.p, h.p) < 250)) out.push({ kind: h.track ? 'trail' : 'frontage', name: (h.track ? 'Two-track reaches boundary: ' : 'Road frontage: ') + h.name, p: h.p });
+  const fc = { type: 'FeatureCollection', features: out.slice(0, 40).map(a => ({ type: 'Feature', properties: { kind: a.kind, name: a.name }, geometry: { type: 'Point', coordinates: a.p } })) };
+  map.getSource('access').setData(fc); S.on.access = true; applyVis('access'); loaded.access = { box: [-180, -90, 180, 90], tier: -1 }; setStatus('access', 'Showing access for ' + f.properties._name);
+  if (popup) popup.remove();
+  if (!out.length) { toast('No mapped parking or road frontage found. Check the DNR map for this unit.', 5000); return; }
+  map.fitBounds([[w - dLon, s - dLat], [e + dLon, n + dLat]], { padding: 40 });
+  openSheet('access', { unit: f.properties._name, list: out.slice(0, 40) });
+}
+
+/* ---------------- map click + popups ---------------- */
+let popup;
+function showPopup(ll, html) { if (popup) popup.remove(); popup = new maplibregl.Popup({ maxWidth: '300px', offset: 8 }).setLngLat(ll).setHTML('<div class="pp">' + html + '</div>').addTo(map); }
+map.on('click', e => {
+  const ll = [e.lngLat.lng, e.lngLat.lat];
+  if (S.mode === 'measure') { S.measure.push(ll); drawMeasure(); return; }
+  if (S.mode === 'mark') { setMode(null); editWp({ id: 0, p: ll, type: 'stand', name: '', notes: '' }); return; }
+  if (S.mode === 'cone') { S.cone = ll; drawCone(); setMode(null); openSheet('wind'); return; }
+  const lay = ['access-pt', 'wma-fill', 'padus-fill', 'pt-fill', 'parcels-fill', 'mine-fill', 'regrid-fill'].filter(l => map.getLayer(l));
+  const fs = map.queryRenderedFeatures(e.point, { layers: lay }), by = id => fs.find(f => f.layer.id === id);
+  const acc = by('access-pt'), pub = by('wma-fill') || by('padus-fill'), par = by('mine-fill') || by('pt-fill') || by('parcels-fill') || by('regrid-fill'), parts = [];
+  if (!acc && !pub && !par && !(S.on.parcels && map.getZoom() >= 13)) return;
+  if (acc) { const p = acc.properties; parts.push(`<h4>${esc(p.name)}</h4><div class="k">${p.kind === 'frontage' ? 'A public road runs along the boundary here. Park fully off the road and do not block gates or field approaches.' : p.kind === 'gate' ? 'Gate: walk-in only unless posted otherwise.' : p.kind === 'trail' ? 'Two-track: confirm it is public before driving it.' : 'Mapped in OpenStreetMap'}</div><div class="btns"><a class="btn s" href="${dirLink(acc.geometry.coordinates)}" target="_blank" rel="noopener">Directions</a></div>`); }
+  if (pub) { const p = pub.properties; parts.push(`<div class="k" style="color:${esc(p._c)}">PUBLIC &middot; ${esc(p._cat)}</div><h4>${esc(p._name)}</h4><div class="k">${[p._mgr, p._acres ? Math.round(p._acres).toLocaleString() + ' ac' : '', p._acc].filter(Boolean).map(esc).join(' &middot; ')}</div><div class="btns"><button class="btn s p" data-act="access" data-src="${p._src}" data-id="${p._id}">How to get in</button><a class="btn s" href="${dirLink(ll)}" target="_blank" rel="noopener">Directions</a></div>`); }
+  else if (par) {
+    const p = par.properties, rg = par.layer.id === 'regrid-fill', owner = rg ? (p.owner || p.ownername) : (p.owner_name || p.tax_name), addr = rg ? (p.address || p.parceladdr) : [p.anumber && p.anumber !== '0' ? p.anumber : '', p.st_name, p.st_pos_typ].filter(Boolean).join(' ');
+    const ac = rg ? (p.ll_gisacre || p.gisacre || (p.calcarea ? p.calcarea / 4046.8564 : 0)) : (p.acres_deed > 0 ? p.acres_deed : p.acres_poly), pin = rg ? (p.parcelnumb || p.lrid) : p.county_pin;
+    parts.push(`<div class="k" style="color:#ffe45c">PRIVATE LAND &middot; permission required</div><h4>${esc(owner || 'Owner name not published')}</h4>${!rg && p.owner_more ? `<div>${esc(p.owner_more)}</div>` : ''}<div class="k">${[ac > 0 ? (+ac).toFixed(1) + ' ac' : '', addr, p.ctu_name, p.co_name ? p.co_name + ' Co.' : ''].filter(Boolean).map(esc).join(' &middot; ')}</div><div class="k">${[p.section ? 'Sec ' + p.section : '', p.township ? 'T' + p.township : '', p.range ? 'R' + p.range : '', pin ? 'PIN ' + pin : ''].filter(Boolean).map(esc).join(' ')}</div>`);
+  } else if (!acc) parts.push(`<div class="k" style="color:#ffe45c">NOT PUBLIC LAND</div><h4>Treat as private</h4><div class="k">No public unit is mapped here. ${S.regrid ? 'No parcel record loaded at this spot yet.' : 'This county is not in the free state parcel data. Under Layers, add the county\'s parcel file or a subscription token to see owners.'}</div>`);
+  parts.push(`<div class="btns"><button class="btn s" data-act="mark-here" data-ll="${ll.join(',')}">Mark this spot</button><button class="btn s" data-act="cone-here" data-ll="${ll.join(',')}">Wind check</button></div>`);
+  showPopup(ll, parts.join('<hr>'));
+});
+map.on('contextmenu', e => editWp({ id: 0, p: [e.lngLat.lng, e.lngLat.lat], type: 'stand', name: '', notes: '' }));
+
+/* ---------------- modes (measure / mark / cone) ---------------- */
+function setMode(m) {
+  S.mode = m; const mb = $('#modebar'); mb.style.display = m ? 'flex' : 'none'; map.getCanvas().style.cursor = m ? 'crosshair' : '';
+  $('#modeUndo').style.display = $('#modeClear').style.display = m === 'measure' ? '' : 'none';
+  $('#modeTxt').textContent = m === 'measure' ? 'Tap each point' : m === 'mark' ? 'Tap the map to drop a waypoint' : m === 'cone' ? 'Tap where you plan to sit' : '';
+  if (m) closeSheet(); if (m === 'measure') drawMeasure();
+}
+let mLabels = [];
+function drawMeasure() {
+  const pts = S.measure, fs = pts.map(p => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: p } }));
+  if (pts.length > 1) fs.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts } });
+  map.getSource('measure').setData({ type: 'FeatureCollection', features: fs });
+  mLabels.forEach(m => m.remove()); mLabels = [];
+  const lab = (p, txt, cls, off) => { const el = document.createElement('div'); el.className = 'ml ' + (cls || ''); el.textContent = txt; mLabels.push(new maplibregl.Marker({ element: el, offset: off || [0, 0] }).setLngLat(p).addTo(map)); };
+  for (let i = 1; i < pts.length; i++) lab([(pts[i - 1][0] + pts[i][0]) / 2, (pts[i - 1][1] + pts[i][1]) / 2], fmtDist(HM.hav(pts[i - 1], pts[i])));
+  const tot = pts.length > 1 ? fmtDist(HM.lineLen(pts)) : '', ac = pts.length > 2 ? HM.polyAcres(pts).toFixed(1) + ' ac' : '';
+  if (pts.length > 2) lab(pts[pts.length - 1], 'Total ' + tot + ' · ' + ac, 'tot', [0, -22]);
+  if (S.mode === 'measure') $('#modeTxt').textContent = pts.length < 2 ? 'Tap each point' : pts.length + ' pts · ' + tot;
+}
+
+/* ---------------- waypoints ---------------- */
+let wpMarkers = [];
+function drawWps() {
+  wpMarkers.forEach(m => m.remove()); wpMarkers = [];
+  for (const w of S.wps) { const t = WPT[w.type] || WPT.other, el = document.createElement('div'); el.className = 'wp'; el.style.background = t[1]; el.innerHTML = `<i>${t[2]}</i>`; el.title = w.name; el.addEventListener('click', ev => { ev.stopPropagation(); if (!S.mode) editWp(w); }); wpMarkers.push(new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [0, 0] }).setLngLat(w.p).addTo(map)); }
+  store.set('wps', S.wps);
+}
+function editWp(w) { if (popup) popup.remove(); openSheet('wp', w); }
+
+async function shareWp(w) {
+  const t = WPT[w.type] || WPT.other, name = w.name || t[0], lat = w.p[1].toFixed(6), lng = w.p[0].toFixed(6);
+  const app = /^https?:/.test(location.protocol) ? `${location.origin}${location.pathname}?wp=${encodeURIComponent([lat, lng, w.type, name, w.notes || ''].join('|'))}#16/${lat}/${lng}` : '';
+  const text = `${name} (${t[0]})${w.notes ? '\n' + w.notes : ''}\n${lat}, ${lng}\nGoogle Maps: https://maps.google.com/?q=${lat},${lng}` + (app ? `\nOpen in Hunt Map: ${app}` : '');
+  try { if (navigator.share) { await navigator.share({ title: name, text }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text); toast('Waypoint copied. Paste it into a text or email.', 4000); } catch (e) { openSheet('sharetxt', text); }
+}
+function openShared() {
+  const q = new URLSearchParams(location.search).get('wp'); if (!q) return; const a = q.split('|'), lat = +a[0], lng = +a[1]; if (!isFinite(lat) || !isFinite(lng)) return;
+  map.jumpTo({ center: [lng, lat], zoom: 16 }); editWp({ id: 0, p: [lng, lat], type: WPT[a[2]] ? a[2] : 'other', name: a[3] || 'Shared waypoint', notes: a[4] || '' }); toast('Someone shared this waypoint with you. Tap Save to keep it.', 6000);
+  try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { }
+}
+/* ---------------- GPS, compass, tracking ---------------- */
+let meMarker, watchId, follow = false;
+function startGps() {
+  if (!navigator.geolocation) { toast('This browser has no location support'); return; }
+  if (watchId != null) return;
+  watchId = navigator.geolocation.watchPosition(pos => {
+    const p = [pos.coords.longitude, pos.coords.latitude]; S.me = p; S.acc = pos.coords.accuracy;
+    if (!meMarker) { const el = document.createElement('div'); el.className = 'me'; el.innerHTML = '<div class="hd"></div>'; meMarker = new maplibregl.Marker({ element: el, rotationAlignment: 'map' }).setLngLat(p).addTo(map); }
+    meMarker.setLngLat(p); if (follow) map.easeTo({ center: p, duration: 400 });
+    if (S.rec && pos.coords.accuracy < 60) { const c = S.rec.pts, last = c[c.length - 1]; if (!last || HM.hav(last, p) > 5) { c.push(p); drawTracks(); const el = $('#recInfo'); if (el) el.textContent = recText(); } }
+  }, err => { toast('Location error: ' + err.message + (location.protocol === 'https:' ? '' : ' (needs an https page)'), 5000); stopGps(); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+}
+function stopGps() { if (watchId != null) navigator.geolocation.clearWatch(watchId); watchId = null; follow = false; $('#fLoc').classList.remove('on'); }
+function whereAmI(cb) {
+  if (S.me && watchId != null) { cb(S.me); return; }
+  if (!navigator.geolocation) { toast('This browser has no location support'); return; }
+  toast('Finding your location…', 8000); startGps();
+  navigator.geolocation.getCurrentPosition(pos => { S.me = [pos.coords.longitude, pos.coords.latitude]; $('#toast').style.display = 'none'; cb(S.me); }, err => toast(err.code === 1 ? 'Location is blocked. Allow location for this site in your browser settings, then try again.' : 'Could not get a location fix: ' + err.message, 6000), { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 });
+}
+$('#fLoc').onclick = () => whereAmI(p => { follow = true; $('#fLoc').classList.add('on'); map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 15.5) }); });
+map.on('dragstart', () => { follow = false; $('#fLoc').classList.remove('on'); });
+let cmpOn = false, lastTurn = 0;
+function onOrient(e) {
+  let h = null;
+  if (typeof e.webkitCompassHeading === 'number') h = e.webkitCompassHeading;
+  else if (e.absolute && e.alpha != null) h = 360 - e.alpha; else return;
+  h = (h + ((screen.orientation && screen.orientation.angle) || 0) + 360) % 360; S.heading = h;
+  if (meMarker) { meMarker.setRotation(h); meMarker.getElement().querySelector('.hd').style.display = 'block'; }
+  const now = Date.now(); if (cmpOn && now - lastTurn > 120) { lastTurn = now; const cur = map.getBearing(), diff = ((h - cur + 540) % 360) - 180; if (Math.abs(diff) > 1.5) map.easeTo({ bearing: cur + diff * .5, duration: 120, easing: t => t }); }
+}
+$('#fCmp').onclick = async () => {
+  if (cmpOn) { cmpOn = false; $('#fCmp').classList.remove('on'); map.easeTo({ bearing: 0, duration: 500 }); return; }
+  try {
+    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') { const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') { toast('Compass permission was not granted'); return; } }
+    if (!window.DeviceOrientationEvent) { toast('No compass sensor on this device'); return; }
+    if (!onOrient.bound) { window.addEventListener('deviceorientationabsolute', onOrient, true); window.addEventListener('deviceorientation', onOrient, true); onOrient.bound = true; }
+    cmpOn = true; $('#fCmp').classList.add('on'); startGps(); toast('Compass mode: the map turns with your phone. Tap N to lock north.');
+    setTimeout(() => { if (cmpOn && S.heading == null) toast('No compass reading yet. This needs a phone with a magnetometer.', 4000); }, 3000);
+  } catch (er) { toast('Compass unavailable: ' + er.message); }
+};
+const recText = () => S.rec ? `${fmtDist(HM.lineLen(S.rec.pts))} · ${Math.round((Date.now() - S.rec.t0) / 60000)} min · ${S.rec.pts.length} points` : '';
+function drawTracks() {
+  const fs = S.tracks.filter(t => !t.hide).map(t => ({ type: 'Feature', properties: { live: 0 }, geometry: { type: 'LineString', coordinates: t.pts } }));
+  if (S.rec && S.rec.pts.length > 1) fs.push({ type: 'Feature', properties: { live: 1 }, geometry: { type: 'LineString', coordinates: S.rec.pts } });
+  if (map.getSource('tracks')) map.getSource('tracks').setData({ type: 'FeatureCollection', features: fs });
+}
+
+/* ---------------- wind ---------------- */
+async function loadWind(force) {
+  const c = map.getCenter(); if (!force && S.wind && HM.hav(S.wind.at, [c.lng, c.lat]) < 15000 && Date.now() - S.wind.t < 18e5) return;
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat.toFixed(3)}&longitude=${c.lng.toFixed(3)}&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation_probability&daily=sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=3`);
+    const j = await r.json(); if (!j.hourly) throw new Error('no data');
+    const now = j.current ? j.current.time : j.hourly.time[0]; let i0 = j.hourly.time.findIndex(t => t >= now.slice(0, 13)); if (i0 < 0) i0 = 0;
+    S.wind = { at: [c.lng, c.lat], t: Date.now(), cur: j.current, h: j.hourly, i0, daily: j.daily }; S.windHour = 0; windChip(); drawCone();
+    if ($('#sheet').dataset.p === 'wind') openSheet('wind');
+  } catch (e) { $('#windTxt').textContent = 'wind n/a'; console.warn('wind', e); }
+}
+const windAt = k => { const w = S.wind; if (!w) return null; const i = Math.min(w.h.time.length - 1, w.i0 + k); return { time: w.h.time[i], dir: w.h.wind_direction_10m[i], spd: w.h.wind_speed_10m[i], gust: w.h.wind_gusts_10m[i], temp: w.h.temperature_2m[i], pop: w.h.precipitation_probability ? w.h.precipitation_probability[i] : null }; };
+function windChip() { const w = windAt(S.windHour); if (!w) return; $('#windArrow').style.transform = `rotate(${w.dir + 180}deg)`; $('#windTxt').textContent = `${HM.compass(w.dir)} ${Math.round(w.spd)}`; }
+function drawCone() {
+  if (!map.getSource('cone')) return; const w = windAt(S.windHour);
+  if (!S.cone || !w) { map.getSource('cone').setData(empty()); return; }
+  const down = (w.dir + 180) % 360, len = 180 + Math.min(25, w.spd) * 14, half = w.spd < 4 ? 40 : w.spd < 10 ? 26 : 18, ring = [S.cone];
+  for (let a = -half; a <= half; a += 4) ring.push(HM.dest(S.cone, down + a, len)); ring.push(S.cone);
+  map.getSource('cone').setData({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [ring] } });
+}
+$('#windChip').onclick = () => openSheet('wind');
+map.on('moveend', () => loadWind());
+const hhmm = t => { const d = new Date(t); return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
+const hlabel = t => { const d = new Date(t); return d.toLocaleTimeString([], { hour: 'numeric' }).replace(' ', '').toLowerCase(); };
+
+/* ---------------- hot spots ---------------- */
+let hotMarkers = [];
+function clearHot() { $('#hotChip').style.display = 'none'; hotMarkers.forEach(m => m.remove()); hotMarkers = []; S.hot.picks = []; if (map.getLayer('hot')) map.removeLayer('hot'); if (map.getSource('hot')) map.removeSource('hot'); }
+async function loadImg(url) { const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status); return createImageBitmap(await r.blob()); }
+async function getLandcover(bx, W, H) {
+  const b = bx.map(v => v.toFixed(2)).join(',');
+  const urls = [`${SRC.nlcd}/export?bbox=${b}&bboxSR=3857&imageSR=3857&size=${W},${H}&format=png32&transparent=false&layers=show:2&f=image`, `${SRC.nlcdWms}?service=WMS&version=1.1.1&request=GetMap&layers=NLCD_2021_Land_Cover_L48&styles=&srs=EPSG:3857&bbox=${b}&width=${W}&height=${H}&format=image/png`];
+  for (const u of urls) { try { const bmp = await loadImg(u), cv = document.createElement('canvas'); cv.width = W; cv.height = H; const cx = cv.getContext('2d', { willReadFrequently: true }); cx.imageSmoothingEnabled = false; cx.drawImage(bmp, 0, 0, W, H); const res = HM.classify(cx.getImageData(0, 0, W, H).data); if (res.unknownFrac < .4) return res.cls; console.warn('land cover colors not recognised', res.unknownFrac); } catch (e) { console.warn('land cover', e); } }
+  return null;
+}
+async function getDem(bx, W, H) {
+  try {
+    const C = 40075016.686, o = C / 2, span = (bx[2] - bx[0]) / W, z = HM.clamp(Math.floor(Math.log2(C / (256 * span))), 5, 14), ts = C / 2 ** z;
+    const tx0 = Math.floor((bx[0] + o) / ts), tx1 = Math.floor((bx[2] + o) / ts), ty0 = Math.floor((o - bx[3]) / ts), ty1 = Math.floor((o - bx[1]) / ts), nx = tx1 - tx0 + 1, ny = ty1 - ty0 + 1;
+    if (nx * ny > 36) return null;
+    const cv = document.createElement('canvas'); cv.width = nx * 256; cv.height = ny * 256; const cx = cv.getContext('2d', { willReadFrequently: true }), jobs = [];
+    for (let x = tx0; x <= tx1; x++) for (let y = ty0; y <= ty1; y++) jobs.push(loadImg(SRC.dem.replace('{z}', z).replace('{x}', x).replace('{y}', y)).then(b => cx.drawImage(b, (x - tx0) * 256, (y - ty0) * 256)));
+    await Promise.all(jobs);
+    const d = cx.getImageData(0, 0, cv.width, cv.height).data, MW = cv.width, MH = cv.height, el = i => d[4 * i] * 256 + d[4 * i + 1] + d[4 * i + 2] / 256 - 32768, dem = new Float32Array(W * H);
+    for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+      const mx = bx[0] + (c + .5) * (bx[2] - bx[0]) / W, my = bx[3] - (r + .5) * (bx[3] - bx[1]) / H;
+      const px = HM.clamp(((mx + o) / ts - tx0) * 256 - .5, 0, MW - 1.001), py = HM.clamp(((o - my) / ts - ty0) * 256 - .5, 0, MH - 1.001), x0 = Math.floor(px), y0 = Math.floor(py), fx = px - x0, fy = py - y0, i = y0 * MW + x0;
+      dem[r * W + c] = el(i) * (1 - fx) * (1 - fy) + el(i + 1) * fx * (1 - fy) + el(i + MW) * (1 - fx) * fy + el(i + MW + 1) * fx * fy;
+    }
+    return dem;
+  } catch (e) { console.warn('dem', e); return null; }
+}
+function publicMask(bx, W, H) {
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const cx = cv.getContext('2d', { willReadFrequently: true }); cx.fillStyle = '#fff'; let n = 0;
+  for (const f of [...S.data.wma, ...S.data.padus]) {
+    if (!f.geometry || f.properties._closed || /Conservation land/.test(f.properties._cat)) continue; n++; cx.beginPath();
+    for (const ring of ringsOf(f.geometry)) { ring.forEach((p, i) => { const x = (HM.lon2x(p[0]) - bx[0]) / (bx[2] - bx[0]) * W, y = (bx[3] - HM.lat2y(p[1])) / (bx[3] - bx[1]) * H; i ? cx.lineTo(x, y) : cx.moveTo(x, y); }); cx.closePath(); }
+    cx.fill('evenodd');
+  }
+  const d = cx.getImageData(0, 0, W, H).data, m = new Uint8Array(W * H); let any = 0; for (let i = 0; i < W * H; i++) if (d[4 * i + 3] > 127) { m[i] = 1; any++; }
+  return { mask: m, any, n };
+}
+async function analyze() {
+  const out = $('#hotOut'); if (map.getZoom() < 12) { out.innerHTML = '<div class="note">Zoom in to about a township or closer (zoom 12+) and run it again.</div>'; return; }
+  out.innerHTML = '<div class="note">Reading land cover and terrain for this view…</div>'; clearHot();
+  const b = map.getBounds(), bx = [HM.lon2x(b.getWest()), HM.lat2y(b.getSouth()), HM.lon2x(b.getEast()), HM.lat2y(b.getNorth())], k = Math.cos(map.getCenter().lat * Math.PI / 180);
+  const gw = (bx[2] - bx[0]) * k, W = HM.clamp(Math.round(gw / 20), 64, 256), H = HM.clamp(Math.round(W * (bx[3] - bx[1]) / (bx[2] - bx[0])), 32, 420), cell = gw / W;
+  const [cls, dem] = await Promise.all([getLandcover(bx, W, H), getDem(bx, W, H)]);
+  if (!cls && !dem) { out.innerHTML = '<div class="note">Could not reach the land cover or elevation services. Check your signal and try again.</div>'; return; }
+  const pm = publicMask(bx, W, H), w = windAt(S.windHour), h = S.hot; let pubOnly = h.publicOnly, pubNote = '';
+  if (pubOnly && !pm.any) { pubOnly = false; pubNote = 'No public land is loaded in this view, so all land was scored. Turn on the public land layers and pan to a unit to limit results.'; }
+  const res = HM.score({ W, H, cell, cls, dem, species: h.species, phase: h.phase, windFrom: w ? w.dir : null, mask: pm.mask, publicOnly: pubOnly });
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const cx = cv.getContext('2d'), im = cx.createImageData(W, H);
+  for (let i = 0; i < W * H; i++) { const s = res.score[i]; if (s < .3) continue; const t = Math.min(1, (s - .3) / .5); im.data[4 * i] = 255; im.data[4 * i + 1] = Math.round(225 - 190 * t); im.data[4 * i + 2] = Math.round(60 - 40 * t); im.data[4 * i + 3] = Math.round(70 + 150 * t); }
+  cx.putImageData(im, 0, 0);
+  map.addSource('hot', { type: 'image', url: cv.toDataURL(), coordinates: [[b.getWest(), b.getNorth()], [b.getEast(), b.getNorth()], [b.getEast(), b.getSouth()], [b.getWest(), b.getSouth()]] });
+  map.addLayer({ id: 'hot', type: 'raster', source: 'hot', paint: { 'raster-opacity': .8, 'raster-resampling': 'linear', 'raster-fade-duration': 0 } }, map.getLayer('padus-fill') ? 'padus-fill' : undefined);
+  $('#hotChip').style.display = 'block';
+  h.picks = res.picks.map((p, i) => ({ n: i + 1, ll: [HM.x2lon(bx[0] + (p.x + .5) * (bx[2] - bx[0]) / W), HM.y2lat(bx[3] - (p.y + .5) * (bx[3] - bx[1]) / H)], score: p.score, reasons: p.reasons, roadM: p.roadM }));
+  h.picks.forEach(p => { const el = document.createElement('div'); el.className = 'hs'; el.textContent = p.n; el.addEventListener('click', ev => { ev.stopPropagation(); showPick(p); }); hotMarkers.push(new maplibregl.Marker({ element: el }).setLngLat(p.ll).addTo(map)); });
+  const notes = []; if (res.terrainOnly) notes.push('Land cover could not be loaded, so this run used terrain only. In flat farm country that is a weak signal.'); if (!dem) notes.push('Elevation could not be loaded, so slope and leeward effects were skipped.'); if (pubNote) notes.push(pubNote);
+  out.innerHTML = (notes.length ? `<div class="note">${notes.map(esc).join(' ')}</div>` : '') + (h.picks.length ? h.picks.map(p => `<div class="row" data-act="pick" data-n="${p.n}" style="cursor:pointer"><div class="hs" style="box-shadow:none">${p.n}</div><div class="g"><div>${esc(p.reasons[0] || 'Mixed factors')}</div><small>Score ${Math.round(p.score * 100)}${p.roadM != null ? ' · ' + fmtDist(p.roadM) + ' from road or buildings' : ''}</small></div></div>`).join('') : '<div class="note">Nothing in this view scored well for that animal and season. Try a different area or turn off "public land only".</div>') + '<div class="btns"><button class="btn s" data-act="hot-clear">Clear overlay</button></div>';
+}
+function showPick(p) {
+  const w = windAt(S.windHour), tip = w ? `Wind is from the ${HM.compass(w.dir)} at ${Math.round(w.spd)} mph: set up on the ${HM.compass(w.dir + 180)} side of where you expect animals and walk in from that side.` : '';
+  showPopup(p.ll, `<div class="k">Hot spot ${p.n} &middot; score ${Math.round(p.score * 100)}</div><h4>${esc(p.reasons[0] || 'Mixed factors')}</h4>${p.reasons.slice(1).map(r => `<div class="k">+ ${esc(r)}</div>`).join('')}${p.roadM != null ? `<div class="k">${fmtDist(p.roadM)} from the nearest road or buildings</div>` : ''}${tip ? `<hr><div class="k">${esc(tip)}</div>` : ''}<div class="btns"><button class="btn s p" data-act="mark-here" data-ll="${p.ll.join(',')}" data-name="Hot spot ${p.n}">Save as waypoint</button><button class="btn s" data-act="cone-here" data-ll="${p.ll.join(',')}">Wind check</button></div>`);
+  map.easeTo({ center: p.ll });
+}
+
+/* ---------------- panels ---------------- */
+function closeSheet() { const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
+function openSheet(p, arg) {
+  const s = $('#sheet'); s.dataset.p = p; s.classList.add('open'); document.querySelectorAll('#bar button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  const head = t => `<h2>${t}<button class="x" data-act="close">&times;</button></h2>`; let h = '';
+  if (p === 'layers') {
+    h = head('Map layers') + `<div class="seg"><button data-act="base" data-b="sat" class="${S.base === 'sat' ? 'on' : ''}">Satellite</button><button data-act="base" data-b="topo" class="${S.base === 'topo' ? 'on' : ''}">Topo</button></div>` +
+      LAYERS.map(l => `<label class="row"><span class="sw" style="background:${l.sw}"></span><span class="g">${l.name}<br><small>${l.sub}</small><br><small data-st="${l.id}" style="color:var(--acc)">${esc(S.status[l.id] || '')}</small></span><input type="checkbox" data-layer="${l.id}" ${S.on[l.id] ? 'checked' : ''}></label>`).join('') +
+      `<h3>Private land owners</h3><div class="note">Yellow lines are private parcels. 59 Minnesota counties come free from the state. Each area is fetched once, then kept on this device so it opens instantly, even with no signal.</div><div class="btns"><button class="btn p" data-act="save-area">Save parcels for this view</button></div><div class="mut">Zoom to a hunting area or a whole county and tap this before you leave home.</div><h3>Option 1: add a county's own parcel file (free)</h3><div class="mut">Download the county's parcel shapefile (.zip) and add it here. It stays on this device only.</div>${S.mine.map(m => `<div class="row"><div class="g">${esc(m.name)}<br><small>${m.features.length.toLocaleString()} parcels on this device</small></div><button class="btn s" data-act="mine-del" data-n="${esc(m.name)}">Remove</button></div>`).join('')}<div class="btns"><button class="btn p" data-act="mine-add">Add parcel file</button><button class="btn" data-act="mine-export">Export parcels.json</button><a class="btn" href="https://www.mcleodcountymn.gov/departments/public_works/gis_(mapping___surveying)/gis_data.php" target="_blank" rel="noopener">McLeod County download page</a></div><div class="mut">To build added counties into the app for your family, export parcels.json and upload it to GitHub next to index.html. Every phone that opens the app then gets them automatically.</div><input type="file" id="mineFile" accept=".zip,.geojson,.json" style="display:none"><h3>Option 2: statewide parcel subscription</h3><label class="fld"><span>Provider</span><select id="rgProv"><option value="regrid" ${S.prov === 'regrid' ? 'selected' : ''}>Regrid</option><option value="landrecords" ${S.prov === 'landrecords' ? 'selected' : ''}>Land Records (landrecords.us)</option></select></label><label class="fld"><span>API token</span><input id="rgKey" value="${esc(S.regrid)}" placeholder="paste token" autocapitalize="off" autocomplete="off"></label><div class="btns"><button class="btn" data-act="regrid-save">Save token</button></div><h3>Public land colors</h3><div class="row"><span class="sw" style="background:#ff9f1c"></span><span class="g">State WMA</span></div><div class="row"><span class="sw" style="background:#ff4fa3"></span><span class="g">Federal: WPA, refuge</span></div><div class="row"><span class="sw" style="background:#3fa9ff"></span><span class="g">Other state land</span></div><div class="row"><span class="sw" style="background:#b388ff"></span><span class="g">County or local</span></div><div class="row"><span class="sw" style="background:#b8c0c0"></span><span class="g">Conservation land, access not confirmed</span></div><div class="note">Tap any shaded unit or parcel for details. "How to get in" finds parking and where public roads touch the boundary.</div>`;
+  } else if (p === 'mark') h = head('Drop a waypoint') + `<div class="btns" style="flex-direction:column"><button class="btn p" data-act="mark-me">At my current location</button><button class="btn" data-act="mark-tap">Tap a spot on the map</button><button class="btn" data-act="mark-center">At the center of the screen</button></div><div class="mut">You can also tap anywhere on the map and choose "Mark this spot".</div>`;
+  else if (p === 'measure') { setMode('measure'); return; }
+  else if (p === 'wp') {
+    const w = arg; s._wp = w;
+    h = head(w.id ? 'Edit waypoint' : 'New waypoint') + `<label class="fld"><span>Name</span><input id="wpName" value="${esc(w.name)}" placeholder="North ridge stand"></label><label class="fld"><span>Type</span><select id="wpType">${Object.entries(WPT).map(([k, v]) => `<option value="${k}" ${k === w.type ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label><label class="fld"><span>Notes</span><textarea id="wpNotes" rows="2" placeholder="Best on a NW wind, enter from the east">${esc(w.notes)}</textarea></label><div class="mut">${w.p[1].toFixed(5)}, ${w.p[0].toFixed(5)}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) + ' from you' : ''}</div><div class="btns"><button class="btn p" data-act="wp-save">Save</button><button class="btn" data-act="wp-share">Share</button><button class="btn" data-act="cone-here" data-ll="${w.p.join(',')}">Wind check</button><a class="btn" href="${dirLink(w.p)}" target="_blank" rel="noopener">Directions</a>${w.id ? '<button class="btn" data-act="wp-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
+  } else if (p === 'track') {
+    h = head('Track my walk') + (S.rec ? `<div class="note" id="recInfo">${recText()}</div><div class="btns"><button class="btn p" data-act="rec-stop">Stop and save</button><button class="btn" data-act="rec-cancel">Discard</button></div>` : `<div class="note">Records your path in and out so you can retrace it in the dark. Keep this page open while recording; phones pause location when the screen locks.</div><div class="btns"><button class="btn p" data-act="rec-start">Start recording</button></div>`) +
+      `<h3>Saved tracks</h3>` + (S.tracks.length ? S.tracks.map((t, i) => `<div class="row"><div class="g" data-act="trk-go" data-i="${i}" style="cursor:pointer">${esc(t.name)}<br><small>${fmtDist(HM.lineLen(t.pts))}</small></div><input type="checkbox" data-trk="${i}" ${t.hide ? '' : 'checked'}><button class="btn s" data-act="trk-del" data-i="${i}">&times;</button></div>`).join('') : '<div class="mut">None yet.</div>');
+  } else if (p === 'wind') {
+    const w = windAt(S.windHour), W = S.wind;
+    if (!w) h = head('Wind') + '<div class="note">Wind forecast not loaded yet.</div><div class="btns"><button class="btn" data-act="wind-reload">Retry</button></div>';
+    else {
+      const strip = []; for (let k = 0; k < 36; k += 1) { const x = windAt(k); strip.push(`<div class="${k === S.windHour ? 'on' : ''}" data-act="wind-hr" data-k="${k}">${hlabel(x.time)}<svg viewBox="0 0 24 24" style="transform:rotate(${x.dir + 180}deg)"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#7cc4ff"/></svg>${Math.round(x.spd)}</div>`); }
+      const di = W.daily ? Math.max(0, W.daily.time.indexOf(w.time.slice(0, 10))) : -1, sr = di >= 0 && new Date(W.daily.sunrise[di]), ss = di >= 0 && new Date(W.daily.sunset[di]);
+      h = head('Wind and light') + `<div style="font-size:19px;font-weight:600">From ${HM.compass(w.dir)} (${Math.round(w.dir)}&deg;) at ${Math.round(w.spd)} mph</div><div class="mut">Gusts ${Math.round(w.gust)} mph &middot; ${Math.round(w.temp)}&deg;F${w.pop != null ? ' &middot; ' + w.pop + '% precip' : ''} &middot; ${S.windHour ? '+' + S.windHour + ' h' : 'now'}. Your scent blows toward the ${HM.compass(w.dir + 180)}.</div><div class="hr">${strip.join('')}</div>` +
+        (sr ? `<div class="note">Sunrise ${hhmm(sr)}, sunset ${hhmm(ss)}. Half hour before and after: ${hhmm(sr - 18e5)} to ${hhmm(+ss + 18e5)}. Confirm legal shooting hours in the current MN regulations.</div>` : '') +
+        `<div class="btns"><button class="btn p" data-act="cone-place">${S.cone ? 'Move scent cone' : 'Place scent cone'}</button>${S.cone ? '<button class="btn" data-act="cone-clear">Remove cone</button>' : ''}</div><div class="mut">The blue cone shows where your scent drifts from a sit for the selected hour. Tap an hour above to check a morning or evening sit.</div>`;
+    }
+  } else if (p === 'hot') {
+    const hs = S.hot;
+    h = head('Hot spots') + `<label class="fld"><span>Animal</span><select id="hotSp">${Object.entries(HM.MODES).map(([k, v]) => `<option value="${k}" ${k === hs.species ? 'selected' : ''}>${v.label}</option>`).join('')}</select></label><label class="fld"><span>Time of season</span><select id="hotPh">${Object.entries(HM.MODES[hs.species].phases).map(([k, v]) => `<option value="${k}" ${k === hs.phase ? 'selected' : ''}>${v}</option>`).join('')}</select></label><label class="row"><span class="g">Public land only</span><input type="checkbox" id="hotPub" ${hs.publicOnly ? 'checked' : ''}></label><div class="btns"><button class="btn p" data-act="hot-run">Analyze this view</button></div><div id="hotOut"></div><div class="note">This scores the visible area from land cover (timber, cattails, crops, water), terrain, distance from roads and today's wind. It is a scouting shortlist built on rules of thumb, not tracked animal data. Confirm with boots on the ground.</div>`;
+  } else if (p === 'saved') {
+    h = head('Saved waypoints') + (S.wps.length ? S.wps.map(w => `<div class="row" data-act="wp-go" data-id="${w.id}" style="cursor:pointer"><span class="sw" style="background:${(WPT[w.type] || WPT.other)[1]};border-radius:50%"></span><div class="g">${esc(w.name || (WPT[w.type] || WPT.other)[0])}<br><small>${esc((WPT[w.type] || WPT.other)[0])}${w.notes ? ' · ' + esc(w.notes) : ''}</small></div></div>`).join('') : '<div class="mut">No waypoints yet. Tap Mark, or tap the map and choose "Mark this spot".</div>') +
+      `<h3>Backup</h3><div class="btns"><button class="btn" data-act="export">Export GPX</button><button class="btn" data-act="import">Import GPX / GeoJSON</button></div><input type="file" id="impFile" accept=".gpx,.geojson,.json" style="display:none"><div class="mut">Waypoints and tracks are stored in this browser on this device only. Export a GPX to back them up or move them to another device.</div>`;
+  } else if (p === 'access') {
+    h = head('Getting into ' + esc(arg.unit)) + arg.list.map(a => `<div class="row"><span class="sw" style="border-radius:50%;background:${a.kind === 'parking' ? '#2f6fde' : a.kind === 'frontage' ? '#57d38c' : '#4da3ff'}"></span><div class="g" data-act="go" data-ll="${a.p.join(',')}" style="cursor:pointer">${esc(a.name)}</div><a class="btn s" href="${dirLink(a.p)}" target="_blank" rel="noopener">Directions</a></div>`).join('') + '<div class="note">Blue is mapped parking. Green is a spot where a public road touches the boundary, where you can usually park on the shoulder and walk in. Parking lots missing from OpenStreetMap will not show, so also look for DNR signs and lots on the satellite view.</div>';
+  } else if (p === 'sharetxt') { h = head('Share waypoint') + `<div class="mut">Copy this text and send it:</div><label class="fld"><textarea rows="6" readonly onclick="this.select()">${esc(arg)}</textarea></label>`;
+  } else if (p === 'search') {
+    h = head('Search results') + (arg.length ? arg.map(r => `<div class="row" data-act="go" data-ll="${r.lon},${r.lat}" data-z="13" style="cursor:pointer"><div class="g">${esc(r.display_name)}</div></div>`).join('') : '<div class="mut">Nothing found.</div>');
+  }
+  s.innerHTML = h; s.scrollTop = 0;
+}
+$('#bar').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (!b) return; if ($('#sheet').dataset.p === b.dataset.p) closeSheet(); else { setMode(null); openSheet(b.dataset.p); } });
+$('#q').addEventListener('keydown', async e => {
+  if (e.key !== 'Enter') return; const v = e.target.value.trim(); if (!v) return; e.target.blur();
+  const m = v.match(/^\s*(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)\s*$/); if (m) { map.flyTo({ center: [+m[2], +m[1]], zoom: 15 }); return; }
+  try { const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=us&q=' + encodeURIComponent(v)); openSheet('search', await r.json()); } catch (er) { toast('Search failed'); }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.layer) { const id = t.dataset.layer; S.on[id] = t.checked; store.set('on', S.on); applyVis(id); if (t.checked) { delete loaded[id]; loadLayer(id); } if (id === 'wma') { delete loaded.padus; loadLayer('padus'); } }
+  else if (t.dataset.trk) { S.tracks[+t.dataset.trk].hide = !t.checked; store.set('tracks', S.tracks); drawTracks(); }
+  else if (t.id === 'hotSp') { S.hot.species = t.value; S.hot.phase = HM.defaultPhase(t.value, new Date().getMonth() + 1); openSheet('hot'); }
+  else if (t.id === 'hotPh') S.hot.phase = t.value;
+  else if (t.id === 'hotPub') S.hot.publicOnly = t.checked;
+  else if (t.id === 'impFile' && t.files[0]) importFile(t.files[0]);
+  else if (t.id === 'mineFile' && t.files[0]) importParcels(t.files[0]);
+});
+const parseLL = s => s.split(',').map(Number);
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act, sh = $('#sheet');
+  if (a === 'close') closeSheet();
+  else if (a === 'base') { S.base = b.dataset.b; applyBase(); openSheet('layers'); }
+  else if (a === 'mode-done') setMode(null);
+  else if (a === 'mode-clear') { S.measure = []; drawMeasure(); }
+  else if (a === 'mode-undo') { S.measure.pop(); drawMeasure(); }
+  else if (a === 'access') { const f = S.data[b.dataset.src].find(x => x.properties._id == b.dataset.id); if (f) findAccess(f); }
+  else if (a === 'mark-here') editWp({ id: 0, p: parseLL(b.dataset.ll), type: 'stand', name: b.dataset.name || '', notes: '' });
+  else if (a === 'cone-here') { S.cone = parseLL(b.dataset.ll); drawCone(); if (popup) popup.remove(); openSheet('wind'); }
+  else if (a === 'cone-place') setMode('cone');
+  else if (a === 'cone-clear') { S.cone = null; drawCone(); openSheet('wind'); }
+  else if (a === 'wind-hr') { S.windHour = +b.dataset.k; windChip(); drawCone(); const sc = sh.querySelector('.hr').scrollLeft; openSheet('wind'); sh.querySelector('.hr').scrollLeft = sc; }
+  else if (a === 'wind-reload') loadWind(true);
+  else if (a === 'mark-me') whereAmI(p => { map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 16) }); editWp({ id: 0, p: p.slice(), type: 'stand', name: '', notes: '' }); });
+  else if (a === 'mark-tap') setMode('mark');
+  else if (a === 'mark-center') { const c = map.getCenter(); editWp({ id: 0, p: [c.lng, c.lat], type: 'stand', name: '', notes: '' }); }
+  else if (a === 'wp-share') { const w = Object.assign({}, sh._wp, { name: $('#wpName').value.trim(), type: $('#wpType').value, notes: $('#wpNotes').value.trim() }); shareWp(w); }
+  else if (a === 'mine-add') $('#mineFile').click();
+  else if (a === 'mine-export') exportPack();
+  else if (a === 'save-area') saveArea();
+  else if (a === 'mine-del') { const n = b.dataset.n; idbDo('readwrite', st => st.delete(n)).catch(() => { }); S.mine = S.mine.filter(m => m.name !== n); drawMine(); openSheet('layers'); }
+  else if (a === 'regrid-save') { S.regrid = $('#rgKey').value.trim(); S.prov = $('#rgProv').value; store.set('prov', S.prov); store.set('regrid', S.regrid); addRegrid(); delete loaded.parcels; loadLayer('parcels'); toast(S.regrid ? 'Token saved. Zoom in to see parcel lines.' : 'Token removed'); openSheet('layers'); }
+  else if (a === 'wp-save') { const w = sh._wp; w.name = $('#wpName').value.trim(); w.type = $('#wpType').value; w.notes = $('#wpNotes').value.trim(); if (!w.id) { w.id = Date.now(); S.wps.push(w); } drawWps(); closeSheet(); toast('Waypoint saved'); }
+  else if (a === 'wp-del') { S.wps = S.wps.filter(x => x.id !== sh._wp.id); drawWps(); closeSheet(); }
+  else if (a === 'wp-go') { const w = S.wps.find(x => x.id == b.dataset.id); if (w) { map.flyTo({ center: w.p, zoom: Math.max(map.getZoom(), 15.5) }); editWp(w); } }
+  else if (a === 'go') { map.flyTo({ center: parseLL(b.dataset.ll), zoom: +b.dataset.z || Math.max(map.getZoom(), 16) }); if (b.dataset.z) closeSheet(); }
+  else if (a === 'rec-start') { S.rec = { t0: Date.now(), pts: [] }; whereAmI(p => { follow = true; map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 15.5) }); }); openSheet('track'); toast('Recording your track'); }
+  else if (a === 'rec-stop') { if (S.rec.pts.length > 1) { S.tracks.push({ name: 'Track ' + new Date(S.rec.t0).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), pts: S.rec.pts }); store.set('tracks', S.tracks); } else toast('Not enough points to save'); S.rec = null; drawTracks(); openSheet('track'); }
+  else if (a === 'rec-cancel') { S.rec = null; drawTracks(); openSheet('track'); }
+  else if (a === 'trk-del') { S.tracks.splice(+b.dataset.i, 1); store.set('tracks', S.tracks); drawTracks(); openSheet('track'); }
+  else if (a === 'trk-go') { const t = S.tracks[+b.dataset.i], bb = new maplibregl.LngLatBounds(); t.pts.forEach(p => bb.extend(p)); map.fitBounds(bb, { padding: 60 }); }
+  else if (a === 'hot-run') analyze().catch(er => { console.warn(er); $('#hotOut').innerHTML = '<div class="note">Analysis failed: ' + esc(er.message) + '</div>'; });
+  else if (a === 'hot-clear') { clearHot(); if (popup) popup.remove(); const o = $('#hotOut'); if (o) o.innerHTML = ''; toast('Hot spots cleared'); }
+  else if (a === 'pick') { const p = S.hot.picks.find(x => x.n == b.dataset.n); if (p) showPick(p); }
+  else if (a === 'export') exportGpx();
+  else if (a === 'import') $('#impFile').click();
+});
+
+/* ---------------- GPX import / export ---------------- */
+function exportGpx() {
+  const x = s => esc(s), g = ['<?xml version="1.0" encoding="UTF-8"?>', '<gpx version="1.1" creator="Hunt Map" xmlns="http://www.topografix.com/GPX/1/1">'];
+  S.wps.forEach(w => g.push(`<wpt lat="${w.p[1]}" lon="${w.p[0]}"><name>${x(w.name || (WPT[w.type] || WPT.other)[0])}</name><desc>${x(w.notes)}</desc><type>${x(w.type)}</type></wpt>`));
+  S.tracks.forEach(t => g.push(`<trk><name>${x(t.name)}</name><trkseg>${t.pts.map(p => `<trkpt lat="${p[1]}" lon="${p[0]}"/>`).join('')}</trkseg></trk>`)); g.push('</gpx>');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([g.join('\n')], { type: 'application/gpx+xml' })); a.download = 'hunt-map-' + new Date().toISOString().slice(0, 10) + '.gpx'; document.body.appendChild(a); a.click(); a.remove();
+}
+async function importFile(file) {
+  try {
+    const txt = await file.text(); let nw = 0, nt = 0;
+    if (/^\s*</.test(txt)) {
+      const d = new DOMParser().parseFromString(txt, 'application/xml'), tx = (el, n) => { const c = el.getElementsByTagName(n)[0]; return c ? c.textContent : ''; };
+      for (const w of d.getElementsByTagName('wpt')) { const ty = tx(w, 'type'); S.wps.push({ id: Date.now() + nw, p: [+w.getAttribute('lon'), +w.getAttribute('lat')], name: tx(w, 'name'), notes: tx(w, 'desc'), type: WPT[ty] ? ty : 'other' }); nw++; }
+      for (const t of d.getElementsByTagName('trk')) { const pts = [...t.getElementsByTagName('trkpt')].map(p => [+p.getAttribute('lon'), +p.getAttribute('lat')]); if (pts.length > 1) { S.tracks.push({ name: tx(t, 'name') || 'Imported track', pts }); nt++; } }
+    } else {
+      const j = JSON.parse(txt), fs = j.type === 'FeatureCollection' ? j.features : [j];
+      for (const f of fs) { const g = f.geometry, pr = f.properties || {}; if (!g) continue; if (g.type === 'Point') { S.wps.push({ id: Date.now() + nw, p: g.coordinates.slice(0, 2), name: pr.name || pr.title || '', notes: pr.desc || pr.notes || '', type: 'other' }); nw++; } else if (g.type === 'LineString') { S.tracks.push({ name: pr.name || 'Imported track', pts: g.coordinates.map(c => c.slice(0, 2)) }); nt++; } }
+    }
+    drawWps(); store.set('tracks', S.tracks); drawTracks(); openSheet('saved'); toast(`Imported ${nw} waypoints and ${nt} tracks`);
+  } catch (e) { toast('Could not read that file'); }
+}
+</script>
+</body>
+</html>

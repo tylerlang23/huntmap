@@ -1,0 +1,5 @@
+# Extra counties that are NOT in the state's free 59-county dataset.
+# One per line:  County name | link
+# The link can point straight at a .zip (shapefile or geodatabase), or at a web folder
+# listing, in which case the first .zip with "parcel" in its name is used.
+McLeod | http://www.co.mcleod.mn.us/ftp/GIS/
