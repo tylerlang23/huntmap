@@ -402,6 +402,18 @@ HM.blood = (d, mode, sens) => {
   return hits;
 };
 HM.bearing = (a, b) => { const D = Math.PI / 180, la1 = a[1] * D, la2 = b[1] * D, dl = (b[0] - a[0]) * D; return ((Math.atan2(Math.sin(dl) * Math.cos(la2), Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dl)) / D) + 360) % 360; };
+/* ---- trail enhancer: local contrast normalisation so faint thin features stand out ---- */
+HM.enhance = (d, W, H) => {
+  const N = W * H, L = new Float32Array(N);
+  for (let i = 0; i < N; i++) L[i] = (d[4 * i] * 77 + d[4 * i + 1] * 151 + d[4 * i + 2] * 28) >> 8;
+  const B = HM.boxMean(L, W, H, 7), D = new Float32Array(N), D2 = new Float32Array(N);
+  for (let i = 0; i < N; i++) { D[i] = L[i] - B[i]; D2[i] = D[i] * D[i]; }
+  const V = HM.boxMean(D2, W, H, 10);
+  for (let i = 0; i < N; i++) {
+    const v = HM.clamp(128 + D[i] / (Math.sqrt(V[i]) + 5) * 58, 0, 255), o = 4 * i;
+    d[o] = v; d[o + 1] = v; d[o + 2] = v; d[o + 3] = 255;
+  }
+};
 </script>
 <script>
 /* ======================= Hunt Map app ======================= */
@@ -413,7 +425,9 @@ const SRC = {
   nlcdWms: 'https://www.mrlc.gov/geoserver/mrlc_display/NLCD_2021_Land_Cover_L48/wms',
   dem: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
   overpass: 'https://overpass-api.de/api/interpreter',
-  esri: 'https://server.arcgisonline.com/ArcGIS/rest/services/'
+  esri: 'https://server.arcgisonline.com/ArcGIS/rest/services/',
+  spring: 'https://arcgis.dnr.state.mn.us/public/rest/services/gen/spring_imagery_statewide/MapServer/tile/{z}/{y}/{x}',
+  lidar: 'https://imageserver.gisdata.mn.gov/cgi-bin/wmsll?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=hillshd&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256'
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -434,13 +448,24 @@ const LAYERS = [
   { id: 'parcels', name: 'Parcel lines and owners', sub: 'Private land: owner names where the county publishes them, a county file you add, or a subscription', min: 13.5, sw: '#ffe45c' },
   { id: 'access', name: 'Parking, gates and trails', sub: 'OpenStreetMap', min: 12, sw: '#4da3ff' },
   { id: 'refs', name: 'Road and place labels', sub: 'Esri reference', sw: '#fff' },
-  { id: 'hill', name: 'Hillshade', sub: 'Shaded relief from elevation', sw: '#888' },
+  { id: 'enh', name: 'Trail enhancer', sub: 'Sharpens the imagery so faint paths, edges and tracks stand out. Works on satellite and leaf-off.', sw: '#ddd' },
+  { id: 'hill', name: 'Lidar hillshade', sub: 'MN 1 m lidar terrain: drainages, saddles, benches and low ground under the canopy', sw: '#888' },
   { id: 'nlcd', name: 'Land cover', sub: 'NLCD 2021: timber, crops, wetlands', sw: '#68ab5f' }
 ];
-const MAPL = { wma: ['wma-fill', 'wma-line'], padus: ['padus-fill', 'padus-line'], parcels: ['parcels-fill', 'parcels-line', 'parcels-lbl', 'regrid-fill', 'regrid-line', 'regrid-lbl', 'mine-fill', 'mine-line', 'mine-lbl', 'pt-fill', 'pt-line', 'pt-lbl'], access: ['access-ln', 'access-pt'], refs: ['roads', 'places'], hill: ['hill'], nlcd: ['nlcd'] };
+const MAPL = { wma: ['wma-fill', 'wma-line'], padus: ['padus-fill', 'padus-line'], parcels: ['parcels-fill', 'parcels-line', 'parcels-lbl', 'regrid-fill', 'regrid-line', 'regrid-lbl', 'mine-fill', 'mine-line', 'mine-lbl', 'pt-fill', 'pt-line', 'pt-lbl'], access: ['access-ln', 'access-pt'], refs: ['roads', 'places'], hill: ['hill'], enh: ['enh'], nlcd: ['nlcd'] };
 
 const rt = (u, mz, at) => ({ type: 'raster', tiles: [u], tileSize: 256, maxzoom: mz, attribution: at || '' });
 const empty = () => ({ type: 'FeatureCollection', features: [] });
+/* trail enhancer: fetch the imagery tile, run local-contrast normalisation, hand MapLibre the result */
+const baseTile = (b, z, x, y) => (b === 'spring' ? SRC.spring : SRC.esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}').replace('{z}', z).replace('{x}', x).replace('{y}', y);
+if (maplibregl.addProtocol) maplibregl.addProtocol('enh', async (params, ac) => {
+  const m = params.url.match(/^enh:\/\/(\w+)\/(\d+)\/(\d+)\/(\d+)$/); if (!m) throw new Error('bad enh url');
+  const r = await fetch(baseTile(m[1], m[2], m[3], m[4]), { signal: ac && ac.signal }); if (!r.ok) throw new Error('tile ' + r.status);
+  const bmp = await createImageBitmap(await r.blob()), cv = document.createElement('canvas'); cv.width = cv.height = 256;
+  const cx = cv.getContext('2d', { willReadFrequently: true }); cx.drawImage(bmp, 0, 0, 256, 256);
+  const im = cx.getImageData(0, 0, 256, 256); HM.enhance(im.data, 256, 256); cx.putImageData(im, 0, 0);
+  const blob = await new Promise(res => cv.toBlob(res, 'image/png')); return { data: await blob.arrayBuffer() };
+});
 const map = new maplibregl.Map({
   container: 'map', hash: true, center: [-94.4531, 44.80198], zoom: 14.2, maxPitch: 75, attributionControl: false,
   style: {
@@ -448,6 +473,9 @@ const map = new maplibregl.Map({
     sources: {
       sat: rt(SRC.esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', 18, 'Imagery &copy; Esri, Maxar, Earthstar Geographics'),
       topo: rt('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}', 16, 'USGS The National Map'),
+      spring: rt(SRC.spring, 18, 'Leaf-off imagery: MN DNR'),
+      lidar: rt(SRC.lidar, 18, 'Lidar hillshade: MnGeo, MN DNR'),
+      enh: rt('enh://' + store.get('base', 'sat') + '/{z}/{x}/{y}', 18),
       roads: rt(SRC.esri + 'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', 18),
       places: rt(SRC.esri + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', 18),
       nlcd: rt(SRC.nlcd + '/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png32&transparent=true&layers=show:2&f=image', 22, 'NLCD (USGS/MRLC)'),
@@ -458,7 +486,9 @@ const map = new maplibregl.Map({
       { id: 'bg', type: 'background', paint: { 'background-color': '#14181a' } },
       { id: 'sat', type: 'raster', source: 'sat' },
       { id: 'topo', type: 'raster', source: 'topo', layout: { visibility: 'none' } },
-      { id: 'hill', type: 'hillshade', source: 'dem2', layout: { visibility: 'none' }, paint: { 'hillshade-exaggeration': .6, 'hillshade-shadow-color': '#000' } },
+      { id: 'spring', type: 'raster', source: 'spring', layout: { visibility: 'none' } },
+      { id: 'enh', type: 'raster', source: 'enh', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 0 } },
+      { id: 'hill', type: 'raster', source: 'lidar', layout: { visibility: 'none' }, paint: { 'raster-opacity': .6 } },
       { id: 'nlcd', type: 'raster', source: 'nlcd', layout: { visibility: 'none' }, paint: { 'raster-opacity': .55 } },
       { id: 'roads', type: 'raster', source: 'roads' }, { id: 'places', type: 'raster', source: 'places' }
     ]
@@ -584,13 +614,15 @@ async function importParcels(file) {
   } catch (e) { console.warn(e); toast('Import failed: ' + e.message, 7000); }
 }
 /* ---------------- basemap + layer visibility ---------------- */
+const BASES = ['sat', 'spring', 'topo'], BASEN = { sat: 'Sat', spring: 'Leaf-off', topo: 'Topo' };
 function applyBase() {
-  map.setLayoutProperty('sat', 'visibility', S.base === 'sat' ? 'visible' : 'none');
-  map.setLayoutProperty('topo', 'visibility', S.base === 'topo' ? 'visible' : 'none');
-  $('#fBase span').textContent = S.base === 'sat' ? 'Sat' : 'Topo'; store.set('base', S.base);
+  if (!BASES.includes(S.base)) S.base = 'sat';
+  BASES.forEach(b => map.setLayoutProperty(b, 'visibility', S.base === b ? 'visible' : 'none'));
+  $('#fBase span').textContent = BASEN[S.base]; store.set('base', S.base);
+  const src = map.getSource('enh'); if (src && src.setTiles) { const want = 'enh://' + (S.base === 'topo' ? 'sat' : S.base) + '/{z}/{x}/{y}'; if (src.tiles[0] !== want) src.setTiles([want]); }
 }
 function applyVis(id) { (MAPL[id] || []).forEach(l => map.getLayer(l) && map.setLayoutProperty(l, 'visibility', S.on[id] ? 'visible' : 'none')); }
-$('#fBase').onclick = () => { S.base = S.base === 'sat' ? 'topo' : 'sat'; applyBase(); };
+$('#fBase').onclick = () => { S.base = BASES[(BASES.indexOf(S.base) + 1) % BASES.length]; applyBase(); };
 $('#f3d').onclick = e => {
   const on = !e.currentTarget.classList.contains('on'); e.currentTarget.classList.toggle('on', on);
   try { map.setTerrain(on ? { source: 'dem', exaggeration: 1.6 } : null); } catch (er) { console.warn(er); }
@@ -1025,7 +1057,7 @@ function openSheet(p, arg) {
   const s = $('#sheet'); s.dataset.p = p; s.classList.add('open'); document.querySelectorAll('#bar button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
   const head = t => `<h2>${t}<button class="x" data-act="close">&times;</button></h2>`; let h = '';
   if (p === 'layers') {
-    h = head('Map layers') + `<div class="seg"><button data-act="base" data-b="sat" class="${S.base === 'sat' ? 'on' : ''}">Satellite</button><button data-act="base" data-b="topo" class="${S.base === 'topo' ? 'on' : ''}">Topo</button></div>` +
+    h = head('Map layers') + `<div class="seg"><button data-act="base" data-b="sat" class="${S.base === 'sat' ? 'on' : ''}">Satellite</button><button data-act="base" data-b="spring" class="${S.base === 'spring' ? 'on' : ''}">Leaf-off</button><button data-act="base" data-b="topo" class="${S.base === 'topo' ? 'on' : ''}">Topo</button></div><div class="mut" style="margin-bottom:4px">Leaf-off is Minnesota's spring aerial photography: no leaves, so trails, edges and beds show through the timber.</div>` +
       LAYERS.map(l => `<label class="row"><span class="sw" style="background:${l.sw}"></span><span class="g">${l.name}<br><small>${l.sub}</small><br><small data-st="${l.id}" style="color:var(--acc)">${esc(S.status[l.id] || '')}</small></span><input type="checkbox" data-layer="${l.id}" ${S.on[l.id] ? 'checked' : ''}></label>`).join('') +
       `<h3>Private land owners</h3><div class="note">Yellow lines are private parcels. 60 Minnesota counties, McLeod included, come free from the state. Each area is fetched once, then kept on this device so it opens instantly, even with no signal.</div><div class="btns"><button class="btn p" data-act="save-area">Save parcels for this view</button></div><div class="mut">Zoom to a hunting area or a whole county and tap this before you leave home.</div><h3>Option 1: add a county's own parcel file (free)</h3><div class="mut">Download the county's parcel shapefile (.zip) and add it here. It stays on this device only.</div>${S.mine.map(m => `<div class="row"><div class="g">${esc(m.name)}<br><small>${m.features.length.toLocaleString()} parcels on this device</small></div><button class="btn s" data-act="mine-del" data-n="${esc(m.name)}">Remove</button></div>`).join('')}<div class="btns"><button class="btn p" data-act="mine-add">Add parcel file</button><button class="btn" data-act="mine-export">Export parcels.json</button></div><div class="mut">To build added counties into the app for your family, export parcels.json and upload it to GitHub next to index.html. Every phone that opens the app then gets them automatically.</div><input type="file" id="mineFile" accept=".zip,.geojson,.json" style="display:none"><h3>Option 2: statewide parcel subscription</h3><label class="fld"><span>Provider</span><select id="rgProv"><option value="regrid" ${S.prov === 'regrid' ? 'selected' : ''}>Regrid</option><option value="landrecords" ${S.prov === 'landrecords' ? 'selected' : ''}>Land Records (landrecords.us)</option></select></label><label class="fld"><span>API token</span><input id="rgKey" value="${esc(S.regrid)}" placeholder="paste token" autocapitalize="off" autocomplete="off"></label><div class="btns"><button class="btn" data-act="regrid-save">Save token</button></div><h3>Public land colors</h3><div class="row"><span class="sw" style="background:#ff9f1c"></span><span class="g">State WMA</span></div><div class="row"><span class="sw" style="background:#ff4fa3"></span><span class="g">Federal: WPA, refuge</span></div><div class="row"><span class="sw" style="background:#3fa9ff"></span><span class="g">Other state land</span></div><div class="row"><span class="sw" style="background:#b388ff"></span><span class="g">County or local</span></div><div class="row"><span class="sw" style="background:#b8c0c0"></span><span class="g">Conservation land, access not confirmed</span></div><div class="note">Tap any shaded unit or parcel for details. "How to get in" finds parking and where public roads touch the boundary.</div>`;
   } else if (p === 'mark') h = head('Drop a waypoint') + `<div class="btns" style="flex-direction:column"><button class="btn p" data-act="mark-me">At my current location</button><button class="btn" data-act="mark-tap">Tap a spot on the map</button><button class="btn" data-act="mark-center">At the center of the screen</button></div><div class="mut">You can also tap anywhere on the map and choose "Mark this spot".</div>`;
