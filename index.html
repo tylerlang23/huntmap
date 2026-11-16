@@ -79,7 +79,7 @@ input[type=checkbox]:checked{background:var(--acc)}input[type=checkbox]:checked:
 .ml{background:rgba(10,12,11,.85);color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:11px;padding:2px 8px;font-size:13px;font-weight:700;white-space:nowrap;pointer-events:none}.ml.tot{background:var(--acc);color:#1a0d02;border-color:#1a0d02;font-size:14px}
 .lchips{position:absolute;left:calc(var(--sl) + 10px);top:calc(var(--st) + 64px);z-index:5;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
 .lchips .hotchip{position:static}
-.bloodchip{background:#7a0012;display:none;align-items:center;gap:8px}.bloodchip .dot{width:10px;height:10px;border-radius:50%;background:#ff3b5c;animation:pulse 1.2s infinite}
+.bloodchip,.recchip{background:#7a0012;display:none;align-items:center;gap:8px}.recchip{background:#0b5e3c}.bloodchip .dot,.recchip .dot{width:10px;height:10px;border-radius:50%;background:#ff3b5c;animation:pulse 1.2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 .blood{position:absolute;inset:0;z-index:20;background:#000;display:none;flex-direction:column}
 .blood.open{display:flex}
@@ -131,7 +131,7 @@ input[type=checkbox]:checked{background:var(--acc)}input[type=checkbox]:checked:
 </div>
 <div class="modebar" id="modebar"><span id="modeTxt"></span><button data-act="mode-undo" id="modeUndo">Undo</button><button data-act="mode-clear" id="modeClear">Clear</button><button data-act="mode-done">Done</button></div>
 <button class="loc glass" id="fLoc" aria-label="Go to my location"><svg viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.6l7 2.4 2.4 7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
-<div class="lchips"><button class="hotchip" id="hotChip" data-act="hot-clear">Clear hot spots &times;</button><button class="hotchip bloodchip" id="bloodChip" data-act="blood-open"><span class="dot"></span>Blood trail recording &middot; back to camera</button></div>
+<div class="lchips"><button class="hotchip" id="hotChip" data-act="hot-clear">Clear hot spots &times;</button><button class="hotchip recchip" id="recChip" data-act="rec-chip"><span class="dot"></span><span id="recChipTxt">Recording</span></button><button class="hotchip bloodchip" id="bloodChip" data-act="blood-open"><span class="dot"></span>Blood trail recording &middot; back to camera</button></div>
 <div id="blood" class="blood">
   <video id="bvid" playsinline muted autoplay></video>
   <canvas id="bcan"></canvas>
@@ -779,7 +779,7 @@ function startGps() {
     const p = [pos.coords.longitude, pos.coords.latitude]; S.me = p; S.acc = pos.coords.accuracy; S.meT = Date.now();
     if (!meMarker) { const el = document.createElement('div'); el.className = 'me'; el.innerHTML = '<div class="hd"></div>'; meMarker = new maplibregl.Marker({ element: el, rotationAlignment: 'map' }).setLngLat(p).addTo(map); }
     meMarker.setLngLat(p); if (follow) map.easeTo({ center: p, duration: 400 });
-    if (S.rec && pos.coords.accuracy < (S.rec.blood ? 90 : 60)) { const c = S.rec.pts, last = c[c.length - 1]; if (!last || HM.hav(last, p) > 5) { c.push(p); drawTracks(); const el = $('#recInfo'); if (el) el.textContent = recText(); } }
+    if (S.rec && pos.coords.accuracy < (S.rec.blood ? 90 : 60)) { const c = S.rec.pts, last = c[c.length - 1]; if (!last || HM.hav(last, p) > 5) { c.push(p); drawTracks(); const el = $('#recInfo'); if (el) el.textContent = recText(); recChip(); } }
   }, err => { toast('Location error: ' + err.message + (location.protocol === 'https:' ? '' : ' (needs an https page)'), 5000); stopGps(); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
 }
 function stopGps() { if (watchId != null) navigator.geolocation.clearWatch(watchId); watchId = null; follow = false; $('#fLoc').classList.remove('on'); }
@@ -817,6 +817,7 @@ function drawTracks() {
   if (map.getSource('tracks')) map.getSource('tracks').setData({ type: 'FeatureCollection', features: fs });
 }
 
+function recChip() { const c = $('#recChip'); if (!c) return; const on = S.rec && !S.rec.blood; c.style.display = on ? 'flex' : 'none'; if (on) $('#recChipTxt').textContent = 'Recording ' + (S.rec.pts.length > 1 ? fmtDist(HM.lineLen(S.rec.pts)) : '') + ' \u00b7 tap to stop'; }
 /* ---------------- wind ---------------- */
 async function loadWind(force) {
   const c = map.getCenter(); if (!force && S.wind && HM.hav(S.wind.at, [c.lng, c.lat]) < 15000 && Date.now() - S.wind.t < 18e5) return;
@@ -1066,9 +1067,10 @@ document.addEventListener('click', e => {
   else if (a === 'wp-del') { idbDo('readwrite', st => st.delete(sh._wp.id), 'photos').catch(() => { }); S.wps = S.wps.filter(x => x.id !== sh._wp.id); drawWps(); closeSheet(); }
   else if (a === 'wp-go') { const w = S.wps.find(x => x.id == b.dataset.id); if (w) { map.flyTo({ center: w.p, zoom: Math.max(map.getZoom(), 15.5) }); editWp(w); } }
   else if (a === 'go') { map.flyTo({ center: parseLL(b.dataset.ll), zoom: +b.dataset.z || Math.max(map.getZoom(), 16) }); if (b.dataset.z) closeSheet(); }
-  else if (a === 'rec-start') { S.rec = { t0: Date.now(), pts: [] }; whereAmI(p => { follow = true; map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 15.5) }); }); openSheet('track'); toast('Recording your track'); }
-  else if (a === 'rec-stop') { if (S.rec.pts.length > 1) { S.tracks.push({ name: 'Track ' + new Date(S.rec.t0).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), pts: S.rec.pts }); store.set('tracks', S.tracks); } else toast('Not enough points to save'); S.rec = null; drawTracks(); openSheet('track'); }
-  else if (a === 'rec-cancel') { S.rec = null; drawTracks(); openSheet('track'); }
+  else if (a === 'rec-start') { S.rec = { t0: Date.now(), pts: [] }; closeSheet(); recChip(); whereAmI(p => { follow = true; $('#fLoc').classList.add('on'); map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 16) }); }); toast('Recording. Tap the green banner to stop.', 3000); }
+  else if (a === 'rec-chip') openSheet('track');
+  else if (a === 'rec-stop') { recChip.pending = 1; if (S.rec.pts.length > 1) { S.tracks.push({ name: 'Track ' + new Date(S.rec.t0).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), pts: S.rec.pts }); store.set('tracks', S.tracks); } else toast('Not enough points to save'); S.rec = null; drawTracks(); recChip(); closeSheet(); toast('Track saved', 2500); }
+  else if (a === 'rec-cancel') { S.rec = null; drawTracks(); recChip(); closeSheet(); }
   else if (a === 'trk-del') { S.tracks.splice(+b.dataset.i, 1); store.set('tracks', S.tracks); drawTracks(); openSheet('track'); }
   else if (a === 'trk-go') { const t = S.tracks[+b.dataset.i], bb = new maplibregl.LngLatBounds(); t.pts.forEach(p => bb.extend(p)); map.fitBounds(bb, { padding: 60 }); }
   else if (a === 'hot-run') analyze().catch(er => { console.warn(er); $('#hotOut').innerHTML = '<div class="note">Analysis failed: ' + esc(er.message) + '</div>'; });
