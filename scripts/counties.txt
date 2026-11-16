@@ -1,4 +1,4 @@
-# Extra counties that are NOT in the state's free 59-county dataset.
+# Extra counties that are NOT in the state's free dataset (63 counties as of Nov 2026; McLeod is included).
 # One per line:  County name | link
 # The link can point straight at a .zip (shapefile or geodatabase), or at a web folder
 # listing, in which case the first .zip with "parcel" in its name is used.
