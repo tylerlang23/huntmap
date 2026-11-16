@@ -1,0 +1,20 @@
+name: Probe a county download page
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Page to inspect"
+        default: "http://www.co.mcleod.mn.us/ftp/GIS/"
+  push:
+    branches: [main]
+    paths: [".github/workflows/probe.yml"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          URL="${{ github.event.inputs.url || 'http://www.co.mcleod.mn.us/ftp/GIS/' }}"
+          curl -sSL -A "Mozilla/5.0" -D - -o page.html -w "final=%{url_effective} code=%{http_code}\n" "$URL" | head -30 || true
+          echo "---- size"; wc -c page.html
+          echo "---- links"; grep -oiE "(href|src)=[\"']?[^\"' >]+" page.html | sort -u | head -150
+          echo "---- text"; sed -e 's/<[^>]*>/ /g' page.html | tr -s ' \n' | head -c 3000

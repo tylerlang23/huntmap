@@ -8,6 +8,7 @@ on:
         default: false
   push:
     branches: [main]
+    paths: ["index.html", "parcels.json", "scripts/**", ".github/workflows/build.yml"]
   schedule:
     - cron: "17 9 3 * *"   # monthly refresh of parcel data
 permissions:
@@ -28,7 +29,7 @@ jobs:
         run: echo "month=$(date +%Y-%m)" >> "$GITHUB_OUTPUT"
       - name: Reuse this month's parcel tiles if already built
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: site/parcels.pmtiles
           key: parcels-${{ steps.stamp.outputs.month }}-${{ hashFiles('scripts/**') }}-${{ github.event.inputs.rebuild_parcels == 'true' && github.run_id || 'keep' }}
@@ -43,6 +44,12 @@ jobs:
       - name: Build parcel tiles
         if: steps.cache.outputs.cache-hit != 'true'
         run: scripts/build_parcels.sh
+      - name: Keep the parcel tiles for later runs
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: site/parcels.pmtiles
+          key: ${{ steps.cache.outputs.cache-primary-key }}
       - name: Assemble site
         run: |
           mkdir -p site
