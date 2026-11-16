@@ -36,6 +36,11 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .stack button:last-child{border-bottom:0}
 .stack button span{display:block;margin-top:-2px;color:var(--mut)}
 .stack button.on{color:var(--acc)}.stack button.on span{color:var(--acc)}
+.cstrip{position:absolute;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);top:calc(var(--st) + 62px);height:54px;border-radius:14px;z-index:5;display:none;overflow:hidden}
+.cstrip canvas{position:absolute;inset:0;width:100%;height:100%}
+.cread{position:absolute;left:50%;top:4px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none;background:rgba(0,0,0,.55);border-radius:8px;padding:2px 8px 3px}
+.cread b{font-size:16px;line-height:1;margin-top:3px;color:#fff;font-variant-numeric:tabular-nums}.cread span{font-size:10px;color:var(--acc2);font-weight:700;letter-spacing:.06em}
+body.cmp .stack{top:calc(var(--st) + 126px)}body.cmp .lchips,body.cmp .modebar{top:calc(var(--st) + 126px)}
 .loc{position:absolute;right:calc(var(--sr) + 10px);bottom:calc(var(--tab) + var(--sb) + 34px);z-index:5;width:52px;height:52px;border-radius:50%;color:var(--blue);display:grid;place-items:center}
 .loc svg{width:24px;height:24px}.loc.on{background:var(--blue);color:#fff;border-color:transparent}.loc.on svg path{fill:currentColor}
 /* tab bar */
@@ -124,10 +129,12 @@ input[type=checkbox]:checked{background:var(--acc)}input[type=checkbox]:checked:
   <label class="search glass"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" placeholder="Search a place or lat, lng" enterkeyhint="search" autocomplete="off" autocorrect="off"></label>
   <button class="chip glass" id="windChip" aria-label="Wind"><svg viewBox="0 0 24 24" id="windArrow"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#7cc4ff"/></svg><span id="windTxt">Wind</span></button>
 </div>
+<div class="cstrip glass" id="cstrip"><canvas id="ccan"></canvas><div class="cread"><b id="cdeg">--</b><span id="cdir"></span></div></div>
 <div class="stack glass">
   <button id="fBase" aria-label="Switch basemap"><svg class="i" viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Sat</span></button>
   <button id="f3d" aria-label="3D terrain"><svg class="i" viewBox="0 0 24 24"><path d="M2.5 19l6.5-11 4 6.5 2.2-3.2L21.5 19z"/></svg><span>3D</span></button>
-  <button id="fCmp" aria-label="Compass mode"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg><span>Compass</span></button>
+  <button id="fCmp" aria-label="Compass"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg><span>Compass</span></button>
+  <button id="fOrient" aria-label="Map orientation"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l6 17-6-4-6 4z"/></svg><span id="orientTxt">N up</span></button>
 </div>
 <div class="modebar" id="modebar"><span id="modeTxt"></span><button data-act="mode-undo" id="modeUndo">Undo</button><button data-act="mode-clear" id="modeClear">Clear</button><button data-act="mode-done">Done</button></div>
 <button class="loc glass" id="fLoc" aria-label="Go to my location"><svg viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.6l7 2.4 2.4 7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
@@ -777,6 +784,7 @@ function startGps() {
   if (watchId != null) return;
   watchId = navigator.geolocation.watchPosition(pos => {
     const p = [pos.coords.longitude, pos.coords.latitude]; S.me = p; S.acc = pos.coords.accuracy; S.meT = Date.now();
+    if (pos.coords.heading != null && !isNaN(pos.coords.heading) && pos.coords.speed > .6) { S.travel = pos.coords.heading; if (S.orient === 'travel') turnMap(S.travel); if (cmpOn && (S.headT == null || Date.now() - S.headT > 3000)) drawStrip(S.travel); }
     if (!meMarker) { const el = document.createElement('div'); el.className = 'me'; el.innerHTML = '<div class="hd"></div>'; meMarker = new maplibregl.Marker({ element: el, rotationAlignment: 'map' }).setLngLat(p).addTo(map); }
     meMarker.setLngLat(p); if (follow) map.easeTo({ center: p, duration: 400 });
     if (S.rec && pos.coords.accuracy < (S.rec.blood ? 90 : 60)) { const c = S.rec.pts, last = c[c.length - 1]; if (!last || HM.hav(last, p) > 5) { c.push(p); drawTracks(); const el = $('#recInfo'); if (el) el.textContent = recText(); recChip(); } }
@@ -791,25 +799,64 @@ function whereAmI(cb) {
 }
 $('#fLoc').onclick = () => whereAmI(p => { follow = true; $('#fLoc').classList.add('on'); map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 15.5) }); });
 map.on('dragstart', () => { follow = false; $('#fLoc').classList.remove('on'); });
-let cmpOn = false, lastTurn = 0;
+/* ---- compass strip + map orientation ---- */
+let cmpOn = false, lastTurn = 0, sensorOn = false; S.orient = store.get('orient', 'north');
 function onOrient(e) {
   let h = null;
   if (typeof e.webkitCompassHeading === 'number') h = e.webkitCompassHeading;
   else if (e.absolute && e.alpha != null) h = 360 - e.alpha; else return;
-  h = (h + ((screen.orientation && screen.orientation.angle) || 0) + 360) % 360; S.heading = h;
+  h = (h + ((screen.orientation && screen.orientation.angle) || 0) + 360) % 360; S.heading = h; S.headT = Date.now();
   if (meMarker) { meMarker.setRotation(h); meMarker.getElement().querySelector('.hd').style.display = 'block'; }
-  const now = Date.now(); if (cmpOn && now - lastTurn > 120) { lastTurn = now; const cur = map.getBearing(), diff = ((h - cur + 540) % 360) - 180; if (Math.abs(diff) > 1.5) map.easeTo({ bearing: cur + diff * .5, duration: 120, easing: t => t }); }
+  if (cmpOn) drawStrip(h);
+  if (S.orient === 'heading') turnMap(h);
+}
+function turnMap(h) { const now = Date.now(); if (now - lastTurn < 120) return; lastTurn = now; const cur = map.getBearing(), diff = ((h - cur + 540) % 360) - 180; if (Math.abs(diff) > 1.5) map.easeTo({ bearing: cur + diff * .5, duration: 120, easing: t => t }); }
+function drawStrip(h) {
+  const c = $('#ccan'), r = window.devicePixelRatio || 1, W = c.clientWidth, H = c.clientHeight; if (!W) return;
+  if (c.width !== W * r) { c.width = W * r; c.height = H * r; }
+  const x = c.getContext('2d'); x.setTransform(r, 0, 0, r, 0, 0); x.clearRect(0, 0, W, H);
+  const span = 120, pxd = W / span, names = { 0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW' };
+  x.textAlign = 'center'; x.textBaseline = 'top';
+  for (let d = Math.ceil((h - span / 2) / 5) * 5; d <= h + span / 2; d += 5) {
+    const px = W / 2 + (d - h) * pxd, dd = ((d % 360) + 360) % 360, big = dd % 45 === 0, mid = dd % 15 === 0;
+    x.strokeStyle = big ? '#fff' : 'rgba(255,255,255,' + (mid ? .7 : .35) + ')'; x.lineWidth = big ? 2 : 1;
+    x.beginPath(); x.moveTo(px, H); x.lineTo(px, H - (big ? 18 : mid ? 12 : 7)); x.stroke();
+    if (Math.abs(d - h) < 17) continue;
+    if (big) { x.fillStyle = dd === 0 ? '#ff5a5a' : '#fff'; x.font = '700 13px -apple-system,system-ui,sans-serif'; x.fillText(names[dd], px, 9); }
+    else if (dd % 30 === 0) { x.fillStyle = 'rgba(255,255,255,.6)'; x.font = '600 10px -apple-system,system-ui,sans-serif'; x.fillText(dd, px, 12); }
+  }
+  x.fillStyle = '#ff7a1a'; x.beginPath(); x.moveTo(W / 2 - 7, H); x.lineTo(W / 2 + 7, H); x.lineTo(W / 2, H - 10); x.closePath(); x.fill();
+  x.fillRect(W / 2 - 1, H - 24, 2, 16);
+  $('#cdeg').textContent = Math.round(h) + '°'; $('#cdir').textContent = HM.compass(h);
+}
+async function startSensor() {
+  if (sensorOn) return true;
+  if (!window.DeviceOrientationEvent) { toast('No compass sensor on this device'); return false; }
+  try {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') { const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') { toast('Compass permission was not granted. Allow Motion & Orientation for this site in Safari settings.', 5000); return false; } }
+    window.addEventListener('deviceorientationabsolute', onOrient, true); window.addEventListener('deviceorientation', onOrient, true); sensorOn = true;
+    setTimeout(() => { if (S.heading == null) toast('No compass reading yet. This needs a phone with a magnetometer; try moving the phone in a figure 8.', 5000); }, 3000);
+    return true;
+  } catch (er) { toast('Compass unavailable: ' + er.message); return false; }
 }
 $('#fCmp').onclick = async () => {
-  if (cmpOn) { cmpOn = false; $('#fCmp').classList.remove('on'); map.easeTo({ bearing: 0, duration: 500 }); return; }
-  try {
-    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') { const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') { toast('Compass permission was not granted'); return; } }
-    if (!window.DeviceOrientationEvent) { toast('No compass sensor on this device'); return; }
-    if (!onOrient.bound) { window.addEventListener('deviceorientationabsolute', onOrient, true); window.addEventListener('deviceorientation', onOrient, true); onOrient.bound = true; }
-    cmpOn = true; $('#fCmp').classList.add('on'); startGps(); toast('Compass mode: the map turns with your phone. Tap N to lock north.');
-    setTimeout(() => { if (cmpOn && S.heading == null) toast('No compass reading yet. This needs a phone with a magnetometer.', 4000); }, 3000);
-  } catch (er) { toast('Compass unavailable: ' + er.message); }
+  if (cmpOn) { cmpOn = false; $('#fCmp').classList.remove('on'); $('#cstrip').style.display = 'none'; document.body.classList.remove('cmp'); return; }
+  if (!await startSensor()) return;
+  cmpOn = true; $('#fCmp').classList.add('on'); $('#cstrip').style.display = 'block'; document.body.classList.add('cmp'); drawStrip(S.heading || 0); startGps();
 };
+const ORIENT = { north: 'N up', heading: 'Head up', travel: 'Travel up' };
+function setOrient(o) {
+  S.orient = o; store.set('orient', o); $('#orientTxt').textContent = ORIENT[o]; $('#fOrient').classList.toggle('on', o !== 'north');
+  if (o === 'north') map.easeTo({ bearing: 0, duration: 500 });
+  else if (o === 'heading' && S.heading != null) turnMap(S.heading);
+  else if (o === 'travel') { startGps(); if (S.travel != null) turnMap(S.travel); }
+}
+$('#fOrient').onclick = async () => {
+  const next = S.orient === 'north' ? 'heading' : S.orient === 'heading' ? 'travel' : 'north';
+  if (next === 'heading' && !await startSensor()) { setOrient('travel'); return; }
+  setOrient(next); toast(next === 'north' ? 'North at the top' : next === 'heading' ? 'Map turns the way the phone points' : 'Map turns the way you are moving (needs you to be walking)', 2500);
+};
+map.on('load', () => { $('#orientTxt').textContent = ORIENT[S.orient] || 'N up'; $('#fOrient').classList.toggle('on', S.orient !== 'north'); if (S.orient === 'travel') startGps(); });
 const recText = () => S.rec ? `${fmtDist(HM.lineLen(S.rec.pts))} · ${Math.round((Date.now() - S.rec.t0) / 60000)} min · ${S.rec.pts.length} points` : '';
 function drawTracks() {
   const fs = S.tracks.filter(t => !t.hide).map(t => ({ type: 'Feature', properties: { live: 0 }, geometry: { type: 'LineString', coordinates: t.pts } }));
