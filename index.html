@@ -77,6 +77,25 @@ input[type=checkbox]:checked{background:var(--acc)}input[type=checkbox]:checked:
 .wp i{transform:rotate(45deg);font-style:normal;font-weight:800;font-size:13px;color:#fff}
 .hs{width:30px;height:30px;border-radius:50%;background:#e01e37;border:2.5px solid #fff;color:#fff;font-weight:800;font-size:14px;display:grid;place-items:center;box-shadow:0 0 0 5px rgba(224,30,55,.3),0 2px 6px rgba(0,0,0,.5);cursor:pointer;flex:none}
 .ml{background:rgba(10,12,11,.85);color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:11px;padding:2px 8px;font-size:13px;font-weight:700;white-space:nowrap;pointer-events:none}.ml.tot{background:var(--acc);color:#1a0d02;border-color:#1a0d02;font-size:14px}
+.lchips{position:absolute;left:calc(var(--sl) + 10px);top:calc(var(--st) + 64px);z-index:5;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.lchips .hotchip{position:static}
+.bloodchip{background:#7a0012;display:none;align-items:center;gap:8px}.bloodchip .dot{width:10px;height:10px;border-radius:50%;background:#ff3b5c;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.blood{position:absolute;inset:0;z-index:20;background:#000;display:none;flex-direction:column}
+.blood.open{display:flex}
+.blood video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.blood canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.btop{position:absolute;top:0;left:0;right:0;padding:calc(var(--st) + 8px) 12px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(rgba(0,0,0,.75),transparent)}
+.bttl{text-align:center;line-height:1.15}.bttl b{display:block;font-size:16px}.bttl span{font-size:12.5px;color:#ffb3bd}
+.bbtn{height:40px;padding:0 14px;border-radius:12px;border:0;background:rgba(255,255,255,.18);color:#fff;font-weight:600;font-size:15px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.bbtn.sq{width:46px;height:46px;padding:0;font-size:16px}.bbtn.on{background:var(--acc);color:#1a0d02}
+.bside{position:absolute;right:calc(var(--sr) + 10px);top:50%;transform:translateY(-70%);display:flex;flex-direction:column;gap:10px}
+.bbot{position:absolute;left:0;right:0;bottom:0;padding:10px calc(var(--sr) + 12px) calc(var(--sb) + 10px) calc(var(--sl) + 12px);background:linear-gradient(transparent,rgba(0,0,0,.85) 30%)}
+.bsens{display:flex;align-items:center;gap:10px;font-size:12.5px;color:#ddd}.bsens input{flex:1}.bsens span:last-child{min-width:92px;text-align:right;color:var(--mut)}
+.bseg{background:rgba(255,255,255,.14);margin:8px 0}
+.bmarks{display:flex;gap:8px}.bmarks .btn{flex:1;padding:0 6px;background:rgba(255,255,255,.16)}.bmarks .mark-blood{background:#c1001f;color:#fff;flex:1.4}
+.binfo{margin-top:8px;font-size:13px;color:#ddd;text-align:center;min-height:18px}
+.wpimg{width:100%;border-radius:12px;margin:6px 0;display:block}
 .me{width:24px;height:24px;position:relative}
 .me:before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 7px rgba(59,155,255,.25),0 1px 4px rgba(0,0,0,.5)}
 .me .hd{position:absolute;left:50%;top:-16px;margin-left:-8px;border:8px solid transparent;border-bottom:14px solid var(--blue);border-top:0;display:none}
@@ -107,7 +126,27 @@ input[type=checkbox]:checked{background:var(--acc)}input[type=checkbox]:checked:
 </div>
 <div class="modebar" id="modebar"><span id="modeTxt"></span><button data-act="mode-undo" id="modeUndo">Undo</button><button data-act="mode-clear" id="modeClear">Clear</button><button data-act="mode-done">Done</button></div>
 <button class="loc glass" id="fLoc" aria-label="Go to my location"><svg viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.6l7 2.4 2.4 7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
-<button class="hotchip" id="hotChip" data-act="hot-clear">Clear hot spots &times;</button>
+<div class="lchips"><button class="hotchip" id="hotChip" data-act="hot-clear">Clear hot spots &times;</button><button class="hotchip bloodchip" id="bloodChip" data-act="blood-open"><span class="dot"></span>Blood trail recording &middot; back to camera</button></div>
+<div id="blood" class="blood">
+  <video id="bvid" playsinline muted autoplay></video>
+  <canvas id="bcan"></canvas>
+  <div class="btop">
+    <button class="bbtn" data-act="blood-map">Map</button>
+    <div class="bttl"><b>Blood trail</b><span id="bstat">starting camera</span></div>
+    <button class="bbtn" data-act="blood-finish">Finish</button>
+  </div>
+  <div class="bside">
+    <button class="bbtn sq" data-act="blood-zoom" id="bzoom">1&times;</button>
+    <button class="bbtn sq" data-act="blood-torch" id="btorch" style="display:none">&#9728;</button>
+    <button class="bbtn sq" data-act="blood-freeze" id="bfreeze">&#10074;&#10074;</button>
+  </div>
+  <div class="bbot">
+    <div class="bsens"><span>Sensitivity</span><input type="range" id="bsens" min="0" max="100" value="45"><span id="bsensv">fresh to dried</span></div>
+    <div class="seg bseg"><button data-act="blood-mode" data-m="normal">Normal</button><button data-act="blood-mode" data-m="enhance">Enhance</button><button data-act="blood-mode" data-m="highlight" class="on">Highlight</button></div>
+    <div class="bmarks"><button class="btn mark-blood" data-act="blood-mark" data-t="blood">Mark blood</button><button class="btn" data-act="blood-mark" data-t="hit">Hit site</button><button class="btn" data-act="blood-mark" data-t="found">Found it</button></div>
+    <div class="binfo" id="binfo">Waiting for GPS</div>
+  </div>
+</div>
 <div class="sheet" id="sheet"></div>
 <nav class="bar glass" id="bar">
   <button data-p="layers"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>Layers</button>
@@ -327,6 +366,30 @@ const HM = {};
     return { score, picks, max, terrainOnly };
   };
 })();
+/* ---- blood trail camera filter: works on raw RGBA, returns count of blood-like pixels ----
+   mode: 'enhance' keeps colour but greys everything that is not red; 'highlight' paints blood cyan on a dim grey scene
+   sens: 0 (strict, fresh red only) to 1 (loose, dark or dried blood too) */
+HM.blood = (d, mode, sens) => {
+  const n = d.length >> 2, satMin = 0.55 - 0.3 * sens, hueMax = 12 + 10 * sens, valMin = 30 - 10 * sens, rLead = 60 - 32 * sens; let hits = 0;
+  for (let i = 0; i < n; i++) {
+    const o = i << 2, r = d[o], g = d[o + 1], b = d[o + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), ch = mx - mn;
+    let blood = false;
+    if (r === mx && mx >= valMin && ch > 0) {
+      const sat = ch / mx, hue = 60 * (g - b) / ch; // hue is 0 at pure red, +toward yellow, -toward magenta
+      blood = sat >= satMin && hue <= hueMax && hue >= -hueMax * 1.6 && r - Math.max(g, b) >= rLead;
+    }
+    if (blood) {
+      hits++;
+      if (mode === 'highlight') { d[o] = 0; d[o + 1] = 235; d[o + 2] = 255; }
+      else { d[o] = Math.min(255, r * 1.25 + 20); d[o + 1] = g * .55; d[o + 2] = b * .55; }
+    } else {
+      const l = (r * 77 + g * 151 + b * 28) >> 8, v = mode === 'highlight' ? l * .55 : l;
+      d[o] = v; d[o + 1] = v; d[o + 2] = v;
+    }
+  }
+  return hits;
+};
+HM.bearing = (a, b) => { const D = Math.PI / 180, la1 = a[1] * D, la2 = b[1] * D, dl = (b[0] - a[0]) * D; return ((Math.atan2(Math.sin(dl) * Math.cos(la2), Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dl)) / D) + 360) % 360; };
 </script>
 <script>
 /* ======================= Hunt Map app ======================= */
@@ -352,7 +415,7 @@ const S = {
   base: store.get('base', 'sat'), regrid: store.get('regrid', ''), prov: store.get('prov', 'regrid'), mine: [], data: { wma: [], padus: [], parcels: [] }, status: {}, mode: null, measure: [], rec: null, me: null, heading: null,
   wind: null, windHour: 0, cone: null, hot: { species: 'deer', phase: HM.defaultPhase('deer', new Date().getMonth() + 1), publicOnly: true, picks: [] }
 };
-const WPT = { stand: ['Stand', '#e01e37', 'S'], blind: ['Blind', '#8e44ad', 'B'], sign: ['Rub / scrape', '#d35400', 'R'], bed: ['Bedding', '#16a085', 'Z'], food: ['Food source', '#b7950b', 'F'], cam: ['Trail camera', '#2c3e50', 'C'], access: ['Parking / access', '#2f6fde', 'P'], sight: ['Sighting', '#27ae60', 'D'], other: ['Other', '#566573', '•'] };
+const WPT = { blood: ['Blood', '#c1001f', 'B'], hit: ['Hit site', '#ff5a1f', 'H'], found: ['Recovered', '#1fa84a', '\u2713'], stand: ['Stand', '#e01e37', 'S'], blind: ['Blind', '#8e44ad', 'B'], sign: ['Rub / scrape', '#d35400', 'R'], bed: ['Bedding', '#16a085', 'Z'], food: ['Food source', '#b7950b', 'F'], cam: ['Trail camera', '#2c3e50', 'C'], access: ['Parking / access', '#2f6fde', 'P'], sight: ['Sighting', '#27ae60', 'D'], other: ['Other', '#566573', '•'] };
 const LAYERS = [
   { id: 'wma', name: 'MN Wildlife Management Areas', sub: 'MN DNR', min: 8, sw: '#ff9f1c' },
   { id: 'padus', name: 'Other public land', sub: 'Federal (WPA, refuge), state forest, county: USGS PAD-US', min: 9, sw: '#ff4fa3' },
@@ -442,7 +505,7 @@ async function addBuiltTiles() {
   } catch (e) { S.built = false; console.info('no built-in parcel tiles', e && e.message); }
 }
 /* ---------------- county parcel files imported onto this device (IndexedDB) ---------------- */
-const idb = () => new Promise((res, rej) => { const r = indexedDB.open('huntmap', 2); r.onupgradeneeded = () => { const d = r.result; ['parcels', 'ptiles'].forEach(n => d.objectStoreNames.contains(n) || d.createObjectStore(n)); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const idb = () => new Promise((res, rej) => { const r = indexedDB.open('huntmap', 3); r.onupgradeneeded = () => { const d = r.result; ['parcels', 'ptiles', 'photos'].forEach(n => d.objectStoreNames.contains(n) || d.createObjectStore(n)); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
 const idbDo = async (mode, fn, store = 'parcels') => { const db = await idb(); return new Promise((res, rej) => { const tx = db.transaction(store, mode), rq = fn(tx.objectStore(store)); tx.oncomplete = () => res(rq && rq.result); tx.onerror = () => rej(tx.error); }); };
 function drawMine() { const fs = []; S.mine.forEach(s => { for (const f of s.features) fs.push(f); }); if (map.getSource('mine')) map.getSource('mine').setData({ type: 'FeatureCollection', features: fs }); }
 const PACK = 'Built-in parcels';
@@ -708,10 +771,10 @@ function startGps() {
   if (!navigator.geolocation) { toast('This browser has no location support'); return; }
   if (watchId != null) return;
   watchId = navigator.geolocation.watchPosition(pos => {
-    const p = [pos.coords.longitude, pos.coords.latitude]; S.me = p; S.acc = pos.coords.accuracy;
+    const p = [pos.coords.longitude, pos.coords.latitude]; S.me = p; S.acc = pos.coords.accuracy; S.meT = Date.now();
     if (!meMarker) { const el = document.createElement('div'); el.className = 'me'; el.innerHTML = '<div class="hd"></div>'; meMarker = new maplibregl.Marker({ element: el, rotationAlignment: 'map' }).setLngLat(p).addTo(map); }
     meMarker.setLngLat(p); if (follow) map.easeTo({ center: p, duration: 400 });
-    if (S.rec && pos.coords.accuracy < 60) { const c = S.rec.pts, last = c[c.length - 1]; if (!last || HM.hav(last, p) > 5) { c.push(p); drawTracks(); const el = $('#recInfo'); if (el) el.textContent = recText(); } }
+    if (S.rec && pos.coords.accuracy < (S.rec.blood ? 90 : 60)) { const c = S.rec.pts, last = c[c.length - 1]; if (!last || HM.hav(last, p) > 5) { c.push(p); drawTracks(); const el = $('#recInfo'); if (el) el.textContent = recText(); } }
   }, err => { toast('Location error: ' + err.message + (location.protocol === 'https:' ? '' : ' (needs an https page)'), 5000); stopGps(); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
 }
 function stopGps() { if (watchId != null) navigator.geolocation.clearWatch(watchId); watchId = null; follow = false; $('#fLoc').classList.remove('on'); }
@@ -838,6 +901,71 @@ function showPick(p) {
   map.easeTo({ center: p.ll });
 }
 
+/* ---------------- blood trail: camera filter + GPS route + marks ---------------- */
+const B = { on: false, cam: false, stream: null, raf: 0, mode: 'highlight', sens: .45, zoom: 1, frozen: false, torch: false, marks: 0, lastBlood: null, t0: 0, frames: 0, hits: 0 };
+const bel = id => document.getElementById(id);
+async function bloodOpen() {
+  if (!B.on) { B.on = true; B.t0 = Date.now(); B.marks = 0; B.bloodN = 0; B.lastBlood = null; S.rec = { t0: B.t0, pts: [], blood: true }; whereAmI(() => { }); }
+  bel('blood').classList.add('open'); bel('bloodChip').style.display = 'none'; closeSheet(); setMode(null);
+  await bloodCam(); bloodInfo();
+}
+async function bloodCam() {
+  if (B.cam) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { bel('bstat').textContent = 'no camera access in this browser'; return; }
+  bel('bstat').textContent = 'starting camera';
+  try {
+    B.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    const v = bel('bvid'); v.srcObject = B.stream; await v.play().catch(() => { }); B.cam = true; B.frozen = false; bel('bfreeze').classList.remove('on');
+    const tr = B.stream.getVideoTracks()[0], caps = tr.getCapabilities ? tr.getCapabilities() : {};
+    bel('btorch').style.display = caps.torch ? '' : 'none'; B.torch = false; bel('btorch').classList.remove('on');
+    bel('bstat').textContent = 'point at the ground'; bloodLoop();
+  } catch (e) { bel('bstat').textContent = e.name === 'NotAllowedError' ? 'camera blocked: allow it in Settings > Safari' : 'camera error: ' + e.message; }
+}
+function bloodStopCam() { cancelAnimationFrame(B.raf); B.raf = 0; if (B.stream) B.stream.getTracks().forEach(t => t.stop()); B.stream = null; B.cam = false; }
+function bloodLoop() {
+  const v = bel('bvid'), c = bel('bcan'), W = 480;
+  const step = () => {
+    B.raf = requestAnimationFrame(step); if (B.frozen || !v.videoWidth) return;
+    const H = Math.round(W * v.videoHeight / v.videoWidth); if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    const cx = c.getContext('2d', { willReadFrequently: true }), z = B.zoom, sw = v.videoWidth / z, sh = v.videoHeight / z;
+    cx.drawImage(v, (v.videoWidth - sw) / 2, (v.videoHeight - sh) / 2, sw, sh, 0, 0, W, H);
+    if (B.mode !== 'normal') { const im = cx.getImageData(0, 0, W, H); B.hits = HM.blood(im.data, B.mode, B.sens); cx.putImageData(im, 0, 0); } else B.hits = 0;
+    if (++B.frames % 15 === 0) bel('bstat').textContent = B.mode === 'normal' ? 'camera' : (B.hits ? 'red signal ' + Math.min(100, Math.round(B.hits / (W * H) * 2000)) + '%' : 'no red in view');
+  };
+  step();
+}
+const dirWord = d => HM.compass(d);
+function bloodInfo() {
+  if (!B.on) return; const el = bel('binfo'), parts = [];
+  if (S.rec && S.rec.pts.length > 1) parts.push('Trail ' + fmtDist(HM.lineLen(S.rec.pts)));
+  parts.push(Math.round((Date.now() - B.t0) / 60000) + ' min');
+  if (B.marks) parts.push(B.marks + (B.marks === 1 ? ' mark' : ' marks'));
+  if (B.lastBlood && S.me) { const d = HM.hav(S.me, B.lastBlood); parts.push('last blood ' + (d < 8 ? 'here' : fmtDist(d) + ' ' + dirWord(HM.bearing(S.me, B.lastBlood)))); }
+  if (!S.me) parts.push(watchId == null ? 'GPS off' : 'waiting for GPS'); else if (S.acc > 40) parts.push('GPS ±' + Math.round(S.acc * 1.09) + ' yd');
+  el.textContent = parts.join(' · ');
+}
+setInterval(bloodInfo, 3000);
+function bloodThumb() {
+  try { const c = bel('bcan'); if (!c.width) return null; const t = document.createElement('canvas'), w = 360, h = Math.round(c.height * w / c.width); t.width = w; t.height = h; t.getContext('2d').drawImage(c, 0, 0, w, h); return t.toDataURL('image/jpeg', .6); } catch (e) { return null; }
+}
+function bloodMark(type) {
+  const go = p => {
+    B.marks++; if (type === 'blood') B.bloodN = (B.bloodN || 0) + 1; const n = { blood: 'Blood ' + B.bloodN, hit: 'Hit site', found: 'Recovered' }[type] || type, when = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const w = { id: Date.now(), p: p.slice(), type, name: n, notes: when + (S.acc ? ', GPS ±' + Math.round(S.acc * 1.09) + ' yd' : '') };
+    const img = B.mode === 'normal' ? null : bloodThumb(); if (img) { w.photo = 1; idbDo('readwrite', st => st.put(img, w.id), 'photos').catch(() => { }); }
+    S.wps.push(w); drawWps(); if (type === 'blood') B.lastBlood = w.p; if (type === 'found') toast('Marked where you found it. Tap Finish to save the trail.', 4000); else toast(n + ' marked', 1500); bloodInfo();
+  };
+  if (S.me && watchId != null && Date.now() - (S.meT || 0) < 15000) go(S.me); else whereAmI(go);
+}
+function bloodFinish() {
+  const pts = S.rec ? S.rec.pts : [];
+  if (pts.length > 1) { S.tracks.push({ name: 'Blood trail ' + new Date(B.t0).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), pts }); store.set('tracks', S.tracks); }
+  const msg = (pts.length > 1 ? 'Trail saved: ' + fmtDist(HM.lineLen(pts)) : 'No GPS path was recorded') + (B.marks ? ', ' + B.marks + ' marks kept as waypoints' : '');
+  S.rec = null; drawTracks(); B.on = false; bloodStopCam(); bel('blood').classList.remove('open'); bel('bloodChip').style.display = 'none'; toast(msg, 5000); openSheet('track');
+}
+function bloodToMap() { bloodStopCam(); bel('blood').classList.remove('open'); bel('bloodChip').style.display = 'flex'; if (S.me) map.flyTo({ center: S.me, zoom: Math.max(map.getZoom(), 17) }); }
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if (B.cam) bloodStopCam(); } else if (B.on && bel('blood').classList.contains('open')) bloodCam(); });
+
 /* ---------------- panels ---------------- */
 function closeSheet() { const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
 function openSheet(p, arg) {
@@ -851,9 +979,9 @@ function openSheet(p, arg) {
   else if (p === 'measure') { setMode('measure'); return; }
   else if (p === 'wp') {
     const w = arg; s._wp = w;
-    h = head(w.id ? 'Edit waypoint' : 'New waypoint') + `<label class="fld"><span>Name</span><input id="wpName" value="${esc(w.name)}" placeholder="North ridge stand"></label><label class="fld"><span>Type</span><select id="wpType">${Object.entries(WPT).map(([k, v]) => `<option value="${k}" ${k === w.type ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label><label class="fld"><span>Notes</span><textarea id="wpNotes" rows="2" placeholder="Best on a NW wind, enter from the east">${esc(w.notes)}</textarea></label><div class="mut">${w.p[1].toFixed(5)}, ${w.p[0].toFixed(5)}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) + ' from you' : ''}</div><div class="btns"><button class="btn p" data-act="wp-save">Save</button><button class="btn" data-act="wp-share">Share</button><button class="btn" data-act="cone-here" data-ll="${w.p.join(',')}">Wind check</button><a class="btn" href="${dirLink(w.p)}" target="_blank" rel="noopener">Directions</a>${w.id ? '<button class="btn" data-act="wp-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
+    h = head(w.id ? 'Edit waypoint' : 'New waypoint') + (w.photo ? `<img class="wpimg" id="wpImg" alt="Photo at this mark">` : '') + `<label class="fld"><span>Name</span><input id="wpName" value="${esc(w.name)}" placeholder="North ridge stand"></label><label class="fld"><span>Type</span><select id="wpType">${Object.entries(WPT).map(([k, v]) => `<option value="${k}" ${k === w.type ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label><label class="fld"><span>Notes</span><textarea id="wpNotes" rows="2" placeholder="Best on a NW wind, enter from the east">${esc(w.notes)}</textarea></label><div class="mut">${w.p[1].toFixed(5)}, ${w.p[0].toFixed(5)}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) + ' from you' : ''}</div><div class="btns"><button class="btn p" data-act="wp-save">Save</button><button class="btn" data-act="wp-share">Share</button><button class="btn" data-act="cone-here" data-ll="${w.p.join(',')}">Wind check</button><a class="btn" href="${dirLink(w.p)}" target="_blank" rel="noopener">Directions</a>${w.id ? '<button class="btn" data-act="wp-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
   } else if (p === 'track') {
-    h = head('Track my walk') + (S.rec ? `<div class="note" id="recInfo">${recText()}</div><div class="btns"><button class="btn p" data-act="rec-stop">Stop and save</button><button class="btn" data-act="rec-cancel">Discard</button></div>` : `<div class="note">Records your path in and out so you can retrace it in the dark. Keep this page open while recording; phones pause location when the screen locks.</div><div class="btns"><button class="btn p" data-act="rec-start">Start recording</button></div>`) +
+    h = head('Track') + (S.rec && S.rec.blood ? `<div class="note"><b style="color:#ff6b7d">Blood trail in progress</b> · ${recText()}</div><div class="btns"><button class="btn p" data-act="blood-open">Back to camera</button><button class="btn" data-act="blood-finish">Finish and save</button></div>` : `<button class="btn p" data-act="blood-open" style="width:100%;background:#c1001f;color:#fff">Start a blood trail</button><div class="mut" style="margin:6px 0 14px">Camera view that makes blood stand out, records your path as you follow it, and drops marks at each blood find, the hit site and the recovery.</div><h3>Walk in and out</h3>`) + (S.rec && !S.rec.blood ? `<div class="note" id="recInfo">${recText()}</div><div class="btns"><button class="btn p" data-act="rec-stop">Stop and save</button><button class="btn" data-act="rec-cancel">Discard</button></div>` : (S.rec && S.rec.blood ? '' : `<div class="note">Records your path in and out so you can retrace it in the dark. Keep this page open while recording; phones pause location when the screen locks.</div><div class="btns"><button class="btn p" data-act="rec-start">Start recording</button></div>`)) +
       `<h3>Saved tracks</h3>` + (S.tracks.length ? S.tracks.map((t, i) => `<div class="row"><div class="g" data-act="trk-go" data-i="${i}" style="cursor:pointer">${esc(t.name)}<br><small>${fmtDist(HM.lineLen(t.pts))}</small></div><input type="checkbox" data-trk="${i}" ${t.hide ? '' : 'checked'}><button class="btn s" data-act="trk-del" data-i="${i}">&times;</button></div>`).join('') : '<div class="mut">None yet.</div>');
   } else if (p === 'wind') {
     const w = windAt(S.windHour), W = S.wind;
@@ -878,6 +1006,7 @@ function openSheet(p, arg) {
     h = head('Search results') + (arg.length ? arg.map(r => `<div class="row" data-act="go" data-ll="${r.lon},${r.lat}" data-z="13" style="cursor:pointer"><div class="g">${esc(r.display_name)}</div></div>`).join('') : '<div class="mut">Nothing found.</div>');
   }
   s.innerHTML = h; s.scrollTop = 0;
+  if (p === 'wp' && arg.photo) idbDo('readonly', st => st.get(arg.id), 'photos').then(d => { const im = document.getElementById('wpImg'); if (im && d) im.src = d; else if (im) im.remove(); }).catch(() => { });
 }
 $('#bar').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (!b) return; if ($('#sheet').dataset.p === b.dataset.p) closeSheet(); else { setMode(null); openSheet(b.dataset.p); } });
 $('#q').addEventListener('keydown', async e => {
@@ -885,6 +1014,7 @@ $('#q').addEventListener('keydown', async e => {
   const m = v.match(/^\s*(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)\s*$/); if (m) { map.flyTo({ center: [+m[2], +m[1]], zoom: 15 }); return; }
   try { const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=us&q=' + encodeURIComponent(v)); openSheet('search', await r.json()); } catch (er) { toast('Search failed'); }
 });
+document.addEventListener('input', e => { if (e.target.id === 'bsens') { B.sens = e.target.value / 100; bel('bsensv').textContent = B.sens < .25 ? 'fresh red only' : B.sens < .65 ? 'fresh to dried' : 'dark and dried too'; } });
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.dataset.layer) { const id = t.dataset.layer; S.on[id] = t.checked; store.set('on', S.on); applyVis(id); if (t.checked) { delete loaded[id]; loadLayer(id); } if (id === 'wma') { delete loaded.padus; loadLayer('padus'); } }
@@ -910,6 +1040,14 @@ document.addEventListener('click', e => {
   else if (a === 'cone-clear') { S.cone = null; drawCone(); openSheet('wind'); }
   else if (a === 'wind-hr') { S.windHour = +b.dataset.k; windChip(); drawCone(); const sc = sh.querySelector('.hr').scrollLeft; openSheet('wind'); sh.querySelector('.hr').scrollLeft = sc; }
   else if (a === 'wind-reload') loadWind(true);
+  else if (a === 'blood-open') bloodOpen();
+  else if (a === 'blood-map') bloodToMap();
+  else if (a === 'blood-finish') bloodFinish();
+  else if (a === 'blood-mark') bloodMark(b.dataset.t);
+  else if (a === 'blood-mode') { B.mode = b.dataset.m; document.querySelectorAll('.bseg button').forEach(x => x.classList.toggle('on', x === b)); }
+  else if (a === 'blood-zoom') { B.zoom = B.zoom >= 4 ? 1 : B.zoom * 2; b.innerHTML = B.zoom + '&times;'; }
+  else if (a === 'blood-freeze') { B.frozen = !B.frozen; b.classList.toggle('on', B.frozen); }
+  else if (a === 'blood-torch') { const tr = B.stream && B.stream.getVideoTracks()[0]; if (!tr) return; B.torch = !B.torch; tr.applyConstraints({ advanced: [{ torch: B.torch }] }).then(() => b.classList.toggle('on', B.torch)).catch(() => { B.torch = false; toast('Flashlight not supported here'); }); }
   else if (a === 'mark-me') whereAmI(p => { map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 16) }); editWp({ id: 0, p: p.slice(), type: 'stand', name: '', notes: '' }); });
   else if (a === 'mark-tap') setMode('mark');
   else if (a === 'mark-center') { const c = map.getCenter(); editWp({ id: 0, p: [c.lng, c.lat], type: 'stand', name: '', notes: '' }); }
@@ -920,7 +1058,7 @@ document.addEventListener('click', e => {
   else if (a === 'mine-del') { const n = b.dataset.n; idbDo('readwrite', st => st.delete(n)).catch(() => { }); S.mine = S.mine.filter(m => m.name !== n); drawMine(); openSheet('layers'); }
   else if (a === 'regrid-save') { S.regrid = $('#rgKey').value.trim(); S.prov = $('#rgProv').value; store.set('prov', S.prov); store.set('regrid', S.regrid); addRegrid(); delete loaded.parcels; loadLayer('parcels'); toast(S.regrid ? 'Token saved. Zoom in to see parcel lines.' : 'Token removed'); openSheet('layers'); }
   else if (a === 'wp-save') { const w = sh._wp; w.name = $('#wpName').value.trim(); w.type = $('#wpType').value; w.notes = $('#wpNotes').value.trim(); if (!w.id) { w.id = Date.now(); S.wps.push(w); } drawWps(); closeSheet(); toast('Waypoint saved'); }
-  else if (a === 'wp-del') { S.wps = S.wps.filter(x => x.id !== sh._wp.id); drawWps(); closeSheet(); }
+  else if (a === 'wp-del') { idbDo('readwrite', st => st.delete(sh._wp.id), 'photos').catch(() => { }); S.wps = S.wps.filter(x => x.id !== sh._wp.id); drawWps(); closeSheet(); }
   else if (a === 'wp-go') { const w = S.wps.find(x => x.id == b.dataset.id); if (w) { map.flyTo({ center: w.p, zoom: Math.max(map.getZoom(), 15.5) }); editWp(w); } }
   else if (a === 'go') { map.flyTo({ center: parseLL(b.dataset.ll), zoom: +b.dataset.z || Math.max(map.getZoom(), 16) }); if (b.dataset.z) closeSheet(); }
   else if (a === 'rec-start') { S.rec = { t0: Date.now(), pts: [] }; whereAmI(p => { follow = true; map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 15.5) }); }); openSheet('track'); toast('Recording your track'); }
