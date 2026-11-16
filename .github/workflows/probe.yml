@@ -9,10 +9,6 @@ jobs:
     steps:
       - run: |
           B="https://enterprise.gisdata.mn.gov/aghost/rest/services/us_mn_state_mngeo/plan_parcels_open/FeatureServer"
-          echo "---- layers"; curl -sS "$B?f=json" | grep -oE '"name":"[^"]+"' | tr '\n' ' '; echo
-          echo "---- fields of layer 1"; curl -sS "$B/1?f=json" | grep -oE '"name":"[^"]+"' | head -40 | tr '\n' ' '; echo
-          echo "---- McLeod count (upper)"; curl -sS "$B/1/query?where=UPPER(co_name)%3D%27MCLEOD%27&returnCountOnly=true&f=json"; echo
-          echo "---- point in Hutchinson area"; curl -sS "$B/1/query?geometry=-94.37,44.88&geometryType=esriGeometryPoint&inSR=4326&outFields=co_name,owner_name,ctu_name&returnGeometry=false&f=json" | head -c 600; echo
-          echo "---- point near Glencoe"; curl -sS "$B/1/query?geometry=-94.15,44.77&geometryType=esriGeometryPoint&inSR=4326&outFields=co_name,owner_name,ctu_name&returnGeometry=false&f=json" | head -c 600; echo
-          echo "---- metadata layer 0 fields"; curl -sS "$B/0?f=json" | grep -oE '"name":"[^"]+"' | head -30 | tr '\n' ' '; echo
-          echo "---- metadata rows"; curl -sS "$B/0/query?where=1%3D1&outFields=*&returnGeometry=false&f=json" | head -c 4000; echo
+          echo "---- McLeod count"; curl -sS "$B/0/query?where=co_name%3D%27McLeod%27&returnCountOnly=true&f=json"; echo
+          echo "---- counties"; curl -sS "$B/1/query?where=1%3D1&outFields=countyname,gac_open_approval&returnGeometry=false&f=json" | grep -oE '"countyname":"[^"]+","gac_open_approval":"?[^,}"]*' | sed -E 's/"countyname":"//; s/","gac_open_approval":"?/=/' | sort | tr '\n' ' '; echo
+          echo "---- McLeod sample"; curl -sS "$B/0/query?where=co_name%3D%27McLeod%27&outFields=owner_name,tax_name,acres_deed,ctu_name&returnGeometry=false&resultRecordCount=3&f=json" | head -c 700; echo
