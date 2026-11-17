@@ -110,6 +110,22 @@ input[type=checkbox]:checked{background:var(--acc)}input[type=checkbox]:checked:
 .bmarks{display:flex;gap:8px}.bmarks .btn{flex:1;padding:0 6px;background:rgba(255,255,255,.16)}.bmarks .mark-blood{background:#c1001f;color:#fff;flex:1.4}
 .binfo{margin-top:8px;font-size:13px;color:#ddd;text-align:center;min-height:18px}
 .wpimg{width:100%;border-radius:12px;margin:6px 0;display:block}
+.dist{font-size:14px;color:#ffcf7a;margin:0 0 6px}.dist b{font-size:16px}
+.wx2{display:flex;gap:10px;align-items:center;background:var(--field);border-radius:12px;padding:8px 10px;margin:6px 0}.wx2>div{min-width:132px}.wx2 small{display:block;font-size:11.5px;color:var(--mut);font-weight:600}.wx2 b{display:block;font-size:15.5px}.wx2 span{font-size:12.5px;color:var(--mut)}.wx2 span.up{color:#57d38c}.wx2 span.dn{color:#ff8a7a}
+.spark{flex:1;height:40px;min-width:0}
+.moon{display:flex;gap:10px;align-items:center;background:var(--field);border-radius:12px;padding:8px 10px;margin:6px 0}.moon .mg{font-size:30px;line-height:1}.moon b{display:block;font-size:15px}.moon small{color:var(--mut);font-size:12.5px}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}.dot.ok{background:#2fd16b}.dot.no{background:#ff4d4d}.okt{color:#57d38c;font-size:13px}.not{color:#ff8a7a;font-size:13px}
+.wp .bd{position:absolute;right:-5px;top:-5px;width:12px;height:12px;border-radius:50%;border:2px solid #fff;text-decoration:none}.wp .bd.ok{background:#2fd16b}.wp .bd.no{background:#ff3b3b}
+.wchips{display:flex;flex-wrap:wrap;gap:6px}.wchip{min-width:46px;height:38px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.08);font-weight:700;font-size:14px}.wchip.on{background:#1f9d55;border-color:#2fd16b;color:#fff}
+.trio{display:flex;gap:8px}.trio .fld{flex:1;min-width:0;margin:6px 0}.fld input[type=date],.fld input[type=time]{min-height:44px}
+.ctr{display:flex;align-items:center;gap:10px;padding:5px 0}.ctr span{flex:1}.ctr b{min-width:28px;text-align:center;font-size:18px}.ctr .btn{width:44px;font-size:20px}
+details.logs summary{cursor:pointer;color:var(--acc2);font-weight:600;padding:8px 0}
+.prog{background:var(--field);border-radius:10px;height:34px;position:relative;overflow:hidden;margin:6px 0}.prog i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#1f6fd1,#3b9bff);width:0}.prog span{position:relative;display:block;text-align:center;line-height:34px;font-size:13px;font-weight:600}
+.btn[disabled]{opacity:.45}
+.guide{position:absolute;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);bottom:calc(var(--tab) + var(--sb) + 12px);z-index:6;border-radius:18px;padding:10px 12px;display:none;align-items:center;gap:12px;max-width:520px}
+.guide.on{display:flex}.garr{width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.35);border:0;display:grid;place-items:center;flex:none;padding:0}.garr svg{width:50px;height:50px;transition:transform .25s}
+.gtx{flex:1;min-width:0;line-height:1.2}.gtx b{display:block;font-size:22px}.gtx span{display:block;font-size:14px;color:var(--acc2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gtx small{color:var(--mut);font-size:11.5px}
+body.guiding .loc{bottom:calc(var(--tab) + var(--sb) + 104px)}body.guiding .disc{display:none}
 .me{width:24px;height:24px;position:relative}
 .me:before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 7px rgba(59,155,255,.25),0 1px 4px rgba(0,0,0,.5)}
 .me .hd{position:absolute;left:50%;top:-16px;margin-left:-8px;border:8px solid transparent;border-bottom:14px solid var(--blue);border-top:0;display:none}
@@ -172,6 +188,7 @@ input[type=checkbox]:checked{background:var(--acc)}input[type=checkbox]:checked:
   <button data-p="hot"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.800"/><path d="M12 1.500v4M12 18.500v4M1.500 12h4M18.500 12h4"/></svg>Hot spots</button>
   <button data-p="saved"><svg class="i" viewBox="0 0 24 24"><path d="M6.500 3h11v18l-5.500-4.200L6.500 21z"/></svg>Saved</button>
 </nav>
+<div class="guide glass" id="guide"><button class="garr" data-act="guide-center" aria-label="Show target"><svg id="gArrow" viewBox="0 0 48 48"><path d="M24 3l13 36-13-8-13 8z" fill="#ff7a1a" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></button><div class="gtx"><b id="gDist">Waiting for GPS</b><span id="gName"></span><small id="gSrc"></small></div><button class="btn s" data-act="guide-stop">Stop</button></div>
 <div class="toast glass" id="toast"></div>
 <div class="disc">Boundaries are approximate, not a survey. Data may be out of date.</div>
 <script>
@@ -382,6 +399,86 @@ const HM = {};
     return { score, picks, max, terrainOnly };
   };
 })();
+
+/* ---- moon: phase from the synodic month, position from a low-precision lunar model ---- */
+(function () {
+  const rad = Math.PI / 180, e = rad * 23.4397, J2000 = 2451545;
+  const toDays = t => t / 864e5 + 2440587.5 - J2000;
+  function moonPos(t, lat, lng) {
+    const d = toDays(t), L = rad * (218.316 + 13.176396 * d), M = rad * (134.963 + 13.064993 * d), F = rad * (93.272 + 13.229350 * d);
+    const l = L + rad * 6.289 * Math.sin(M), b = rad * 5.128 * Math.sin(F), dist = 385001 - 20905 * Math.cos(M);
+    const ra = Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l)), dec = Math.asin(Math.sin(b) * Math.cos(e) + Math.cos(b) * Math.sin(e) * Math.sin(l));
+    const lw = rad * -lng, phi = rad * lat, H = rad * (280.16 + 360.9856235 * d) - lw - ra;
+    let alt = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H));
+    alt -= Math.asin(6378.14 / dist) * Math.cos(alt); // parallax
+    return alt / rad;
+  }
+  HM.moonAlt = moonPos;
+  HM.moonPhase = t => {
+    const syn = 29.530588853, ref = Date.UTC(2000, 0, 6, 18, 14), p = ((((t - ref) / 864e5) % syn) + syn) % syn / syn;
+    const illum = Math.round((1 - Math.cos(2 * Math.PI * p)) / 2 * 100);
+    const names = ['New moon', 'Waxing crescent', 'First quarter', 'Waxing gibbous', 'Full moon', 'Waning gibbous', 'Last quarter', 'Waning crescent'];
+    return { p, illum, name: names[Math.floor((p * 8 + .5)) % 8] };
+  };
+  // rise, set, overhead and underfoot for the local calendar day that contains t0 (midnight-to-midnight passed in)
+  HM.moonTimes = (dayStart, lat, lng) => {
+    const step = 6e4 * 5, out = { rise: null, set: null, over: null, under: null }; let prev = moonPos(dayStart, lat, lng), hi = -99, lo = 99;
+    const h0 = 0.133;
+    for (let t = dayStart + step; t <= dayStart + 864e5; t += step) {
+      const a = moonPos(t, lat, lng);
+      if (prev < h0 && a >= h0 && !out.rise) out.rise = t - step * (a - h0) / (a - prev);
+      if (prev >= h0 && a < h0 && !out.set) out.set = t - step * (h0 - a) / (prev - a);
+      if (a > hi) { hi = a; out.over = t; } if (a < lo) { lo = a; out.under = t; }
+      prev = a;
+    }
+    if (out.over === dayStart + 864e5 || out.over === dayStart + step) out.over = null;
+    if (out.under === dayStart + 864e5 || out.under === dayStart + step) out.under = null;
+    return out;
+  };
+})();
+
+/* ---- stand wind rules ---- */
+HM.DIR8 = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+HM.windFits = (winds, dir) => {
+  if (!winds || !winds.length || dir == null) return null;
+  return winds.some(w => { const c = HM.DIR8.indexOf(w) * 45, d = Math.abs(((dir - c + 540) % 360) - 180); return d <= 30; });
+};
+
+/* ---- hunt log stats per stand ---- */
+HM.sitStats = sits => {
+  const n = sits.length; if (!n) return null;
+  const deer = s => (s.seen ? (s.seen.does || 0) + (s.seen.bucks || 0) + (s.seen.fawns || 0) + (s.seen.unk || 0) : 0);
+  let hrs = 0, total = 0, bucks = 0; const byWind = {};
+  for (const s of sits) {
+    hrs += Math.max(0, (s.end - s.start) / 36e5); total += deer(s); bucks += (s.seen && s.seen.bucks) || 0;
+    const k8 = s.wx && s.wx.dir != null ? HM.DIR8[Math.round(((s.wx.dir % 360) + 360) % 360 / 45) % 8] : null;
+    if (k8) { const o = byWind[k8] || (byWind[k8] = { sits: 0, deer: 0 }); o.sits++; o.deer += deer(s); }
+  }
+  let best = null; for (const k in byWind) { const r = byWind[k].deer / byWind[k].sits; if (!best || r > best.rate || (r === best.rate && byWind[k].sits > best.sits)) best = { dir: k, rate: r, sits: byWind[k].sits }; }
+  return { sits: n, hours: hrs, deer: total, bucks, perSit: total / n, best: best && best.rate > 0 ? best : null, byWind };
+};
+
+/* ---- offline tile keys: WMS requests are keyed by tile z/x/y so float formatting never matters ---- */
+HM.tileKey = (url) => {
+  try {
+    const u = new URL(url), q = u.searchParams, bb = q.get('BBOX') || q.get('bbox');
+    if (bb && /GetMap/i.test(q.get('REQUEST') || q.get('request') || '')) {
+      const [x0, y0, x1, y1] = bb.split(',').map(Number), C = 20037508.342789244, z = Math.round(Math.log2(2 * C / (x1 - x0)));
+      const x = Math.round((x0 + C) / (x1 - x0)), y = Math.round((C - y1) / (y1 - y0)), L = q.get('LAYERS') || q.get('layers') || '';
+      let h = 5381; for (let i = 0; i < L.length; i++) h = ((h * 33) ^ L.charCodeAt(i)) >>> 0;
+      return 'https://offline.key/wms/' + u.host + u.pathname + '/' + h.toString(36) + '/' + z + '/' + x + '/' + y;
+    }
+  } catch (e) { }
+  return url;
+};
+HM.wmsUrl = (tpl, z, x, y) => {
+  const C = 20037508.342789244, s = 2 * C / 2 ** z, x0 = -C + x * s, y1 = C - y * s;
+  return tpl.replace('{bbox-epsg-3857}', [x0, y1 - s, x0 + s, y1].join(','));
+};
+HM.tilesIn = (b, z) => { // b = [w,s,e,n] in degrees
+  const n = 2 ** z, lx = l => Math.floor((l + 180) / 360 * n), ly = l => { const r = l * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n); };
+  const out = []; for (let x = lx(b[0]); x <= lx(b[2]); x++) for (let y = ly(b[3]); y <= ly(b[1]); y++) out.push([z, x, y]); return out;
+};
 /* ---- blood trail camera filter: works on raw RGBA, returns count of blood-like pixels ----
    mode: 'enhance' keeps colour but greys everything that is not red; 'highlight' paints blood cyan on a dim grey scene
    sens: 0 (strict, fresh red only) to 1 (loose, dark or dried blood too) */
@@ -433,6 +530,7 @@ HM.mergeSync = (loc, rem) => {
   return {
     wps: pick(loc.wps, rem.wps, w => w.p ? w.p[0].toFixed(6) + ',' + w.p[1].toFixed(6) + '|' + (w.name || '') : null),
     tracks: pick(loc.tracks, rem.tracks, t => t.pts && t.pts.length ? t.pts.length + '|' + t.pts[0].join(',') + '|' + t.pts[t.pts.length - 1].join(',') : null),
+    log: pick(loc.log, rem.log),
     del
   };
 };
@@ -448,7 +546,10 @@ const SRC = {
   dem: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
   overpass: 'https://overpass-api.de/api/interpreter',
   esri: 'https://server.arcgisonline.com/ArcGIS/rest/services/',
-  spring: 'https://arcgis.dnr.state.mn.us/public/rest/services/gen/spring_imagery_statewide/MapServer/tile/{z}/{y}/{x}',
+  // leaf-off: MnGeo spring (and 2011-12 fall) flights, oldest first so the newest flight for an area is drawn on top
+  spring: 'https://imageserver.gisdata.mn.gov/cgi-bin/wmsll?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=rr2009,neclr2009,dulclr09,ncclr09,south11,murray11,rice11,fall11,fall12,meek13,nc13ft,nc13hm,mc14,polk,nw14,carl15_9,doug16,met10,smet10,dak10,scott10,nga2012,wash13,scott13,dak13,carv13,met16,mcle18,itas18,hen18,steele19,lake19,carl19,dak19,lyon20,kooc20,belt20,met20,rams20,rice21,lesueur21,carlton21,dak21,hen21,steele22,mcle22,doug22,hen22,rice23,belt23,dak23,lyon24,lake24,met25,wab25,dak26&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256',
+  usgsImg: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
+  topo: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
   lidar: 'https://imageserver.gisdata.mn.gov/cgi-bin/wmsll?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=hillshd&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256'
 };
 const $ = s => document.querySelector(s);
@@ -459,7 +560,7 @@ const dirLink = p => `https://www.google.com/maps/dir/?api=1&destination=${p[1].
 const store = { get(k, d) { try { const v = localStorage.getItem('huntmap.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('huntmap.' + k, JSON.stringify(v)); } catch (e) { } } };
 
 const S = {
-  wps: store.get('wps', []), tracks: store.get('tracks', []), del: store.get('del', {}), gh: store.get('gh', { token: '', gist: '', last: 0 }), on: store.get('on', { wma: true, padus: true, parcels: true, access: false, refs: true, hill: false, nlcd: false }),
+  wps: store.get('wps', []), tracks: store.get('tracks', []), log: store.get('log', []), offAreas: store.get('offAreas', []), del: store.get('del', {}), gh: store.get('gh', { token: '', gist: '', last: 0 }), on: store.get('on', { wma: true, padus: true, parcels: true, access: false, refs: true, hill: false, nlcd: false }),
   base: store.get('base', 'sat'), regrid: store.get('regrid', ''), prov: store.get('prov', 'regrid'), mine: [], data: { wma: [], padus: [], parcels: [] }, status: {}, mode: null, measure: [], rec: null, me: null, heading: null,
   wind: null, windHour: 0, cone: null, hot: { species: 'deer', phase: HM.defaultPhase('deer', new Date().getMonth() + 1), publicOnly: true, picks: [] }
 };
@@ -479,7 +580,7 @@ const MAPL = { wma: ['wma-fill', 'wma-line'], padus: ['padus-fill', 'padus-line'
 const rt = (u, mz, at) => ({ type: 'raster', tiles: [u], tileSize: 256, maxzoom: mz, attribution: at || '' });
 const empty = () => ({ type: 'FeatureCollection', features: [] });
 /* trail enhancer: fetch the imagery tile, run local-contrast normalisation, hand MapLibre the result */
-const baseTile = (b, z, x, y) => (b === 'spring' ? SRC.spring : SRC.esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}').replace('{z}', z).replace('{x}', x).replace('{y}', y);
+const baseTile = (b, z, x, y) => b === 'spring' ? HM.wmsUrl(SRC.spring, +z, +x, +y) : (SRC.esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}').replace('{z}', z).replace('{x}', x).replace('{y}', y);
 if (maplibregl.addProtocol) maplibregl.addProtocol('enh', async (params, ac) => {
   const m = params.url.match(/^enh:\/\/(\w+)\/(\d+)\/(\d+)\/(\d+)$/); if (!m) throw new Error('bad enh url');
   const r = await fetch(baseTile(m[1], m[2], m[3], m[4]), { signal: ac && ac.signal }); if (!r.ok) throw new Error('tile ' + r.status);
@@ -494,8 +595,8 @@ const map = new maplibregl.Map({
     version: 8, glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
     sources: {
       sat: rt(SRC.esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', 18, 'Imagery &copy; Esri, Maxar, Earthstar Geographics'),
-      topo: rt('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}', 16, 'USGS The National Map'),
-      spring: rt(SRC.spring, 18, 'Leaf-off imagery: MN DNR'),
+      topo: rt(SRC.topo, 16, 'USGS The National Map'),
+      spring: rt(SRC.spring, 19, 'Leaf-off: MnGeo spring and fall flights'),
       lidar: rt(SRC.lidar, 18, 'Lidar hillshade: MnGeo, MN DNR'),
       enh: rt('enh://' + store.get('base', 'sat') + '/{z}/{x}/{y}', 18),
       roads: rt(SRC.esri + 'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', 18),
@@ -522,7 +623,7 @@ map.on('error', e => console.warn('map error', e && e.error && e.error.message))
 
 map.on('load', () => {
   const add = (id, data) => map.addSource(id, { type: 'geojson', data: data || empty() });
-  ['wma', 'padus', 'parcels', 'access', 'tracks', 'measure', 'cone'].forEach(id => add(id));
+  ['wma', 'padus', 'parcels', 'access', 'tracks', 'measure', 'cone', 'rings', 'ruler', 'guide', 'offareas'].forEach(id => add(id));
   for (const id of ['padus', 'wma']) {
     map.addLayer({ id: id + '-fill', type: 'fill', source: id, paint: { 'fill-color': ['get', '_c'], 'fill-opacity': ['case', ['==', ['get', '_closed'], 1], .12, .28] } }, 'roads');
     map.addLayer({ id: id + '-line', type: 'line', source: id, paint: { 'line-color': ['get', '_c'], 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1, 15, 3], 'line-dasharray': [1, 0] } }, 'roads');
@@ -531,6 +632,11 @@ map.on('load', () => {
   map.addLayer({ id: 'parcels-line', type: 'line', source: 'parcels', paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 13, .6, 17, 2], 'line-opacity': .9 } }, 'roads');
   map.addLayer({ id: 'cone', type: 'fill', source: 'cone', paint: { 'fill-color': '#7cc4ff', 'fill-opacity': .35, 'fill-outline-color': '#fff' } });
   map.addLayer({ id: 'access-ln', type: 'line', source: 'access', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': '#4da3ff', 'line-width': 2.5, 'line-dasharray': [2, 1.5] } });
+  map.addLayer({ id: 'offareas', type: 'line', source: 'offareas', paint: { 'line-color': '#3b9bff', 'line-width': 2, 'line-dasharray': [3, 2] } });
+  map.addLayer({ id: 'rings', type: 'line', source: 'rings', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': '#fff', 'line-width': 1.5, 'line-opacity': .85, 'line-dasharray': [2, 2] } });
+  map.addLayer({ id: 'rings-lbl', type: 'symbol', source: 'rings', filter: ['==', ['geometry-type'], 'Point'], layout: { 'text-field': ['get', 'l'], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-allow-overlap': true }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
+  map.addLayer({ id: 'ruler', type: 'line', source: 'ruler', paint: { 'line-color': '#ffcf7a', 'line-width': 2.5, 'line-dasharray': [1.5, 1.5] } });
+  map.addLayer({ id: 'guide', type: 'line', source: 'guide', paint: { 'line-color': '#ff7a1a', 'line-width': 4, 'line-opacity': .9, 'line-dasharray': [2, 1] } });
   map.addLayer({ id: 'tracks', type: 'line', source: 'tracks', paint: { 'line-color': ['case', ['==', ['get', 'live'], 1], '#ff3b6b', '#35e0c2'], 'line-width': 3 } });
   map.addLayer({ id: 'measure-ln', type: 'line', source: 'measure', paint: { 'line-color': '#fff', 'line-width': 2.5, 'line-dasharray': [2, 1] } });
   map.addLayer({ id: 'measure-pt', type: 'circle', source: 'measure', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 5, 'circle-color': '#ff8a1f', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
@@ -540,7 +646,7 @@ map.on('load', () => {
   map.addLayer({ id: 'mine-fill', type: 'fill', source: 'mine', paint: { 'fill-color': '#fff', 'fill-opacity': 0 } }, 'roads');
   map.addLayer({ id: 'mine-line', type: 'line', source: 'mine', minzoom: 11, paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .4, 17, 2], 'line-opacity': .9 } }, 'roads');
   map.addLayer({ id: 'mine-lbl', type: 'symbol', source: 'mine', minzoom: 14.5, layout: { 'text-field': ['coalesce', ['get', 'owner_name'], ''], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-width': 8 }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
-  loadMine(); addRegrid(); addBuiltTiles(); applyBase(); LAYERS.forEach(l => applyVis(l.id)); drawWps(); drawTracks(); refresh(); loadWind(); openShared(); syncSoon(800);
+  loadMine(); addRegrid(); addBuiltTiles(); applyBase(); LAYERS.forEach(l => applyVis(l.id)); drawWps(); drawTracks(); refresh(); loadWind(); openShared(); syncSoon(800); offZoomCap();
 });
 
 /* ---------------- private parcels from a Regrid key (covers counties with no open data) ---------------- */
@@ -558,7 +664,7 @@ function addRegrid() {
 async function addBuiltTiles() {
   if (!window.pmtiles || !/^https?:/.test(location.protocol)) return;
   try {
-    const url = new URL('parcels.pmtiles', location.href).href, pm = new pmtiles.PMTiles(url), hd = await pm.getHeader();
+    const url = new URL('parcels.pmtiles', location.href).href, pm = new pmtiles.PMTiles(url), hd = await pm.getHeader(); window.__pm = pm; window.__pmHd = hd;
     const proto = new pmtiles.Protocol(); proto.add(pm); maplibregl.addProtocol('pmtiles', proto.tile);
     map.addSource('pt', { type: 'vector', url: 'pmtiles://' + url, attribution: 'Parcels: MnGeo open data and counties' });
     const mz = Math.max(11, hd.minZoom || 12);
@@ -569,7 +675,7 @@ async function addBuiltTiles() {
   } catch (e) { S.built = false; console.info('no built-in parcel tiles', e && e.message); }
 }
 /* ---------------- county parcel files imported onto this device (IndexedDB) ---------------- */
-const idb = () => new Promise((res, rej) => { const r = indexedDB.open('huntmap', 3); r.onupgradeneeded = () => { const d = r.result; ['parcels', 'ptiles', 'photos'].forEach(n => d.objectStoreNames.contains(n) || d.createObjectStore(n)); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const idb = () => new Promise((res, rej) => { const r = indexedDB.open('huntmap', 4); r.onupgradeneeded = () => { const d = r.result; ['parcels', 'ptiles', 'photos', 'off'].forEach(n => d.objectStoreNames.contains(n) || d.createObjectStore(n)); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
 const idbDo = async (mode, fn, store = 'parcels') => { const db = await idb(); return new Promise((res, rej) => { const tx = db.transaction(store, mode), rq = fn(tx.objectStore(store)); tx.oncomplete = () => res(rq && rq.result); tx.onerror = () => rej(tx.error); }); };
 function drawMine() { const fs = []; S.mine.forEach(s => { for (const f of s.features) fs.push(f); }); if (map.getSource('mine')) map.getSource('mine').setData({ type: 'FeatureCollection', features: fs }); }
 const PACK = 'Built-in parcels';
@@ -720,7 +826,12 @@ async function loadLayer(id) {
       if (id === 'wma' && S.on.padus) { delete loaded.padus; loaded.wma = { box, tier }; loadLayer('padus'); }
     }
     loaded[id] = { box: id === 'parcels' ? viewBox(.1) : box, tier };
-  } catch (e) { if (e.name !== 'AbortError') { console.warn(id, e); setStatus(id, 'Failed to load: ' + (e.message || 'network')); } }
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    const off = id === 'wma' || id === 'padus' ? await offlineFeatures(id, viewBox(0)) : null;
+    if (off && off.length) { const fs = off.filter((f, i) => tagPublic(f, id, i)); S.data[id] = fs; map.getSource(id).setData({ type: 'FeatureCollection', features: fs }); setStatus(id, fs.length + ' from your offline download'); return; }
+    console.warn(id, e); setStatus(id, navigator.onLine === false ? 'No signal, and this area is not downloaded' : 'Failed to load: ' + (e.message || 'network'));
+  }
 }
 let rtimer; function refresh() { clearTimeout(rtimer); rtimer = setTimeout(() => LAYERS.forEach(l => l.min && loadLayer(l.id)), 350); }
 map.on('moveend', refresh);
@@ -768,7 +879,9 @@ async function findAccess(f) {
 
 /* ---------------- map click + popups ---------------- */
 let popup;
-function showPopup(ll, html) { if (popup) popup.remove(); popup = new maplibregl.Popup({ maxWidth: '300px', offset: 8 }).setLngLat(ll).setHTML('<div class="pp">' + html + '</div>').addTo(map); }
+function showPopup(ll, html) { if (popup) popup.remove(); clearRuler(); popup = new maplibregl.Popup({ maxWidth: '300px', offset: 8 }).setLngLat(ll).setHTML('<div class="pp">' + html + '</div>').addTo(map); if (popup.on) popup.on('close', clearRuler); }
+function drawRuler(ll) { const s = map.getSource('ruler'); if (s && S.me) s.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [S.me, ll] } }); }
+function clearRuler() { const s = map.getSource && map.getSource('ruler'); if (s) s.setData(empty()); }
 map.on('click', e => {
   const ll = [e.lngLat.lng, e.lngLat.lat];
   if (S.mode === 'measure') { S.measure.push(ll); drawMeasure(); return; }
@@ -777,7 +890,12 @@ map.on('click', e => {
   const lay = ['access-pt', 'wma-fill', 'padus-fill', 'pt-fill', 'parcels-fill', 'mine-fill', 'regrid-fill'].filter(l => map.getLayer(l));
   const fs = map.queryRenderedFeatures(e.point, { layers: lay }), by = id => fs.find(f => f.layer.id === id);
   const acc = by('access-pt'), pub = by('wma-fill') || by('padus-fill'), par = by('mine-fill') || by('pt-fill') || by('parcels-fill') || by('regrid-fill'), parts = [];
-  if (!acc && !pub && !par && !(S.on.parcels && map.getZoom() >= 13)) return;
+  const meOk = S.me && Date.now() - (S.meT || 0) < 3e5, dline = meOk ? (() => { const d = HM.hav(S.me, ll); return `<div class="dist"><b>${fmtDist(d)}</b> ${HM.compass(HM.bearing(S.me, ll))} of you</div>`; })() : '';
+  if (!acc && !pub && !par && !(S.on.parcels && map.getZoom() >= 13)) {
+    if (!meOk) return;
+    showPopup(ll, dline + `<div class="btns"><button class="btn s p" data-act="guide-ll" data-ll="${ll.join(',')}">Guide me here</button><button class="btn s" data-act="mark-here" data-ll="${ll.join(',')}">Mark this spot</button></div>`); drawRuler(ll); return;
+  }
+  if (dline) parts.push(dline);
   if (acc) { const p = acc.properties; parts.push(`<h4>${esc(p.name)}</h4><div class="k">${p.kind === 'frontage' ? 'A public road runs along the boundary here. Park fully off the road and do not block gates or field approaches.' : p.kind === 'gate' ? 'Gate: walk-in only unless posted otherwise.' : p.kind === 'trail' ? 'Two-track: confirm it is public before driving it.' : 'Mapped in OpenStreetMap'}</div><div class="btns"><a class="btn s" href="${dirLink(acc.geometry.coordinates)}" target="_blank" rel="noopener">Directions</a></div>`); }
   if (pub) { const p = pub.properties; parts.push(`<div class="k" style="color:${esc(p._c)}">PUBLIC &middot; ${esc(p._cat)}</div><h4>${esc(p._name)}</h4><div class="k">${[p._mgr, p._acres ? Math.round(p._acres).toLocaleString() + ' ac' : '', p._acc].filter(Boolean).map(esc).join(' &middot; ')}</div><div class="btns"><button class="btn s p" data-act="access" data-src="${p._src}" data-id="${p._id}">How to get in</button><a class="btn s" href="${dirLink(ll)}" target="_blank" rel="noopener">Directions</a></div>`); }
   else if (par) {
@@ -785,8 +903,8 @@ map.on('click', e => {
     const ac = rg ? (p.ll_gisacre || p.gisacre || (p.calcarea ? p.calcarea / 4046.8564 : 0)) : (p.acres_deed > 0 ? p.acres_deed : p.acres_poly), pin = rg ? (p.parcelnumb || p.lrid) : p.county_pin;
     parts.push(`<div class="k" style="color:#ffe45c">PRIVATE LAND &middot; permission required</div><h4>${esc(owner || 'Owner name not published')}</h4>${!rg && p.owner_more ? `<div>${esc(p.owner_more)}</div>` : ''}<div class="k">${[ac > 0 ? (+ac).toFixed(1) + ' ac' : '', addr, p.ctu_name, p.co_name ? p.co_name + ' Co.' : ''].filter(Boolean).map(esc).join(' &middot; ')}</div><div class="k">${[p.section ? 'Sec ' + p.section : '', p.township ? 'T' + p.township : '', p.range ? 'R' + p.range : '', pin ? 'PIN ' + pin : ''].filter(Boolean).map(esc).join(' ')}</div>`);
   } else if (!acc) parts.push(`<div class="k" style="color:#ffe45c">NOT PUBLIC LAND</div><h4>Treat as private</h4><div class="k">No public unit is mapped here. ${S.regrid ? 'No parcel record loaded at this spot yet.' : 'This county is not in the free state parcel data. Under Layers, add the county\'s parcel file or a subscription token to see owners.'}</div>`);
-  parts.push(`<div class="btns"><button class="btn s" data-act="mark-here" data-ll="${ll.join(',')}">Mark this spot</button><button class="btn s" data-act="cone-here" data-ll="${ll.join(',')}">Wind check</button></div>`);
-  showPopup(ll, parts.join('<hr>'));
+  parts.push(`<div class="btns">${meOk ? `<button class="btn s p" data-act="guide-ll" data-ll="${ll.join(',')}">Guide me here</button>` : ''}<button class="btn s" data-act="mark-here" data-ll="${ll.join(',')}">Mark this spot</button><button class="btn s" data-act="cone-here" data-ll="${ll.join(',')}">Wind check</button></div>`);
+  showPopup(ll, parts.join('<hr>').replace(/<hr>(<div class="dist">)/, '$1')); if (meOk) drawRuler(ll);
 });
 map.on('contextmenu', e => editWp({ id: 0, p: [e.lngLat.lng, e.lngLat.lat], type: 'stand', name: '', notes: '' }));
 
@@ -835,7 +953,7 @@ async function findGist() {
   const g = await gh('/gists', { method: 'POST', body: JSON.stringify({ public: false, description: 'Hunt Map waypoints and tracks (synced by the app)', files: { [GFILE]: { content: JSON.stringify({ v: 1, wps: [], tracks: [], del: {} }) } } }) });
   return g.id;
 }
-const strip = d => ({ wps: d.wps.map(w => Object.assign({}, w)), tracks: d.tracks.map(t => { const c = Object.assign({}, t); delete c.hide; return c; }), del: d.del });
+const strip = d => ({ wps: d.wps.map(w => Object.assign({}, w)), tracks: d.tracks.map(t => { const c = Object.assign({}, t); delete c.hide; return c; }), log: (d.log || []).map(s => Object.assign({}, s)), del: d.del });
 async function sync() {
   if (!S.gh.token) return; if (syncing) { syncAgain = true; return; } syncing = true; setSync('Syncing…');
   try {
@@ -845,15 +963,15 @@ async function sync() {
     const f = g.files[GFILE]; let remote = { wps: [], tracks: [], del: {} };
     if (f) { const txt = f.truncated ? await (await fetch(f.raw_url)).text() : f.content; try { remote = JSON.parse(txt || '{}'); } catch (e) { } }
     const hidden = new Set(S.tracks.filter(t => t.hide).map(t => String(t.id)));
-    const m = HM.mergeSync(strip(S), remote), sig = d => JSON.stringify([d.wps, d.tracks, d.del]);
+    const m = HM.mergeSync(strip(S), remote), sig = d => JSON.stringify([d.wps, d.tracks, d.log || [], d.del]);
     if (sig(m) !== sig(strip(S))) {
       const before = S.wps.length + S.tracks.length; S.applying = true;
-      S.wps = m.wps; S.tracks = m.tracks.map(t => (hidden.has(String(t.id)) ? Object.assign(t, { hide: true }) : t)); S.del = m.del;
+      S.wps = m.wps; S.log = m.log; store.set('log', S.log); S.tracks = m.tracks.map(t => (hidden.has(String(t.id)) ? Object.assign(t, { hide: true }) : t)); S.del = m.del;
       store.set('del', S.del); store.set('tracks', S.tracks); drawWps(); drawTracks(); S.applying = false;
-      const p = $('#sheet').dataset.p; if (p === 'saved' || p === 'track') openSheet(p);
+      const p = $('#sheet').dataset.p; if (p === 'saved' || p === 'track') openSheet(p); if (p === 'wind') openSheet('wind');
       const diff = S.wps.length + S.tracks.length - before; if (diff > 0) toast(`Synced: ${diff} new from your other devices`, 3000);
     }
-    if (sig(m) !== sig({ wps: remote.wps || [], tracks: remote.tracks || [], del: remote.del || {} })) await gh('/gists/' + S.gh.gist, { method: 'PATCH', body: JSON.stringify({ files: { [GFILE]: { content: JSON.stringify(Object.assign({ v: 1, t: Date.now() }, m)) } } }) });
+    if (sig(m) !== sig({ wps: remote.wps || [], tracks: remote.tracks || [], log: remote.log || [], del: remote.del || {} })) await gh('/gists/' + S.gh.gist, { method: 'PATCH', body: JSON.stringify({ files: { [GFILE]: { content: JSON.stringify(Object.assign({ v: 1, t: Date.now() }, m)) } } }) });
     S.gh.last = Date.now(); store.set('gh', S.gh); setSync('Synced ' + hm(new Date()) + ' · ' + S.wps.length + ' waypoints, ' + S.tracks.length + ' tracks');
   } catch (e) { console.warn('sync', e); setSync(navigator.onLine === false ? 'Offline. Will sync when you have signal.' : (e.message || 'Sync failed'), true); }
   finally { S.applying = false; syncing = false; if (syncAgain) { syncAgain = false; syncSoon(500); } }
@@ -864,10 +982,30 @@ setInterval(() => { if (!document.hidden) syncSoon(0); }, 120000);
 
 /* ---------------- waypoints ---------------- */
 let wpMarkers = [];
-function drawWps() {
-  wpMarkers.forEach(m => m.remove()); wpMarkers = [];
-  for (const w of S.wps) { const t = WPT[w.type] || WPT.other, el = document.createElement('div'); el.className = 'wp'; el.style.background = t[1]; el.innerHTML = `<i>${t[2]}</i>`; el.title = w.name; el.addEventListener('click', ev => { ev.stopPropagation(); if (!S.mode) editWp(w); }); wpMarkers.push(new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [0, 0] }).setLngLat(w.p).addTo(map)); }
-  stampAll(); store.set('wps', S.wps); syncSoon();
+function renderWps() {
+  wpMarkers.forEach(m => m.remove()); wpMarkers = []; const wd = windAt(S.windHour);
+  for (const w of S.wps) {
+    const t = WPT[w.type] || WPT.other, el = document.createElement('div'), fit = HM.windFits(w.winds, wd && wd.dir);
+    el.className = 'wp'; el.style.background = t[1]; el.innerHTML = `<i>${t[2]}</i>` + (fit == null ? '' : `<s class="bd ${fit ? 'ok' : 'no'}"></s>`); el.title = w.name;
+    el.addEventListener('click', ev => { ev.stopPropagation(); if (!S.mode) editWp(w); });
+    wpMarkers.push(new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [0, 0] }).setLngLat(w.p).addTo(map));
+  }
+  drawRings();
+}
+function drawWps() { renderWps(); stampAll(); store.set('wps', S.wps); syncSoon(); }
+const RINGS = { bow: [20, 30, 40], gun: [50, 100, 150, 200] };
+function drawRings() {
+  const src = map.getSource && map.getSource('rings'); if (!src) return; const fs = [];
+  for (const w of S.wps) for (const yd of RINGS[w.rings] || []) {
+    const m = yd / 1.09361, ring = []; for (let a = 0; a <= 360; a += 6) ring.push(HM.dest(w.p, a, m));
+    fs.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: ring } });
+    fs.push({ type: 'Feature', properties: { l: yd + ' yd' }, geometry: { type: 'Point', coordinates: HM.dest(w.p, 0, m) } });
+  }
+  src.setData({ type: 'FeatureCollection', features: fs });
+}
+function standsForHour(dir) {
+  const st = S.wps.filter(w => w.winds && w.winds.length); if (!st.length) return '<h3>Your stands</h3><div class="mut">Open a stand, tick the winds it hunts well on, and this shows which stands work for the hour you pick above.</div>';
+  return '<h3>Your stands at this hour</h3>' + st.map(w => { const ok = HM.windFits(w.winds, dir); return `<div class="row" data-act="wp-go" data-id="${w.id}" style="cursor:pointer"><span class="dot ${ok ? 'ok' : 'no'}"></span><div class="g">${esc(w.name || 'Stand')}<br><small>Good on ${w.winds.join(', ')}</small></div><b class="${ok ? 'okt' : 'not'}">${ok ? 'Good wind' : 'Bad wind'}</b></div>`; }).join('');
 }
 function editWp(w) { if (popup) popup.remove(); openSheet('wp', w); }
 
@@ -935,15 +1073,15 @@ function drawStrip(h) {
   x.fillRect(W / 2 - 1, H - 24, 2, 16);
   $('#cdeg').textContent = Math.round(h) + '°'; $('#cdir').textContent = HM.compass(h);
 }
-async function startSensor() {
+async function startSensor(quiet) {
   if (sensorOn) return true;
-  if (!window.DeviceOrientationEvent) { toast('No compass sensor on this device'); return false; }
+  if (!window.DeviceOrientationEvent) { if (!quiet) toast('No compass sensor on this device'); return false; }
   try {
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') { const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') { toast('Compass permission was not granted. Allow Motion & Orientation for this site in Safari settings.', 5000); return false; } }
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') { const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') { if (!quiet) toast('Compass permission was not granted. Allow Motion & Orientation for this site in Safari settings.', 5000); return false; } }
     window.addEventListener('deviceorientationabsolute', onOrient, true); window.addEventListener('deviceorientation', onOrient, true); sensorOn = true;
-    setTimeout(() => { if (S.heading == null) toast('No compass reading yet. This needs a phone with a magnetometer; try moving the phone in a figure 8.', 5000); }, 3000);
+    setTimeout(() => { if (S.heading == null && !quiet) toast('No compass reading yet. This needs a phone with a magnetometer; try moving the phone in a figure 8.', 5000); }, 3000);
     return true;
-  } catch (er) { toast('Compass unavailable: ' + er.message); return false; }
+  } catch (er) { if (!quiet) toast('Compass unavailable: ' + er.message); return false; }
 }
 $('#fCmp').onclick = async () => {
   if (cmpOn) { cmpOn = false; $('#fCmp').classList.remove('on'); $('#cstrip').style.display = 'none'; document.body.classList.remove('cmp'); return; }
@@ -975,14 +1113,34 @@ function recChip() { const c = $('#recChip'); if (!c) return; const on = S.rec &
 async function loadWind(force) {
   const c = map.getCenter(); if (!force && S.wind && HM.hav(S.wind.at, [c.lng, c.lat]) < 15000 && Date.now() - S.wind.t < 18e5) return;
   try {
-    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat.toFixed(3)}&longitude=${c.lng.toFixed(3)}&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation_probability&daily=sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=3`);
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat.toFixed(3)}&longitude=${c.lng.toFixed(3)}&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation_probability,pressure_msl&daily=sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&past_days=1&forecast_days=3`);
     const j = await r.json(); if (!j.hourly) throw new Error('no data');
     const now = j.current ? j.current.time : j.hourly.time[0]; let i0 = j.hourly.time.findIndex(t => t >= now.slice(0, 13)); if (i0 < 0) i0 = 0;
-    S.wind = { at: [c.lng, c.lat], t: Date.now(), cur: j.current, h: j.hourly, i0, daily: j.daily }; S.windHour = 0; windChip(); drawCone();
+    S.wind = { at: [c.lng, c.lat], t: Date.now(), cur: j.current, h: j.hourly, i0, daily: j.daily }; S.windHour = 0; store.set('wind', S.wind); windChip(); drawCone(); renderWps();
     if ($('#sheet').dataset.p === 'wind') openSheet('wind');
-  } catch (e) { $('#windTxt').textContent = 'wind n/a'; console.warn('wind', e); }
+  } catch (e) {
+    console.warn('wind', e); const old = store.get('wind', null);
+    if (old && old.h && !S.wind) { const nowKey = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 13); let i0 = old.h.time.findIndex(t => t >= nowKey); if (i0 < 0) i0 = old.h.time.length - 1; S.wind = Object.assign(old, { i0, stale: true }); S.windHour = 0; windChip(); renderWps(); }
+    else if (!S.wind) $('#windTxt').textContent = 'wind n/a';
+  }
 }
-const windAt = k => { const w = S.wind; if (!w) return null; const i = Math.min(w.h.time.length - 1, w.i0 + k); return { time: w.h.time[i], dir: w.h.wind_direction_10m[i], spd: w.h.wind_speed_10m[i], gust: w.h.wind_gusts_10m[i], temp: w.h.temperature_2m[i], pop: w.h.precipitation_probability ? w.h.precipitation_probability[i] : null }; };
+const windAt = k => { const w = S.wind; if (!w) return null; const i = Math.min(w.h.time.length - 1, w.i0 + k); return { time: w.h.time[i], dir: w.h.wind_direction_10m[i], spd: w.h.wind_speed_10m[i], gust: w.h.wind_gusts_10m[i], temp: w.h.temperature_2m[i], pop: w.h.precipitation_probability ? w.h.precipitation_probability[i] : null, pres: w.h.pressure_msl ? w.h.pressure_msl[i] : null, i }; };
+function presTrend(i) {
+  const P = S.wind && S.wind.h.pressure_msl; if (!P || P[i] == null) return null; const j = Math.max(0, i - 3), d = P[i] - P[j];
+  const word = d >= 2.5 ? 'rising fast' : d >= 1 ? 'rising' : d <= -2.5 ? 'falling fast' : d <= -1 ? 'falling' : 'steady';
+  return { inHg: P[i] * .02953, d3: d * .02953, word };
+}
+function presSpark(i) {
+  const P = S.wind && S.wind.h.pressure_msl; if (!P) return ''; const a = Math.max(0, i - 24), b = Math.min(P.length - 1, i + 24), v = P.slice(a, b + 1).filter(x => x != null); if (v.length < 3) return '';
+  const lo = Math.min(...v) - .5, hi = Math.max(...v) + .5, W = 300, H = 40, X = k => (k - a) / (b - a) * W, Y = p => H - (p - lo) / (hi - lo) * H;
+  const pts = []; for (let k = a; k <= b; k++) if (P[k] != null) pts.push(X(k).toFixed(1) + ',' + Y(P[k]).toFixed(1));
+  return `<svg viewBox="0 0 ${W} ${H + 2}" class="spark"><polyline points="${pts.join(' ')}" fill="none" stroke="#7cc4ff" stroke-width="2"/><circle cx="${X(i)}" cy="${Y(P[i])}" r="4" fill="#ff7a1a"/></svg>`;
+}
+function moonInfo(dayStr) {
+  const d0 = new Date(dayStr + 'T00:00').getTime(), at = S.wind ? S.wind.at : [map.getCenter().lng, map.getCenter().lat];
+  return Object.assign(HM.moonPhase(d0 + 432e5), HM.moonTimes(d0, at[1], at[0]));
+}
+const moonGlyph = p => ['\u{1F311}', '\u{1F312}', '\u{1F313}', '\u{1F314}', '\u{1F315}', '\u{1F316}', '\u{1F317}', '\u{1F318}'][Math.floor(p * 8 + .5) % 8];
 function sunToday() {
   const W = S.wind; if (!W || !W.daily) return null; const today = new Date(), key = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   let i = W.daily.time.indexOf(key(today)); if (i < 0) i = 0;
@@ -1136,20 +1294,109 @@ function bloodFinish() {
 function bloodToMap() { bloodStopCam(); bel('blood').classList.remove('open'); bel('bloodChip').style.display = 'flex'; if (S.me) map.flyTo({ center: S.me, zoom: Math.max(map.getZoom(), 17) }); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) { if (B.cam) bloodStopCam(); } else if (B.on && bel('blood').classList.contains('open')) bloodCam(); });
 
+/* ---------------- guide me: arrow + distance to a target ---------------- */
+const G = { t: null, iv: 0, arrived: false };
+function guideTo(p, name) {
+  G.t = { p: p.slice(), name: name || 'Marked spot' }; G.arrived = false; closeSheet(); if (popup) popup.remove();
+  startGps(); startSensor(true).catch(() => { });
+  $('#guide').classList.add('on'); document.body.classList.add('guiding'); $('#gName').textContent = G.t.name;
+  clearInterval(G.iv); G.iv = setInterval(guideTick, 300); guideTick();
+}
+function guideStop() { clearInterval(G.iv); G.t = null; $('#guide').classList.remove('on'); document.body.classList.remove('guiding'); const s = map.getSource('guide'); if (s) s.setData(empty()); }
+function guideTick() {
+  if (!G.t) return; const me = S.me, el = $('#gArrow');
+  if (!me) { $('#gDist').textContent = 'Waiting for GPS'; $('#gSrc').textContent = ''; el.style.opacity = .3; return; }
+  const d = HM.hav(me, G.t.p), brg = HM.bearing(me, G.t.p), s = map.getSource('guide'); if (s) s.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [me, G.t.p] } });
+  let hd, src;
+  if (S.heading != null && Date.now() - (S.headT || 0) < 4000) { hd = S.heading; src = 'by compass'; }
+  else if (S.travel != null && Date.now() - (S.meT || 0) < 15000) { hd = S.travel; src = 'by direction you are walking'; }
+  else { hd = map.getBearing(); src = 'relative to the map (no compass)'; }
+  el.style.opacity = 1; el.style.transform = `rotate(${brg - hd}deg)`;
+  const near = Math.max(12, (S.acc || 10) * .8);
+  if (d <= near) { $('#gDist').textContent = "You're there"; $('#gSrc').textContent = 'within ' + fmtDist(near) + ' (GPS ±' + Math.round((S.acc || 0) * 1.09) + ' yd)'; if (!G.arrived) { G.arrived = true; try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) { } } }
+  else { G.arrived = false; $('#gDist').textContent = fmtDist(d) + ' ' + HM.compass(brg); $('#gSrc').textContent = 'Arrow ' + src; }
+}
+
+/* ---------------- hunt log ---------------- */
+function saveLog() { const now = Date.now(); S.log.forEach(s => { if (!s.id) s.id = 'l' + now + Math.random().toString(36).slice(2, 6); if (!s.u) s.u = now; }); store.set('log', S.log); syncSoon(); }
+const localKey = t => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + 'T' + String(d.getHours()).padStart(2, '0'); };
+function wxFor(t) {
+  const W = S.wind; if (!W) return null; const i = W.h.time.findIndex(x => x.slice(0, 13) === localKey(t)); if (i < 0) return null;
+  const pt = presTrend(i), mo = HM.moonPhase(t);
+  return { dir: W.h.wind_direction_10m[i], spd: W.h.wind_speed_10m[i], temp: W.h.temperature_2m[i], pres: pt ? +pt.inHg.toFixed(2) : null, trend: pt ? pt.word : null, moon: mo.illum, moonName: mo.name };
+}
+const wxLine = x => x ? `${HM.compass(x.dir)} ${Math.round(x.spd)} mph · ${Math.round(x.temp)}°F${x.pres ? ' · ' + x.pres.toFixed(2) + ' ' + (x.trend || '') : ''} · moon ${x.moon}%` : 'Weather not recorded';
+const seenTot = s => (s.seen.does || 0) + (s.seen.bucks || 0) + (s.seen.fawns || 0) + (s.seen.unk || 0);
+const tIn = t => { const d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+const dIn = t => localKey(t).slice(0, 10);
+function newSit(standId) {
+  const end = Math.round(Date.now() / 3e5) * 3e5, sn = sunToday(); let start = end - 3 * 36e5;
+  if (new Date().getHours() < 12 && sn && !sn.tomorrow && +sn.sr - 18e5 < end) start = +sn.sr - 18e5;
+  return { id: 0, stand: standId || '', start, end, seen: { does: 0, bucks: 0, fawns: 0, unk: 0 }, shot: false, notes: '' };
+}
+
+/* ---------------- offline areas ---------------- */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(e => console.warn('sw', e));
+const OFF = {
+  sat: { label: 'Satellite', sub: 'USGS imagery, used for Sat when offline', tpl: SRC.usgsImg, max: 16, kb: 16 },
+  spring: { label: 'Leaf-off', sub: 'MnGeo spring flights', wms: SRC.spring, max: 17, kb: 14 },
+  topo: { label: 'Topo', sub: 'USGS topo map', tpl: SRC.topo, max: 16, kb: 10 },
+  lidar: { label: 'Lidar hillshade', sub: '', wms: SRC.lidar, max: 17, kb: 4 }
+};
+const offState = { run: false, cancel: false, pick: store.get('offPick', { sat: true, spring: true, topo: false, lidar: true, land: true }), detail: store.get('offDetail', 16) };
+function offPlan(b, pick, detail) {
+  const jobs = []; for (const k in OFF) { if (!pick[k]) continue; const o = OFF[k]; for (let z = 10; z <= Math.min(detail, o.max); z++) for (const [zz, x, y] of HM.tilesIn(b, z)) jobs.push({ k, url: o.wms ? HM.wmsUrl(o.wms, zz, x, y) : o.tpl.replace('{z}', zz).replace('{x}', x).replace('{y}', y) }); }
+  const pt = []; if (pick.land && window.__pmHd) for (let z = Math.max(window.__pmHd.minZoom || 12, 10); z <= (window.__pmHd.maxZoom || 14); z++) for (const t of HM.tilesIn(b, z)) pt.push(t);
+  return { jobs, pt, mb: jobs.reduce((s, j) => s + OFF[j.k].kb, 0) / 1024 + pt.length * .03 };
+}
+async function offlineFeatures(id, b) {
+  try { const all = await idbDo('readonly', s => s.getAll(), 'off'); const out = []; for (const r of all || []) { const a = r.b; if (a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1]) (r[id] || []).forEach(f => out.push(JSON.parse(JSON.stringify(f)))); } return out; } catch (e) { return null; }
+}
+function drawOffAreas(show) { const s = map.getSource('offareas'); if (!s) return; s.setData({ type: 'FeatureCollection', features: show ? S.offAreas.map(a => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[a.b[0], a.b[1]], [a.b[2], a.b[1]], [a.b[2], a.b[3]], [a.b[0], a.b[3]], [a.b[0], a.b[1]]] } })) : [] }); }
+async function offDownload() {
+  if (offState.run) return; const v = map.getBounds(), b = [v.getWest(), v.getSouth(), v.getEast(), v.getNorth()], plan = offPlan(b, offState.pick, offState.detail);
+  if (plan.jobs.length > 15000) { toast('That area is too big. Zoom in, or choose Standard detail.', 5000); return; }
+  if (!('caches' in window)) { toast('This browser cannot save maps for offline use'); return; }
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
+  const name = ($('#offName') && $('#offName').value.trim()) || 'Area ' + (S.offAreas.length + 1), id = 'a' + Date.now(), cache = await caches.open('hm-tiles');
+  offState.run = true; offState.cancel = false; let done = 0, bytes = 0, fail = 0; const keys = [], total = plan.jobs.length + plan.pt.length + 3;
+  const prog = () => { const el = $('#offProg'); if (el) { el.style.display = 'block'; el.querySelector('i').style.width = (done / total * 100).toFixed(1) + '%'; el.querySelector('span').textContent = `Saving ${done.toLocaleString()} of ${total.toLocaleString()} · ${(bytes / 1048576).toFixed(1)} MB${fail ? ' · ' + fail + ' missing' : ''}`; } };
+  let i = 0; const work = async () => { while (i < plan.jobs.length && !offState.cancel) { const j = plan.jobs[i++];
+    try { const k = HM.tileKey(j.url), have = await cache.match(k); if (have) { keys.push(k); } else { const r = await fetch(j.url, { mode: 'cors' }); if (r.ok && !r.headers.get('X-HM-Empty') && /image/.test(r.headers.get('Content-Type') || '')) { const bl = await r.blob(); bytes += bl.size; await cache.put(k, new Response(bl, { headers: { 'Content-Type': r.headers.get('Content-Type'), 'Access-Control-Allow-Origin': '*' } })); keys.push(k); } else fail++; } } catch (e) { fail++; }
+    done++; if (done % 8 === 0) prog(); } };
+  prog(); await Promise.all([work(), work(), work(), work(), work(), work()]);
+  if (!offState.cancel && window.__pm) for (const [z, x, y] of plan.pt) { if (offState.cancel) break; try { await window.__pm.getZxy(z, x, y); } catch (e) { } done++; if (done % 8 === 0) prog(); }
+  const rec = { id, b, wma: [], padus: [], keys };
+  if (!offState.cancel && offState.pick.land) { for (const L of ['wma', 'padus']) { try { rec[L] = (await arcQuery(SRC[L], b, { max: 2000 })).features || []; } catch (e) { fail++; } done++; } }
+  for (const g of ['0-255', '256-511']) fetch('https://fonts.openmaptiles.org/Open%20Sans%20Bold/' + g + '.pbf').catch(() => { });
+  done = total; prog(); offState.run = false;
+  if (offState.cancel) { toast('Download stopped. What finished is kept.', 3500); }
+  try { await idbDo('readwrite', s => s.put(rec, id), 'off'); } catch (e) { }
+  S.offAreas.push({ id, name, b, t: Date.now(), detail: offState.detail, n: keys.length, mb: +(bytes / 1048576).toFixed(1), layers: Object.keys(offState.pick).filter(k => offState.pick[k]) }); store.set('offAreas', S.offAreas);
+  toast(`Saved "${name}" for offline use${fail ? ' (' + fail + ' tiles not available from the source)' : ''}`, 5000); openSheet('offline');
+}
+async function offDelete(id) {
+  const rest = new Set(); try { const all = await idbDo('readonly', s => s.getAll(), 'off'); for (const r of all) if (r.id !== id) (r.keys || []).forEach(k => rest.add(k)); const me = all.find(r => r.id === id); if (me) { const c = await caches.open('hm-tiles'); for (const k of me.keys || []) if (!rest.has(k)) await c.delete(k); } await idbDo('readwrite', s => s.delete(id), 'off'); } catch (e) { console.warn(e); }
+  S.offAreas = S.offAreas.filter(a => a.id !== id); store.set('offAreas', S.offAreas); openSheet('offline');
+}
+function offZoomCap() { const mx = S.offAreas.reduce((m, a) => Math.max(m, a.detail || 16), 0); try { map.setMaxZoom(navigator.onLine === false && mx ? mx + .9 : 22); } catch (e) { } }
+window.addEventListener('offline', () => { offZoomCap(); toast('No signal. Using your saved maps.', 3000); });
+window.addEventListener('online', offZoomCap);
+
 /* ---------------- panels ---------------- */
-function closeSheet() { const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
+function closeSheet() { drawOffAreas(false); const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
 function openSheet(p, arg) {
   const s = $('#sheet'); s.dataset.p = p; s.classList.add('open'); document.querySelectorAll('#bar button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
   const head = t => `<h2>${t}<button class="x" data-act="close">&times;</button></h2>`; let h = '';
   if (p === 'layers') {
-    h = head('Map layers') + `<div class="seg"><button data-act="base" data-b="sat" class="${S.base === 'sat' ? 'on' : ''}">Satellite</button><button data-act="base" data-b="spring" class="${S.base === 'spring' ? 'on' : ''}">Leaf-off</button><button data-act="base" data-b="topo" class="${S.base === 'topo' ? 'on' : ''}">Topo</button></div><div class="mut" style="margin-bottom:4px">Leaf-off is Minnesota's spring aerial photography: no leaves, so trails, edges and beds show through the timber.</div>` +
+    h = head('Map layers') + `<button class="btn p" data-act="offline-open" style="width:100%;margin-bottom:10px">Offline maps${S.offAreas.length ? ' (' + S.offAreas.length + ' saved)' : ''}</button>` + `<div class="seg"><button data-act="base" data-b="sat" class="${S.base === 'sat' ? 'on' : ''}">Satellite</button><button data-act="base" data-b="spring" class="${S.base === 'spring' ? 'on' : ''}">Leaf-off</button><button data-act="base" data-b="topo" class="${S.base === 'topo' ? 'on' : ''}">Topo</button></div><div class="mut" style="margin-bottom:4px">Leaf-off is Minnesota's spring aerial photography: no leaves, so trails, edges and beds show through the timber.</div>` +
       LAYERS.map(l => `<label class="row"><span class="sw" style="background:${l.sw}"></span><span class="g">${l.name}<br><small>${l.sub}</small><br><small data-st="${l.id}" style="color:var(--acc)">${esc(S.status[l.id] || '')}</small></span><input type="checkbox" data-layer="${l.id}" ${S.on[l.id] ? 'checked' : ''}></label>`).join('') +
       `<h3>Private land owners</h3><div class="note">Yellow lines are private parcels. 60 Minnesota counties, McLeod included, come free from the state. Each area is fetched once, then kept on this device so it opens instantly, even with no signal.</div><div class="btns"><button class="btn p" data-act="save-area">Save parcels for this view</button></div><div class="mut">Zoom to a hunting area or a whole county and tap this before you leave home.</div><h3>Option 1: add a county's own parcel file (free)</h3><div class="mut">Download the county's parcel shapefile (.zip) and add it here. It stays on this device only.</div>${S.mine.map(m => `<div class="row"><div class="g">${esc(m.name)}<br><small>${m.features.length.toLocaleString()} parcels on this device</small></div><button class="btn s" data-act="mine-del" data-n="${esc(m.name)}">Remove</button></div>`).join('')}<div class="btns"><button class="btn p" data-act="mine-add">Add parcel file</button><button class="btn" data-act="mine-export">Export parcels.json</button></div><div class="mut">To build added counties into the app for your family, export parcels.json and upload it to GitHub next to index.html. Every phone that opens the app then gets them automatically.</div><input type="file" id="mineFile" accept=".zip,.geojson,.json" style="display:none"><h3>Option 2: statewide parcel subscription</h3><label class="fld"><span>Provider</span><select id="rgProv"><option value="regrid" ${S.prov === 'regrid' ? 'selected' : ''}>Regrid</option><option value="landrecords" ${S.prov === 'landrecords' ? 'selected' : ''}>Land Records (landrecords.us)</option></select></label><label class="fld"><span>API token</span><input id="rgKey" value="${esc(S.regrid)}" placeholder="paste token" autocapitalize="off" autocomplete="off"></label><div class="btns"><button class="btn" data-act="regrid-save">Save token</button></div><h3>Public land colors</h3><div class="row"><span class="sw" style="background:#ff9f1c"></span><span class="g">State WMA</span></div><div class="row"><span class="sw" style="background:#ff4fa3"></span><span class="g">Federal: WPA, refuge</span></div><div class="row"><span class="sw" style="background:#3fa9ff"></span><span class="g">Other state land</span></div><div class="row"><span class="sw" style="background:#b388ff"></span><span class="g">County or local</span></div><div class="row"><span class="sw" style="background:#b8c0c0"></span><span class="g">Conservation land, access not confirmed</span></div><div class="note">Tap any shaded unit or parcel for details. "How to get in" finds parking and where public roads touch the boundary.</div>`;
   } else if (p === 'mark') h = head('Drop a waypoint') + `<div class="btns" style="flex-direction:column"><button class="btn p" data-act="mark-me">At my current location</button><button class="btn" data-act="mark-tap">Tap a spot on the map</button><button class="btn" data-act="mark-center">At the center of the screen</button></div><div class="mut">You can also tap anywhere on the map and choose "Mark this spot".</div>`;
   else if (p === 'measure') { setMode('measure'); return; }
   else if (p === 'wp') {
     const w = arg; s._wp = w;
-    h = head(w.id ? 'Edit waypoint' : 'New waypoint') + (w.photo ? `<img class="wpimg" id="wpImg" alt="Photo at this mark">` : '') + `<label class="fld"><span>Name</span><input id="wpName" value="${esc(w.name)}" placeholder="North ridge stand"></label><label class="fld"><span>Type</span><select id="wpType">${Object.entries(WPT).map(([k, v]) => `<option value="${k}" ${k === w.type ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label><label class="fld"><span>Notes</span><textarea id="wpNotes" rows="2" placeholder="Best on a NW wind, enter from the east">${esc(w.notes)}</textarea></label><div class="mut">${w.p[1].toFixed(5)}, ${w.p[0].toFixed(5)}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) + ' from you' : ''}</div><div class="btns"><button class="btn p" data-act="wp-save">Save</button><button class="btn" data-act="wp-share">Share</button><button class="btn" data-act="cone-here" data-ll="${w.p.join(',')}">Wind check</button><a class="btn" href="${dirLink(w.p)}" target="_blank" rel="noopener">Directions</a>${w.id ? '<button class="btn" data-act="wp-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
+    h = head(w.id ? 'Edit waypoint' : 'New waypoint') + (w.photo ? `<img class="wpimg" id="wpImg" alt="Photo at this mark">` : '') + `<label class="fld"><span>Name</span><input id="wpName" value="${esc(w.name)}" placeholder="North ridge stand"></label><label class="fld"><span>Type</span><select id="wpType">${Object.entries(WPT).map(([k, v]) => `<option value="${k}" ${k === w.type ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label><label class="fld"><span>Notes</span><textarea id="wpNotes" rows="2" placeholder="Best on a NW wind, enter from the east">${esc(w.notes)}</textarea></label><div id="wpExtra" style="${['stand', 'blind'].includes(w.type) ? '' : 'display:none'}"><div class="fld"><span>Good winds for this stand</span><div class="wchips">${HM.DIR8.map(d => `<button class="wchip ${(w.winds || []).includes(d) ? 'on' : ''}" data-act="wp-wind" data-d="${d}">${d}</button>`).join('')}</div></div><label class="fld"><span>Range rings</span><select id="wpRings"><option value="">Off</option><option value="bow" ${w.rings === 'bow' ? 'selected' : ''}>Bow: 20, 30, 40 yd</option><option value="gun" ${w.rings === 'gun' ? 'selected' : ''}>Gun: 50 to 200 yd</option></select></label>${(() => { const ss = HM.sitStats(S.log.filter(s => s.stand == w.id)); return ss ? `<div class="note">${ss.sits} sit${ss.sits > 1 ? 's' : ''} · ${ss.perSit.toFixed(1)} deer per sit · ${ss.bucks} buck${ss.bucks === 1 ? '' : 's'}${ss.best ? ' · best on ' + ss.best.dir : ''}</div>` : ''; })()}</div><div class="mut">${w.p[1].toFixed(5)}, ${w.p[0].toFixed(5)}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) + ' ' + HM.compass(HM.bearing(S.me, w.p)) + ' of you' : ''}</div><div class="btns"><button class="btn p" data-act="wp-save">Save</button>${w.id ? '<button class="btn" data-act="guide-wp">Guide me</button>' : ''}${w.id && ['stand', 'blind'].includes(w.type) ? '<button class="btn" data-act="log-new" data-stand="' + w.id + '">Log a sit</button>' : ''}<button class="btn" data-act="wp-share">Share</button><button class="btn" data-act="cone-here" data-ll="${w.p.join(',')}">Wind check</button><a class="btn" href="${dirLink(w.p)}" target="_blank" rel="noopener">Directions</a>${w.id ? '<button class="btn" data-act="wp-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
   } else if (p === 'track') {
     h = head('Track') + (S.rec && S.rec.blood ? `<div class="note"><b style="color:#ff6b7d">Blood trail in progress</b> · ${recText()}</div><div class="btns"><button class="btn p" data-act="blood-open">Back to camera</button><button class="btn" data-act="blood-finish">Finish and save</button></div>` : `<button class="btn p" data-act="blood-open" style="width:100%;background:#c1001f;color:#fff">Start a blood trail</button><div class="mut" style="margin:6px 0 14px">Camera view that makes blood stand out, records your path as you follow it, and drops marks at each blood find, the hit site and the recovery.</div><h3>Walk in and out</h3>`) + (S.rec && !S.rec.blood ? `<div class="note" id="recInfo">${recText()}</div><div class="btns"><button class="btn p" data-act="rec-stop">Stop and save</button><button class="btn" data-act="rec-cancel">Discard</button></div>` : (S.rec && S.rec.blood ? '' : `<div class="note">Records your path in and out so you can retrace it in the dark. Keep this page open while recording; phones pause location when the screen locks.</div><div class="btns"><button class="btn p" data-act="rec-start">Start recording</button></div>`)) +
       `<h3>Saved tracks</h3>` + (S.tracks.length ? S.tracks.map((t, i) => `<div class="row"><div class="g" data-act="trk-go" data-i="${i}" style="cursor:pointer">${esc(t.name)}<br><small>${fmtDist(HM.lineLen(t.pts))}</small></div><input type="checkbox" data-trk="${i}" ${t.hide ? '' : 'checked'}><button class="btn s" data-act="trk-del" data-i="${i}">&times;</button></div>`).join('') : '<div class="mut">None yet.</div>');
@@ -1161,17 +1408,48 @@ function openSheet(p, arg) {
       const di = W.daily ? Math.max(0, W.daily.time.indexOf(w.time.slice(0, 10))) : -1, sr = di >= 0 && new Date(W.daily.sunrise[di]), ss = di >= 0 && new Date(W.daily.sunset[di]);
       h = head('Wind and light') + `<div style="font-size:19px;font-weight:600">From ${HM.compass(w.dir)} (${Math.round(w.dir)}&deg;) at ${Math.round(w.spd)} mph</div><div class="mut">Gusts ${Math.round(w.gust)} mph &middot; ${Math.round(w.temp)}&deg;F${w.pop != null ? ' &middot; ' + w.pop + '% precip' : ''} &middot; ${S.windHour ? '+' + S.windHour + ' h' : 'now'}. Your scent blows toward the ${HM.compass(w.dir + 180)}.</div><div class="hr">${strip.join('')}</div>` +
         (sr ? `<div class="sun"><div><small>Sunrise</small><b>${hm(new Date(sr))}</b></div><div><small>Sunset</small><b>${hm(new Date(ss))}</b></div><div><small>Shooting light</small><b>${hm(new Date(sr - 18e5))} – ${hm(new Date(+ss + 18e5))}</b></div></div><div class="mut" style="margin:-2px 0 8px">For ${new Date(sr).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}. Half hour before sunrise to half hour after sunset; confirm in the current MN regulations.</div>` : '') +
+        (() => { const pt = presTrend(w.i), mo = moonInfo(w.time.slice(0, 10)), t = x => x ? hm(new Date(x)) : '—';
+          return (pt ? `<div class="wx2"><div><small>Pressure</small><b>${pt.inHg.toFixed(2)} inHg</b><span class="${pt.word.startsWith('fall') ? 'dn' : pt.word.startsWith('ris') ? 'up' : ''}">${Math.abs(pt.d3) < .005 ? pt.word + ', no change in 3 h' : pt.word + ' ' + (pt.d3 > 0 ? '+' : '\u2212') + Math.abs(pt.d3).toFixed(2) + ' in 3 h'}</span></div>${presSpark(w.i)}</div>` : '') +
+            `<div class="moon"><span class="mg">${moonGlyph(mo.p)}</span><div><b>${mo.name}, ${mo.illum}% lit</b><small>Rise ${t(mo.rise)} · set ${t(mo.set)} · overhead ${t(mo.over)} · underfoot ${t(mo.under)}</small></div></div>` +
+            (S.wind.stale ? `<div class="mut" style="color:#ffcf7a">No signal: showing the forecast saved ${hm(new Date(S.wind.t))}.</div>` : ''); })() +
+        standsForHour(w.dir) +
         `<div class="btns"><button class="btn p" data-act="cone-place">${S.cone ? 'Move scent cone' : 'Place scent cone'}</button>${S.cone ? '<button class="btn" data-act="cone-clear">Remove cone</button>' : ''}</div><div class="mut">The blue cone shows where your scent drifts from a sit for the selected hour. Tap an hour above to check a morning or evening sit.</div>`;
     }
   } else if (p === 'hot') {
     const hs = S.hot;
     h = head('Hot spots') + `<label class="fld"><span>Animal</span><select id="hotSp">${Object.entries(HM.MODES).map(([k, v]) => `<option value="${k}" ${k === hs.species ? 'selected' : ''}>${v.label}</option>`).join('')}</select></label><label class="fld"><span>Time of season</span><select id="hotPh">${Object.entries(HM.MODES[hs.species].phases).map(([k, v]) => `<option value="${k}" ${k === hs.phase ? 'selected' : ''}>${v}</option>`).join('')}</select></label><label class="row"><span class="g">Public land only</span><input type="checkbox" id="hotPub" ${hs.publicOnly ? 'checked' : ''}></label><div class="btns"><button class="btn p" data-act="hot-run">Analyze this view</button></div><div id="hotOut"></div><div class="note">This scores the visible area from land cover (timber, cattails, crops, water), terrain, distance from roads and today's wind. It is a scouting shortlist built on rules of thumb, not tracked animal data. Confirm with boots on the ground.</div>`;
   } else if (p === 'saved') {
-    h = head('Saved') + (S.wps.length ? S.wps.map(w => `<div class="row" data-act="wp-go" data-id="${w.id}" style="cursor:pointer"><span class="sw" style="background:${(WPT[w.type] || WPT.other)[1]};border-radius:50%"></span><div class="g">${esc(w.name || (WPT[w.type] || WPT.other)[0])}<br><small>${esc((WPT[w.type] || WPT.other)[0])}${w.notes ? ' · ' + esc(w.notes) : ''}</small></div></div>`).join('') : '<div class="mut">No waypoints yet. Tap Mark, or tap the map and choose "Mark this spot".</div>') +
-      `<h3>Sync between devices</h3>` + (S.gh.token ? `<div class="note" id="syncSt" style="${S.syncBad ? 'color:var(--bad)' : ''}">${esc(S.syncMsg || (S.gh.last ? 'Last synced ' + hm(new Date(S.gh.last)) : 'Not synced yet'))}</div><div class="btns"><button class="btn p" data-act="sync-now">Sync now</button><button class="btn" data-act="sync-off">Turn off on this device</button></div><div class="mut">Waypoints and tracks sync through a private Gist on your GitHub account. Blood-trail photos stay on the phone that took them.</div>` : `<div class="mut">Keep waypoints and tracks the same on your phone, computer and family phones. One-time setup:</div><ol class="mut" style="padding-left:20px;margin:6px 0"><li>Tap the button below and sign in to GitHub.</li><li>Leave only the <b>gist</b> box ticked, set Expiration to <b>No expiration</b>, and tap <b>Generate token</b>.</li><li>Copy the token, paste it here, and tap Connect. Do the same on each device.</li></ol><div class="btns"><a class="btn" href="https://github.com/settings/tokens/new?scopes=gist&description=Hunt%20Map%20sync" target="_blank" rel="noopener">Make a token on GitHub</a></div><label class="fld"><span>GitHub token</span><input id="ghTok" placeholder="ghp_…" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></label><div class="btns"><button class="btn p" data-act="sync-on">Connect</button></div>`) +
+    const sits = S.log.slice().sort((x, y) => y.start - x.start), byStand = {}; sits.forEach(s => (byStand[s.stand || '_'] = byStand[s.stand || '_'] || []).push(s));
+    h = head('Saved') + `<h3 style="margin-top:4px">Hunt log</h3><div class="btns"><button class="btn p" data-act="log-new">Log a sit</button></div>` +
+      (sits.length ? `<div class="mut" style="margin-bottom:4px">${sits.length} sit${sits.length > 1 ? 's' : ''} · ${sits.reduce((t, s) => t + seenTot(s), 0)} deer seen</div>` +
+        Object.entries(byStand).filter(([k]) => k !== '_').map(([k, ss]) => { const w = S.wps.find(x => x.id == k), st = HM.sitStats(ss); return `<div class="row"><div class="g"><b>${esc(w ? w.name || 'Stand' : 'Deleted stand')}</b><br><small>${st.sits} sit${st.sits > 1 ? 's' : ''} · ${st.perSit.toFixed(1)} deer/sit · ${st.bucks} buck${st.bucks === 1 ? '' : 's'}${st.best ? ' · best on ' + st.best.dir + ' (' + st.best.rate.toFixed(1) + '/sit)' : ''}</small></div></div>`; }).join('') +
+        `<details class="logs"><summary>All sits</summary>${sits.map(s => { const w = S.wps.find(x => x.id == s.stand); return `<div class="row" data-act="log-edit" data-id="${s.id}" style="cursor:pointer"><div class="g">${new Date(s.start).toLocaleDateString([], { month: 'short', day: 'numeric' })} ${hm(new Date(s.start))}–${hm(new Date(s.end))} · ${esc(w ? w.name || 'Stand' : 'Other spot')}<br><small>${seenTot(s)} deer${s.seen.bucks ? ' (' + s.seen.bucks + ' buck' + (s.seen.bucks > 1 ? 's' : '') + ')' : ''}${s.shot ? ' · harvest' : ''} · ${esc(wxLine(s.wx))}</small></div></div>`; }).join('')}</details>` : '<div class="mut">Log each sit to see which stands, winds and moon phases produce.</div>') +
+      `<h3>Waypoints</h3>` + (S.wps.length ? S.wps.map(w => `<div class="row"><span class="sw" style="background:${(WPT[w.type] || WPT.other)[1]};border-radius:50%"></span><div class="g" data-act="wp-go" data-id="${w.id}" style="cursor:pointer">${esc(w.name || (WPT[w.type] || WPT.other)[0])}<br><small>${esc((WPT[w.type] || WPT.other)[0])}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) : ''}${w.notes ? ' · ' + esc(w.notes) : ''}</small></div><button class="btn s" data-act="guide-id" data-id="${w.id}" aria-label="Guide me">Guide</button></div>`).join('') : '<div class="mut">No waypoints yet. Tap Mark, or tap the map and choose "Mark this spot".</div>') +
+      `<h3>Sync between devices</h3>` + (S.gh.token ? `<div class="note" id="syncSt" style="${S.syncBad ? 'color:var(--bad)' : ''}">${esc(S.syncMsg || (S.gh.last ? 'Last synced ' + hm(new Date(S.gh.last)) : 'Not synced yet'))}</div><div class="btns"><button class="btn p" data-act="sync-now">Sync now</button><button class="btn" data-act="sync-off">Turn off on this device</button></div><div class="mut">Waypoints, tracks and your hunt log sync through a private Gist on your GitHub account. Blood-trail photos stay on the phone that took them.</div>` : `<div class="mut">Keep waypoints and tracks the same on your phone, computer and family phones. One-time setup:</div><ol class="mut" style="padding-left:20px;margin:6px 0"><li>Tap the button below and sign in to GitHub.</li><li>Leave only the <b>gist</b> box ticked, set Expiration to <b>No expiration</b>, and tap <b>Generate token</b>.</li><li>Copy the token, paste it here, and tap Connect. Do the same on each device.</li></ol><div class="btns"><a class="btn" href="https://github.com/settings/tokens/new?scopes=gist&description=Hunt%20Map%20sync" target="_blank" rel="noopener">Make a token on GitHub</a></div><label class="fld"><span>GitHub token</span><input id="ghTok" placeholder="ghp_…" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></label><div class="btns"><button class="btn p" data-act="sync-on">Connect</button></div>`) +
       `<h3>Backup</h3><div class="btns"><button class="btn" data-act="export">Export GPX</button><button class="btn" data-act="import">Import GPX / GeoJSON</button></div><input type="file" id="impFile" accept=".gpx,.geojson,.json" style="display:none"><div class="mut">Waypoints and tracks are stored in this browser on this device only. Export a GPX to back them up or move them to another device.</div>`;
   } else if (p === 'access') {
     h = head('Getting into ' + esc(arg.unit)) + arg.list.map(a => `<div class="row"><span class="sw" style="border-radius:50%;background:${a.kind === 'parking' ? '#2f6fde' : a.kind === 'frontage' ? '#57d38c' : '#4da3ff'}"></span><div class="g" data-act="go" data-ll="${a.p.join(',')}" style="cursor:pointer">${esc(a.name)}</div><a class="btn s" href="${dirLink(a.p)}" target="_blank" rel="noopener">Directions</a></div>`).join('') + '<div class="note">Blue is mapped parking. Green is a spot where a public road touches the boundary, where you can usually park on the shoulder and walk in. Parking lots missing from OpenStreetMap will not show, so also look for DNR signs and lots on the satellite view.</div>';
+  } else if (p === 'log') {
+    const s = arg, stands = S.wps.filter(w => ['stand', 'blind'].includes(w.type)); s._edit = s; $('#sheet')._sit = s;
+    const ctr = (k, l) => `<div class="ctr"><span>${l}</span><button class="btn s" data-act="log-dec" data-k="${k}">−</button><b id="c_${k}">${s.seen[k] || 0}</b><button class="btn s" data-act="log-inc" data-k="${k}">+</button></div>`;
+    h = head(s.id ? 'Edit sit' : 'Log a sit') + `<label class="fld"><span>Where</span><select id="lgStand"><option value="">Somewhere else</option>${stands.map(w => `<option value="${w.id}" ${w.id == s.stand ? 'selected' : ''}>${esc(w.name || 'Stand')}</option>`).join('')}</select></label>` +
+      `<label class="fld"><span>Date</span><input type="date" id="lgDate" value="${dIn(s.start)}"></label><div class="trio"><label class="fld"><span>From</span><input type="time" id="lgFrom" value="${tIn(s.start)}"></label><label class="fld"><span>To</span><input type="time" id="lgTo" value="${tIn(s.end)}"></label></div>` +
+      `<h3>Deer seen</h3>${ctr('does', 'Does')}${ctr('bucks', 'Bucks')}${ctr('fawns', 'Fawns')}${ctr('unk', 'Unknown')}` +
+      `<label class="row"><span class="g">Harvested a deer</span><input type="checkbox" id="lgShot" ${s.shot ? 'checked' : ''}></label><label class="fld"><span>Notes</span><textarea id="lgNotes" rows="2" placeholder="Buck chasing at 7:40 from the north slough">${esc(s.notes)}</textarea></label>` +
+      `<div class="mut" id="lgWx">${s.wx ? 'Weather: ' + esc(wxLine(s.wx)) : 'Wind, temperature, pressure and moon fill in automatically when you save.'}</div>` +
+      `<div class="btns"><button class="btn p" data-act="log-save">Save sit</button>${s.id ? '<button class="btn" data-act="log-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
+  } else if (p === 'offline') {
+    const v = map.getBounds(), b = [v.getWest(), v.getSouth(), v.getEast(), v.getNorth()], pl = offPlan(b, offState.pick, offState.detail);
+    drawOffAreas(true);
+    h = head('Offline maps') + `<div class="mut">Saves the maps for the area on screen so they work with no signal. Zoom to the property first; the blue boxes are areas you already saved.</div>` +
+      Object.entries(OFF).map(([k, o]) => `<label class="row"><span class="g">${o.label}<br><small>${o.sub || ''}</small></span><input type="checkbox" data-off="${k}" ${offState.pick[k] ? 'checked' : ''}></label>`).join('') +
+      `<label class="row"><span class="g">Parcels and public land<br><small>Owner lines and WMA / federal boundaries</small></span><input type="checkbox" data-off="land" ${offState.pick.land ? 'checked' : ''}></label>` +
+      `<div class="seg" style="margin-top:8px"><button data-act="off-detail" data-z="15" class="${offState.detail === 15 ? 'on' : ''}">Light</button><button data-act="off-detail" data-z="16" class="${offState.detail === 16 ? 'on' : ''}">Standard</button><button data-act="off-detail" data-z="17" class="${offState.detail === 17 ? 'on' : ''}">Close-up</button></div>` +
+      `<div class="note">This view: about ${pl.jobs.length.toLocaleString()} map tiles, roughly ${pl.mb < 1 ? '<1' : Math.round(pl.mb)} MB. ${pl.jobs.length > 15000 ? '<b style="color:var(--bad)">Too big: zoom in or pick Light.</b>' : 'Keep the app open until it finishes; leaf-off tiles take about a second each.'}</div>` +
+      `<label class="fld"><span>Name</span><input id="offName" placeholder="Area ${S.offAreas.length + 1}"></label>` +
+      `<div class="btns"><button class="btn p" data-act="off-go" ${offState.run ? 'disabled' : ''}>Download this area</button>${offState.run ? '<button class="btn" data-act="off-stop">Stop</button>' : ''}</div><div class="prog" id="offProg" style="display:${offState.run ? 'block' : 'none'}"><i></i><span></span></div>` +
+      `<h3>Saved areas</h3>` + (S.offAreas.length ? S.offAreas.map(a => `<div class="row"><div class="g" data-act="go-box" data-b="${a.b.join(',')}" style="cursor:pointer">${esc(a.name)}<br><small>${a.mb} MB · ${({ 15: 'light', 16: 'standard', 17: 'close-up' })[a.detail] || ''} · ${new Date(a.t).toLocaleDateString([], { month: 'short', day: 'numeric' })}</small></div><button class="btn s" data-act="off-del" data-id="${a.id}">Delete</button></div>`).join('') : '<div class="mut">None yet.</div>') +
+      `<div class="mut" style="margin-top:8px">Offline, satellite comes from USGS imagery (a bit less sharp than online), and the map stops zooming at the detail you saved.</div>`;
   } else if (p === 'sharetxt') { h = head('Share waypoint') + `<div class="mut">Copy this text and send it:</div><label class="fld"><textarea rows="6" readonly onclick="this.select()">${esc(arg)}</textarea></label>`;
   } else if (p === 'search') {
     h = head('Search results') + (arg.length ? arg.map(r => `<div class="row" data-act="go" data-ll="${r.lon},${r.lat}" data-z="13" style="cursor:pointer"><div class="g">${esc(r.display_name)}</div></div>`).join('') : '<div class="mut">Nothing found.</div>');
@@ -1216,6 +1494,8 @@ document.addEventListener('change', e => {
   const t = e.target;
   if (t.dataset.layer) { const id = t.dataset.layer; S.on[id] = t.checked; store.set('on', S.on); applyVis(id); if (t.checked) { delete loaded[id]; loadLayer(id); } if (id === 'wma') { delete loaded.padus; loadLayer('padus'); } }
   else if (t.dataset.trk) { S.tracks[+t.dataset.trk].hide = !t.checked; saveTracks(); drawTracks(); }
+  else if (t.dataset.off) { offState.pick[t.dataset.off] = t.checked; store.set('offPick', offState.pick); openSheet('offline'); }
+  else if (t.id === 'wpType') { const x = $('#wpExtra'); if (x) x.style.display = ['stand', 'blind'].includes(t.value) ? '' : 'none'; }
   else if (t.id === 'hotSp') { S.hot.species = t.value; S.hot.phase = HM.defaultPhase(t.value, new Date().getMonth() + 1); openSheet('hot'); }
   else if (t.id === 'hotPh') S.hot.phase = t.value;
   else if (t.id === 'hotPub') S.hot.publicOnly = t.checked;
@@ -1235,7 +1515,7 @@ document.addEventListener('click', e => {
   else if (a === 'cone-here') { S.cone = parseLL(b.dataset.ll); drawCone(); if (popup) popup.remove(); openSheet('wind'); }
   else if (a === 'cone-place') setMode('cone');
   else if (a === 'cone-clear') { S.cone = null; drawCone(); openSheet('wind'); }
-  else if (a === 'wind-hr') { S.windHour = +b.dataset.k; windChip(); drawCone(); const sc = sh.querySelector('.hr').scrollLeft; openSheet('wind'); sh.querySelector('.hr').scrollLeft = sc; }
+  else if (a === 'wind-hr') { S.windHour = +b.dataset.k; windChip(); drawCone(); renderWps(); const sc = sh.querySelector('.hr').scrollLeft; openSheet('wind'); sh.querySelector('.hr').scrollLeft = sc; }
   else if (a === 'wind-reload') loadWind(true);
   else if (a === 'blood-open') bloodOpen();
   else if (a === 'blood-map') bloodToMap();
@@ -1248,6 +1528,30 @@ document.addEventListener('click', e => {
   else if (a === 'sync-on') { const t = ($('#ghTok').value || '').trim(); if (!/^(ghp_|github_pat_|gho_)/.test(t)) { toast('That does not look like a GitHub token (it should start with ghp_)', 4000); return; } S.gh = { token: t, gist: '', last: 0 }; store.set('gh', S.gh); S.syncMsg = ''; openSheet('saved'); sync(); }
   else if (a === 'sync-now') sync();
   else if (a === 'sync-off') { S.gh = { token: '', gist: '', last: 0 }; store.set('gh', S.gh); S.syncMsg = ''; openSheet('saved'); toast('Sync turned off on this device. Your waypoints stay here.', 3500); }
+  else if (a === 'guide-wp') { const w = sh._wp; guideTo(w.p, w.name || (WPT[w.type] || WPT.other)[0]); }
+  else if (a === 'guide-id') { const w = S.wps.find(x => x.id == b.dataset.id); if (w) guideTo(w.p, w.name || (WPT[w.type] || WPT.other)[0]); }
+  else if (a === 'guide-ll') guideTo(parseLL(b.dataset.ll), 'Spot you picked');
+  else if (a === 'guide-stop') guideStop();
+  else if (a === 'guide-center') { if (G.t) map.flyTo({ center: G.t.p, zoom: Math.max(map.getZoom(), 16) }); }
+  else if (a === 'wp-wind') b.classList.toggle('on');
+  else if (a === 'log-new') openSheet('log', newSit(b.dataset.stand ? (S.wps.find(x => x.id == b.dataset.stand) || {}).id : ''));
+  else if (a === 'log-edit') { const s = S.log.find(x => x.id === b.dataset.id); if (s) openSheet('log', JSON.parse(JSON.stringify(s))); }
+  else if (a === 'log-inc' || a === 'log-dec') { const s = sh._sit, k = b.dataset.k; s.seen[k] = Math.max(0, (s.seen[k] || 0) + (a === 'log-inc' ? 1 : -1)); $('#c_' + k).textContent = s.seen[k]; }
+  else if (a === 'log-save') {
+    const s = sh._sit, day = $('#lgDate').value, f = $('#lgFrom').value, t = $('#lgTo').value; if (!day || !f || !t) { toast('Fill in the date and times'); return; }
+    s.start = new Date(day + 'T' + f).getTime(); s.end = new Date(day + 'T' + t).getTime(); if (s.end <= s.start) s.end += 864e5;
+    s.stand = $('#lgStand').value; s.shot = $('#lgShot').checked; s.notes = $('#lgNotes').value.trim();
+    const wx = wxFor((s.start + s.end) / 2); if (wx) s.wx = wx; s.u = Date.now();
+    const i = S.log.findIndex(x => x.id === s.id); if (i >= 0 && s.id) S.log[i] = s; else { s.id = ''; S.log.push(s); }
+    delete s._edit; saveLog(); toast(wx || s.wx ? 'Sit saved with ' + wxLine(s.wx) : 'Sit saved (no weather for that time)', 3500); openSheet('saved');
+  }
+  else if (a === 'log-del') { const s = sh._sit; tomb(s.id); S.log = S.log.filter(x => x.id !== s.id); saveLog(); openSheet('saved'); }
+  else if (a === 'offline-open') openSheet('offline');
+  else if (a === 'off-detail') { offState.detail = +b.dataset.z; store.set('offDetail', offState.detail); openSheet('offline'); }
+  else if (a === 'off-go') { offDownload(); openSheet('offline'); }
+  else if (a === 'off-stop') offState.cancel = true;
+  else if (a === 'off-del') offDelete(b.dataset.id);
+  else if (a === 'go-box') { const v = b.dataset.b.split(',').map(Number); map.fitBounds([[v[0], v[1]], [v[2], v[3]]], { padding: 30 }); }
   else if (a === 'mark-me') whereAmI(p => { map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 16) }); editWp({ id: 0, p: p.slice(), type: 'stand', name: '', notes: '' }); });
   else if (a === 'mark-tap') setMode('mark');
   else if (a === 'mark-center') { const c = map.getCenter(); editWp({ id: 0, p: [c.lng, c.lat], type: 'stand', name: '', notes: '' }); }
@@ -1257,7 +1561,7 @@ document.addEventListener('click', e => {
   else if (a === 'save-area') saveArea();
   else if (a === 'mine-del') { const n = b.dataset.n; idbDo('readwrite', st => st.delete(n)).catch(() => { }); S.mine = S.mine.filter(m => m.name !== n); drawMine(); openSheet('layers'); }
   else if (a === 'regrid-save') { S.regrid = $('#rgKey').value.trim(); S.prov = $('#rgProv').value; store.set('prov', S.prov); store.set('regrid', S.regrid); addRegrid(); delete loaded.parcels; loadLayer('parcels'); toast(S.regrid ? 'Token saved. Zoom in to see parcel lines.' : 'Token removed'); openSheet('layers'); }
-  else if (a === 'wp-save') { const w = sh._wp; w.name = $('#wpName').value.trim(); w.type = $('#wpType').value; w.notes = $('#wpNotes').value.trim(); w.u = Date.now(); if (!w.id) { w.id = Date.now(); S.wps.push(w); } drawWps(); closeSheet(); toast('Waypoint saved'); }
+  else if (a === 'wp-save') { const w = sh._wp; w.name = $('#wpName').value.trim(); w.type = $('#wpType').value; w.notes = $('#wpNotes').value.trim(); w.u = Date.now(); if (['stand', 'blind'].includes(w.type)) { w.winds = [...sh.querySelectorAll('.wchip.on')].map(x => x.dataset.d); w.rings = $('#wpRings').value; } if (!w.id) { w.id = Date.now(); S.wps.push(w); } drawWps(); closeSheet(); toast('Waypoint saved'); }
   else if (a === 'wp-del') { idbDo('readwrite', st => st.delete(sh._wp.id), 'photos').catch(() => { }); tomb(sh._wp.id); S.wps = S.wps.filter(x => x.id !== sh._wp.id); drawWps(); closeSheet(); }
   else if (a === 'wp-go') { const w = S.wps.find(x => x.id == b.dataset.id); if (w) { map.flyTo({ center: w.p, zoom: Math.max(map.getZoom(), 15.5) }); editWp(w); } }
   else if (a === 'go') { map.flyTo({ center: parseLL(b.dataset.ll), zoom: +b.dataset.z || Math.max(map.getZoom(), 16) }); if (b.dataset.z) closeSheet(); }
