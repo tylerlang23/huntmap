@@ -7,9 +7,10 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - run: |
+      - shell: bash {0}
+        run: |
           O="Origin: https://tylerlang23.github.io"
-          echo "---- DNR spring tileinfo"; curl -sS "https://arcgis.dnr.state.mn.us/public/rest/services/gen/spring_imagery_statewide/MapServer?f=json" | python3 -c "import sys,json;d=json.load(sys.stdin);t=d['tileInfo'];print('origin',t['origin'],'rows',t['rows'],'wkid',t['spatialReference']);print([(l['level'],round(l['resolution'],4)) for l in t['lods']])"
+          echo "---- DNR spring tileinfo"; curl -sS -D - -A "Mozilla/5.0" "https://arcgis.dnr.state.mn.us/public/rest/services/gen/spring_imagery_statewide/MapServer?f=json" | head -c 1500; echo
           echo "---- USGS services"; curl -sS "https://basemap.nationalmap.gov/arcgis/rest/services?f=json" | python3 -c "import sys,json;print([s['name'] for s in json.load(sys.stdin)['services']])"
           echo "---- USGSImageryOnly"; curl -sS "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer?f=json" | python3 -c "import sys,json;d=json.load(sys.stdin);t=d.get('tileInfo',{});print('lods',[l['level'] for l in t.get('lods',[])],'copy',d.get('copyrightText'))"
           for u in "https://arcgis.dnr.state.mn.us/public/rest/services/gen/spring_imagery_statewide/MapServer/tile/11/23436/15500" \
