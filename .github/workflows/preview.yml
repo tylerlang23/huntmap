@@ -2,6 +2,8 @@ name: Preview screenshots
 on:
   push:
     branches: [preview]
+permissions:
+  contents: write
 jobs:
   shots:
     runs-on: ubuntu-latest
@@ -14,7 +16,12 @@ jobs:
           sleep 1
           python3 scripts/preview.py
       - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: shots
-          path: shots/
+        run: |
+          cd shots && python3 -c "
+          from PIL import Image
+          import glob
+          fs=sorted(glob.glob('*.png'))
+          for k in range(0,len(fs),3):
+            ims=[Image.open(f).resize((390,844)) for f in fs[k:k+3]]; o=Image.new('RGB',(390*len(ims),844)); [o.paste(im,(390*j,0)) for j,im in enumerate(ims)]; o.save(f'../sheet{k//3}.png')
+          "
+          cd .. && mkdir -p /tmp/out && cp sheet*.png /tmp/out/ && cd /tmp/out && git init -q && git checkout -q -b preview-shots && git add -A && git -c user.name=bot -c user.email=bot@example.com commit -qm shots && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" preview-shots
