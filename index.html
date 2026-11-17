@@ -157,6 +157,23 @@ body.zl .pin .pl{display:block}
 @keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,255,255,.45),0 2px 8px rgba(0,0,0,.55)}70%{box-shadow:0 0 0 12px rgba(255,255,255,0),0 2px 8px rgba(0,0,0,.55)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0),0 2px 8px rgba(0,0,0,.55)}}
 .alertpin{width:34px;height:34px;border-radius:10px;background:var(--blaze);color:#1B1F1A;display:grid;place-items:center;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.55);cursor:pointer}.alertpin svg{width:20px;height:20px}
 
+/* ---------- property card ---------- */
+.ptop{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 10px}
+.ptop .hq{width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:none;color:var(--lichen);display:grid;place-items:center;padding:0}.ptop .hq svg{width:19px;height:19px}
+.pchip{display:inline-flex;align-items:center;gap:6px;height:30px;border-radius:15px;padding:0 12px 0 10px;font:600 13.5px/1 var(--f);color:var(--pc);background:color-mix(in srgb,var(--pc) 14%,transparent);border:1px solid color-mix(in srgb,var(--pc) 45%,transparent)}
+.pchip svg{width:16px;height:16px}
+.ptitle{font:700 30px/1.02 var(--fc);letter-spacing:.005em;color:var(--bone);margin:2px 0 6px;overflow-wrap:anywhere}
+.psub{color:var(--lichen);font-size:15px;line-height:1.4}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin:14px 0 6px}
+.facts div{background:var(--field);border:1px solid var(--line);border-radius:13px;padding:9px 11px;min-width:0}
+.facts small{display:block;font-size:12.5px;color:var(--lichen);font-weight:500}
+.facts b{display:block;font:700 21px/1.1 var(--fc);color:var(--bone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.facts span{display:block;font-size:12.5px;color:var(--gold);font-weight:600}
+.prow{display:flex;gap:10px;align-items:center;color:var(--lichen);font-size:14.5px;padding:10px 0 2px}.prow svg{width:18px;height:18px;color:var(--lichen)}.prow b{color:var(--bone);font-weight:600}
+.pact{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin:14px 0 8px}.pact .btn{padding:0 10px;min-height:52px}.pact .btn svg{width:19px;height:19px}
+.pnote{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:11px 12px;border-radius:13px;background:rgba(255,212,71,.07);border:1px solid rgba(255,212,71,.22);color:var(--bone);font-size:14px;line-height:1.4}.pnote svg{width:18px;height:18px;color:#FFD447;flex:none;margin-top:1px}
+.tapdot{width:18px;height:18px;border-radius:50%;background:#FFF4C7;border:3px solid #0C0E0B;box-shadow:0 0 0 4px rgba(255,244,199,.45)}
+
 /* ---------- popups ---------- */
 .maplibregl-popup-content{background:var(--bark);color:var(--bone);border-radius:18px;padding:15px 17px 13px;max-width:310px;border:1px solid var(--line2);font:inherit;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.55)}
 .maplibregl-popup-close-button{color:var(--lichen);font-size:22px;padding:2px 10px;right:2px;top:2px}
@@ -167,6 +184,9 @@ body.zl .pin .pl{display:block}
 .dist{font-size:14.5px;color:var(--gold);margin:0 0 7px}.dist b{font:700 19px/1 var(--fc)}
 .disc{position:absolute;left:calc(var(--sl) + 10px);bottom:calc(var(--tab) + var(--sb) + 10px);z-index:4;font-size:10.5px;color:rgba(236,234,223,.8);text-shadow:0 0 3px #000,0 0 3px #000;max-width:60%;pointer-events:none}
 .maplibregl-ctrl-bottom-left{bottom:calc(var(--tab) + var(--sb) + 24px);left:calc(var(--sl) + 2px)}.maplibregl-ctrl-bottom-right{display:none}
+.maplibregl-ctrl-attrib.maplibregl-compact{background:rgba(21,25,20,.82);color:var(--lichen);border-radius:12px;min-height:24px;font-size:11px;margin:0 0 4px 8px!important}
+.maplibregl-ctrl-attrib.maplibregl-compact a{color:var(--bone)}
+.maplibregl-ctrl-attrib-button{background-color:transparent!important;filter:invert(.85)}
 .maplibregl-ctrl-scale{background:rgba(21,25,20,.55);color:var(--bone);border-color:var(--bone);font-size:10px}
 
 /* ---------- wind panel ---------- */
@@ -785,6 +805,8 @@ const map = new maplibregl.Map({
   }
 });
 map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+const foldCredits = () => { const el = document.querySelector('.maplibregl-ctrl-attrib'); if (el) el.classList.remove('maplibregl-compact-show'); };
+map.on('load', () => setTimeout(foldCredits, 50)); map.on('sourcedata', () => { if (!foldCredits.done) { foldCredits(); } }); map.on('dragstart', () => { foldCredits.done = true; });
 map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
 map.on('error', e => console.warn('map error', e && e.error && e.error.message));
 
@@ -935,6 +957,44 @@ function addSelLayers() {
   map.addLayer({ id: 'psel-fill', type: 'fill', source: 'psel', paint: { 'fill-color': '#FFE680', 'fill-opacity': .16 } }, 'roads');
   map.addLayer({ id: 'psel-case', type: 'line', source: 'psel', layout: { 'line-join': 'round' }, paint: { 'line-color': '#0C0E0B', 'line-opacity': .7, 'line-width': 8 } }, 'roads');
   map.addLayer({ id: 'psel-line', type: 'line', source: 'psel', layout: { 'line-join': 'round' }, paint: { 'line-color': '#FFF4C7', 'line-width': 3.5 } }, 'roads');
+}
+const tcase = s => String(s || '').replace(/\s+/g, ' ').trim().split(' ').map(w => /^(LLC|LLP|LP|INC|II|III|IV|MN|DNR|USA|US|ETAL|ET|AL|TR|RLT|CO|FBO|WMA|WPA|LTD|DBA)$/i.test(w.replace(/[.,]/g, '')) ? w.toUpperCase() : /^[A-Z][A-Z'.-]*$/.test(w) ? w.charAt(0) + w.slice(1).toLowerCase().replace(/(['-][a-z])/g, m => m.toUpperCase()) : w).map((w, i) => i && /^(Of|And|The|For)$/.test(w) ? w.toLowerCase() : w).join(' ');
+let placeMk = null;
+function placeDot(ll) { const el = document.createElement('div'); el.className = 'tapdot'; if (placeMk) placeMk.remove(); placeMk = new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(map); }
+function clearPlace() { if (placeMk) { placeMk.remove(); placeMk = null; } selectShape(null); const s = map.getSource && map.getSource('ruler'); if (s) s.setData(empty()); }
+function placeHtml(c) {
+  const fact = (k, v, sub) => v ? `<div><small>${k}</small><b>${v}</b>${sub ? `<span>${sub}</span>` : ''}</div>` : '', ll = c.ll.join(','), facts = [], q = c.pub, pr = c.par;
+  const fromYou = c.me && S.me ? [fmtDist(HM.hav(S.me, c.ll)), HM.compass(HM.bearing(S.me, c.ll))] : null;
+  let chips = '', title = '', sub = '', note = '', extra = '';
+  if (q) {
+    chips = `<span class="pchip" style="--pc:${q._c}">${ico('i-layers')}Public land</span>${(() => { const acc = q._acc || (q._src === 'wma' ? 'Open access' : ''); return acc ? `<span class="pchip" style="--pc:${q._closed ? '#E0563B' : /Open/.test(acc) ? '#3FB56B' : '#9BA594'}">${esc(acc.replace(/:.*/, ''))}</span>` : ''; })()}`;
+    title = esc(q._name); sub = esc(q._cat) + (q._mgr ? '<br>Managed by ' + esc(q._mgr) : '');
+    facts.push(fact('Acres', q._acres ? Math.round(q._acres).toLocaleString() : ''));
+    if (pr && pr.owner) extra = `<div class="prow">${ico('i-saved')}<span>Parcel owner on record: <b>${esc(tcase(pr.owner))}</b></span></div>`;
+    note = q._closed ? 'This unit is marked closed to the public.' : 'Check the posted rules and the current regulations for this unit before you hunt.';
+  } else if (pr) {
+    chips = `<span class="pchip" style="--pc:#FFD447">${ico('i-saved')}Private land</span>`;
+    title = pr.owner ? esc(tcase(pr.owner)) : 'Owner not published';
+    sub = [pr.more ? esc(tcase(pr.more)) : '', pr.co ? esc(pr.co) + ' County' : ''].filter(Boolean).join('<br>');
+    facts.push(fact('Acres', pr.ac > 0 ? pr.ac.toFixed(1) : ''));
+    if (pr.addr) extra += `<div class="prow">${ico('w-truck')}<span>${esc(tcase(pr.addr))}</span></div>`;
+    note = 'Private property. Get permission from the owner before you hunt or cross it.';
+  } else {
+    chips = `<span class="pchip" style="--pc:#FFD447">${ico('i-info')}Not public land</span>`;
+    title = 'No parcel at this spot';
+    sub = S.built || S.regrid || S.mine.length ? 'Usually water, a road right-of-way, or a gap in county records.' : 'Owner names are not available for this county in the free state data.';
+    note = 'Treat it as private unless you know otherwise.';
+  }
+  if (fromYou) facts.push(fact('From you', fromYou[0], fromYou[1]));
+  if (pr && pr.twp && !q) facts.push(fact('Township', esc(pr.twp.replace(/\s*(Twp|Township)$/i, '')), pr.sec ? 'Section ' + pr.sec : ''));
+  const lg = [pr && pr.pin ? 'Parcel ' + esc(pr.pin) : '', pr && pr.t ? 'T' + pr.t + 'N R' + (pr.r || '') + 'W' : '', !pr && !q ? c.ll[1].toFixed(5) + ', ' + c.ll[0].toFixed(5) : ''].filter(Boolean);
+  const legal = lg.length ? `<div class="mut" style="font-size:13px;margin-top:4px">${lg.join(', ')}</div>` : '';
+  return `<div class="ptop">${chips}<span style="flex:1"></span><button class="hq" data-act="help" data-t="layers" aria-label="How this works">${ico('i-help')}</button><button class="x" data-act="close" aria-label="Close">&times;</button></div>` +
+    `<div class="ptitle">${title}</div>${sub ? `<div class="psub">${sub}</div>` : ''}` +
+    (facts.filter(Boolean).length ? `<div class="facts">${facts.join('')}</div>` : '') + legal + extra +
+    `<div class="pact">${c.me ? `<button class="btn p" data-act="guide-ll" data-ll="${ll}">${ico('i-guide')}Guide me</button>` : `<a class="btn p" href="${dirLink(c.ll)}" target="_blank" rel="noopener">${ico('i-guide')}Directions</a>`}<button class="btn" data-act="mark-here" data-ll="${ll}">${ico('i-mark')}Mark</button><button class="btn" data-act="cone-here" data-ll="${ll}">${ico('i-wind')}Wind</button></div>` +
+    (q ? `<button class="tool" data-act="access" data-src="${q._src}" data-id="${q._id}"><span class="ti">${ico('w-truck')}</span><span class="tt"><b>How to get in</b><small>Parking and places a public road touches the boundary</small></span>${ico('i-chev', 'chev')}</button>` : '') +
+    `<div class="pnote">${ico(q ? 'i-info' : 'i-sos')}<span>${note}</span></div><div class="mut" style="font-size:12px;margin-top:8px">Boundaries are approximate, not a survey.</div>`;
 }
 function selectShape(f) { const s = map.getSource && map.getSource('psel'); if (s) s.setData(f && f.geometry ? { type: 'Feature', properties: {}, geometry: f.geometry } : empty()); }
 
@@ -1093,17 +1153,16 @@ map.on('click', e => {
     if (!meOk) return;
     showPopup(ll, dline + `<div class="btns"><button class="btn s p" data-act="guide-ll" data-ll="${ll.join(',')}">Guide me here</button><button class="btn s" data-act="mark-here" data-ll="${ll.join(',')}">Mark this spot</button></div>`); drawRuler(ll); return;
   }
-  if (dline) parts.push(dline);
   selectShape(pub || par);
-  if (acc) { const p = acc.properties; parts.push(`<h4>${esc(p.name)}</h4><div class="k">${p.kind === 'frontage' ? 'A public road runs along the boundary here. Park fully off the road and do not block gates or field approaches.' : p.kind === 'gate' ? 'Gate: walk-in only unless posted otherwise.' : p.kind === 'trail' ? 'Two-track: confirm it is public before driving it.' : 'Mapped in OpenStreetMap'}</div><div class="btns"><a class="btn s" href="${dirLink(acc.geometry.coordinates)}" target="_blank" rel="noopener">Directions</a></div>`); }
-  if (pub) { const p = pub.properties; parts.push(`<div class="k" style="color:${esc(p._c)}">PUBLIC &middot; ${esc(p._cat)}</div><h4>${esc(p._name)}</h4><div class="k">${[p._mgr, p._acres ? Math.round(p._acres).toLocaleString() + ' ac' : '', p._acc].filter(Boolean).map(esc).join(' &middot; ')}</div><div class="btns"><button class="btn s p" data-act="access" data-src="${p._src}" data-id="${p._id}">How to get in</button><a class="btn s" href="${dirLink(ll)}" target="_blank" rel="noopener">Directions</a></div>`); }
-  else if (par) {
-    const p = par.properties, rg = par.layer.id === 'regrid-fill', owner = rg ? (p.owner || p.ownername) : (p.owner_name || p.tax_name), addr = rg ? (p.address || p.parceladdr) : [p.anumber && p.anumber !== '0' ? p.anumber : '', p.st_name, p.st_pos_typ].filter(Boolean).join(' ');
-    const ac = rg ? (p.ll_gisacre || p.gisacre || (p.calcarea ? p.calcarea / 4046.8564 : 0)) : (p.acres_deed > 0 ? p.acres_deed : p.acres_poly), pin = rg ? (p.parcelnumb || p.lrid) : p.county_pin;
-    parts.push(`<div class="k" style="color:#ffe45c">PRIVATE LAND &middot; permission required</div><h4>${esc(owner || 'Owner name not published')}</h4>${!rg && p.owner_more ? `<div>${esc(p.owner_more)}</div>` : ''}<div class="k">${[ac > 0 ? (+ac).toFixed(1) + ' ac' : '', addr, p.ctu_name, p.co_name ? p.co_name + ' Co.' : ''].filter(Boolean).map(esc).join(' &middot; ')}</div><div class="k">${[p.section ? 'Sec ' + p.section : '', p.township ? 'T' + p.township : '', p.range ? 'R' + p.range : '', pin ? 'PIN ' + pin : ''].filter(Boolean).map(esc).join(' ')}</div>`);
-  } else if (!acc) parts.push(`<div class="k" style="color:#ffe45c">NOT PUBLIC LAND</div><h4>Treat as private</h4><div class="k">No public unit is mapped here. ${S.regrid ? 'No parcel record loaded at this spot yet.' : 'This county is not in the free state parcel data. Under Layers, add the county\'s parcel file or a subscription token to see owners.'}</div>`);
-  parts.push(`<div class="btns">${meOk ? `<button class="btn s p" data-act="guide-ll" data-ll="${ll.join(',')}">Guide me here</button>` : ''}<button class="btn s" data-act="mark-here" data-ll="${ll.join(',')}">Mark this spot</button><button class="btn s" data-act="cone-here" data-ll="${ll.join(',')}">Wind check</button></div>`);
-  showPopup(ll, parts.join('<hr>').replace(/<hr>(<div class="dist">)/, '$1')); if (meOk) drawRuler(ll);
+  if (acc && !pub && !par) {
+    const p = acc.properties; showPopup(ll, (dline || '') + `<h4>${esc(p.name)}</h4><div class="k">${p.kind === 'frontage' ? 'A public road runs along the boundary here. Park fully off the road and do not block gates or field approaches.' : p.kind === 'gate' ? 'Gate: walk-in only unless posted otherwise.' : p.kind === 'trail' ? 'Two-track: confirm it is public before driving it.' : 'Mapped in OpenStreetMap'}</div><div class="btns"><a class="btn s" href="${dirLink(acc.geometry.coordinates)}" target="_blank" rel="noopener">Driving directions</a></div>`); return;
+  }
+  const card = { ll, me: meOk };
+  if (pub) card.pub = pub.properties;
+  if (par) { const p = par.properties, rg = par.layer.id === 'regrid-fill';
+    card.par = { owner: rg ? (p.owner || p.ownername) : (p.owner_name || p.tax_name), more: rg ? '' : p.owner_more, addr: rg ? (p.address || p.parceladdr) : [p.anumber && p.anumber !== '0' ? p.anumber : '', p.st_name, p.st_pos_typ].filter(Boolean).join(' '),
+      ac: +(rg ? (p.ll_gisacre || p.gisacre || (p.calcarea ? p.calcarea / 4046.8564 : 0)) : (p.acres_deed > 0 ? p.acres_deed : p.acres_poly)) || 0, pin: rg ? (p.parcelnumb || p.lrid) : p.county_pin, twp: p.ctu_name, co: p.co_name, sec: p.section, t: p.township, r: p.range }; }
+  if (popup) popup.remove(); placeDot(ll); if (meOk) drawRuler(ll); openSheet('place', card);
 });
 map.on('contextmenu', e => editWp({ id: 0, p: [e.lngLat.lng, e.lngLat.lat], type: 'stand', name: '', notes: '' }));
 
@@ -1742,8 +1801,9 @@ function renderIntro() {
 
 /* ---------------- panels ---------------- */
 const SHEETS = { layers: ['i-layers', 'layers'], tools: ['i-tools', 'start'], mark: ['i-mark', 'mark'], party: ['i-party', 'party'], saved: ['i-saved', 'log'], wind: ['i-wind', 'wind'], wp: ['i-mark', 'mark'], track: ['i-track', 'track'], hot: ['i-hot', 'hot'], offline: ['i-offline', 'offline'], log: ['i-log', 'log'], access: ['i-guide', 'layers'], search: ['i-search', null], sharetxt: ['i-share', null], help: ['i-help', null], topic: ['i-help', null], pjoin: ['i-party', 'party'], alertmsg: ['i-chat', 'party'] };
-function closeSheet() { drawOffAreas(false); const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
+function closeSheet() { drawOffAreas(false); if ($('#sheet').dataset.p === 'place') clearPlace(); const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
 function openSheet(p, arg) {
+  if ($('#sheet').dataset.p === 'place' && p !== 'place') clearPlace();
   const s = $('#sheet'); s.dataset.p = p; s.classList.add('open'); document.querySelectorAll('#bar button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
   const meta = SHEETS[p] || ['i-info', null], head = t => `<h2><span class="hi"><svg class="ic"><use href="#${meta[0]}"/></svg></span><span class="ht">${t}</span>${meta[1] ? `<button class="hq" data-act="help" data-t="${meta[1]}" aria-label="How this works"><svg class="ic"><use href="#i-help"/></svg></button>` : ''}<button class="x" data-act="close" aria-label="Close">&times;</button></h2>`; let h = '';
   if (p === 'layers') {
@@ -1815,6 +1875,8 @@ function openSheet(p, arg) {
       `<div class="btns"><button class="btn p" data-act="off-go" ${offState.run ? 'disabled' : ''}>Download this area</button>${offState.run ? '<button class="btn" data-act="off-stop">Stop</button>' : ''}</div><div class="prog" id="offProg" style="display:${offState.run ? 'block' : 'none'}"><i></i><span></span></div>` +
       `<h3>Saved areas</h3>` + (S.offAreas.length ? S.offAreas.map(a => `<div class="row"><div class="g" data-act="go-box" data-b="${a.b.join(',')}" style="cursor:pointer">${esc(a.name)}<br><small>${a.mb} MB · ${({ 15: 'light', 16: 'standard', 17: 'close-up' })[a.detail] || ''} · ${new Date(a.t).toLocaleDateString([], { month: 'short', day: 'numeric' })}</small></div><button class="btn s" data-act="off-del" data-id="${a.id}">Delete</button></div>`).join('') : '<div class="mut">None yet.</div>') +
       `<div class="mut" style="margin-top:8px">Offline, satellite comes from USGS imagery (a bit less sharp than online), and the map stops zooming at the detail you saved.</div>`;
+  } else if (p === 'place') {
+    h = placeHtml(arg);
   } else if (p === 'party') {
     h = head(P.st ? esc(P.st.name) : 'Party') + partyHtml();
   } else if (p === 'pjoin') {
