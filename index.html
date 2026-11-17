@@ -30,6 +30,8 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .search input::placeholder{color:var(--mut)}
 .chip{height:46px;border-radius:14px;padding:0 12px;display:flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;font-size:15px}
 .chip svg{width:20px;height:20px;transition:transform .3s}
+.chip .wt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.1}.chip small{font-size:11px;font-weight:600;color:#ffcf7a;letter-spacing:-.01em}.chip small:empty{display:none}
+.sun{display:flex;gap:8px;margin:10px 0 6px}.sun div{flex:1;background:var(--field);border-radius:12px;padding:8px 10px}.sun div:last-child{flex:1.5}.sun small{display:block;font-size:11.5px;color:var(--mut);font-weight:600}.sun b{font-size:15.5px;color:#ffcf7a}
 /* right control stack */
 .stack{position:absolute;right:calc(var(--sr) + 10px);top:calc(var(--st) + 64px);z-index:5;border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
 .stack button{width:56px;height:52px;background:none;border:0;border-bottom:.5px solid var(--line);display:grid;place-items:center;color:var(--tx);font-size:10px;font-weight:700;letter-spacing:0;gap:0;padding:5px 0 3px}
@@ -51,6 +53,8 @@ body.cmp .stack{top:calc(var(--st) + 126px)}body.cmp .lchips,body.cmp .modebar{t
 /* sheet */
 .sheet{position:absolute;left:0;right:0;bottom:calc(var(--tab) + var(--sb));z-index:6;background:var(--panel);-webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4);border-top:.5px solid var(--line);border-radius:20px 20px 0 0;max-height:62%;overflow:auto;padding:6px calc(var(--sr) + 16px) 20px calc(var(--sl) + 16px);display:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-shadow:0 -8px 30px rgba(0,0,0,.4)}
 .sheet.open{display:block}
+.sheet.drag{transition:none}.sheet.snap{transition:transform .22s ease}
+@media (pointer:coarse){.sheet .x{display:none}}
 .sheet::before{content:"";display:block;width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.25);margin:2px auto 8px}
 @media(min-width:820px){.sheet{left:12px;right:auto;width:410px;bottom:84px;top:70px;max-height:none;border:.5px solid var(--line);border-radius:20px}.bar{left:12px;right:auto;width:410px;bottom:12px;border-width:.5px;border-radius:18px;padding-bottom:0}.top{max-width:410px;left:12px}}
 .sheet h2{margin:0 0 10px;font-size:20px;font-weight:700;letter-spacing:-.01em;display:flex;justify-content:space-between;align-items:center}
@@ -127,7 +131,7 @@ input[type=checkbox]:checked{background:var(--acc)}input[type=checkbox]:checked:
 <div id="map"></div>
 <div class="top">
   <label class="search glass"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" placeholder="Search a place or lat, lng" enterkeyhint="search" autocomplete="off" autocorrect="off"></label>
-  <button class="chip glass" id="windChip" aria-label="Wind"><svg viewBox="0 0 24 24" id="windArrow"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#7cc4ff"/></svg><span id="windTxt">Wind</span></button>
+  <button class="chip glass" id="windChip" aria-label="Wind"><svg viewBox="0 0 24 24" id="windArrow"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#7cc4ff"/></svg><span class="wt"><span id="windTxt">Wind</span><small id="sunTxt"></small></span></button>
 </div>
 <div class="cstrip glass" id="cstrip"><canvas id="ccan"></canvas><div class="cread"><b id="cdeg">--</b><span id="cdir"></span></div></div>
 <div class="stack glass">
@@ -909,7 +913,18 @@ async function loadWind(force) {
   } catch (e) { $('#windTxt').textContent = 'wind n/a'; console.warn('wind', e); }
 }
 const windAt = k => { const w = S.wind; if (!w) return null; const i = Math.min(w.h.time.length - 1, w.i0 + k); return { time: w.h.time[i], dir: w.h.wind_direction_10m[i], spd: w.h.wind_speed_10m[i], gust: w.h.wind_gusts_10m[i], temp: w.h.temperature_2m[i], pop: w.h.precipitation_probability ? w.h.precipitation_probability[i] : null }; };
-function windChip() { const w = windAt(S.windHour); if (!w) return; $('#windArrow').style.transform = `rotate(${w.dir + 180}deg)`; $('#windTxt').textContent = `${HM.compass(w.dir)} ${Math.round(w.spd)}`; }
+function sunToday() {
+  const W = S.wind; if (!W || !W.daily) return null; const today = new Date(), key = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  let i = W.daily.time.indexOf(key(today)); if (i < 0) i = 0;
+  const sr = new Date(W.daily.sunrise[i]), ss = new Date(W.daily.sunset[i]);
+  if (Date.now() > +ss + 18e5 && W.daily.time[i + 1]) { i++; return { sr: new Date(W.daily.sunrise[i]), ss: new Date(W.daily.sunset[i]), tomorrow: true }; }
+  return { sr, ss, tomorrow: false };
+}
+const hm = d => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s?([AP])M/i, (m, x) => x.toLowerCase());
+function windChip() {
+  const w = windAt(S.windHour); if (!w) return; $('#windArrow').style.transform = `rotate(${w.dir + 180}deg)`; $('#windTxt').textContent = `${HM.compass(w.dir)} ${Math.round(w.spd)} mph`;
+  const s = sunToday(); $('#sunTxt').textContent = s ? `↑${hm(s.sr)} ↓${hm(s.ss)}` : '';
+}
 function drawCone() {
   if (!map.getSource('cone')) return; const w = windAt(S.windHour);
   if (!S.cone || !w) { map.getSource('cone').setData(empty()); return; }
@@ -1075,7 +1090,7 @@ function openSheet(p, arg) {
       const strip = []; for (let k = 0; k < 36; k += 1) { const x = windAt(k); strip.push(`<div class="${k === S.windHour ? 'on' : ''}" data-act="wind-hr" data-k="${k}">${hlabel(x.time)}<svg viewBox="0 0 24 24" style="transform:rotate(${x.dir + 180}deg)"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#7cc4ff"/></svg>${Math.round(x.spd)}</div>`); }
       const di = W.daily ? Math.max(0, W.daily.time.indexOf(w.time.slice(0, 10))) : -1, sr = di >= 0 && new Date(W.daily.sunrise[di]), ss = di >= 0 && new Date(W.daily.sunset[di]);
       h = head('Wind and light') + `<div style="font-size:19px;font-weight:600">From ${HM.compass(w.dir)} (${Math.round(w.dir)}&deg;) at ${Math.round(w.spd)} mph</div><div class="mut">Gusts ${Math.round(w.gust)} mph &middot; ${Math.round(w.temp)}&deg;F${w.pop != null ? ' &middot; ' + w.pop + '% precip' : ''} &middot; ${S.windHour ? '+' + S.windHour + ' h' : 'now'}. Your scent blows toward the ${HM.compass(w.dir + 180)}.</div><div class="hr">${strip.join('')}</div>` +
-        (sr ? `<div class="note">Sunrise ${hhmm(sr)}, sunset ${hhmm(ss)}. Half hour before and after: ${hhmm(sr - 18e5)} to ${hhmm(+ss + 18e5)}. Confirm legal shooting hours in the current MN regulations.</div>` : '') +
+        (sr ? `<div class="sun"><div><small>Sunrise</small><b>${hm(new Date(sr))}</b></div><div><small>Sunset</small><b>${hm(new Date(ss))}</b></div><div><small>Shooting light</small><b>${hm(new Date(sr - 18e5))} – ${hm(new Date(+ss + 18e5))}</b></div></div><div class="mut" style="margin:-2px 0 8px">For ${new Date(sr).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}. Half hour before sunrise to half hour after sunset; confirm in the current MN regulations.</div>` : '') +
         `<div class="btns"><button class="btn p" data-act="cone-place">${S.cone ? 'Move scent cone' : 'Place scent cone'}</button>${S.cone ? '<button class="btn" data-act="cone-clear">Remove cone</button>' : ''}</div><div class="mut">The blue cone shows where your scent drifts from a sit for the selected hour. Tap an hour above to check a morning or evening sit.</div>`;
     }
   } else if (p === 'hot') {
@@ -1093,6 +1108,32 @@ function openSheet(p, arg) {
   s.innerHTML = h; s.scrollTop = 0;
   if (p === 'wp' && arg.photo) idbDo('readonly', st => st.get(arg.id), 'photos').then(d => { const im = document.getElementById('wpImg'); if (im && d) im.src = d; else if (im) im.remove(); }).catch(() => { });
 }
+/* swipe a bottom sheet down to close it */
+(() => {
+  const sh = $('#sheet'); let y0 = null, dy = 0, t0 = 0, active = false;
+  const skip = el => el.closest('input,select,textarea,.hr,a');
+  sh.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || skip(e.target)) { y0 = null; return; }
+    const r = sh.getBoundingClientRect(), onHandle = e.touches[0].clientY - r.top < 28;
+    if (sh.scrollTop > 0 && !onHandle) { y0 = null; return; }
+    y0 = e.touches[0].clientY; dy = 0; t0 = Date.now(); active = false;
+  }, { passive: true });
+  sh.addEventListener('touchmove', e => {
+    if (y0 == null) return; dy = e.touches[0].clientY - y0;
+    if (!active && dy > 8) { active = true; sh.classList.remove('snap'); sh.classList.add('drag'); }
+    if (!active) { if (dy < -4) y0 = null; return; }
+    e.preventDefault(); sh.style.transform = `translateY(${Math.max(0, dy)}px)`;
+  }, { passive: false });
+  const end = () => {
+    if (y0 == null) return; y0 = null; sh.classList.remove('drag'); if (!active) return; active = false;
+    const fast = dy / Math.max(1, Date.now() - t0) > .5;
+    if (dy > Math.min(140, sh.offsetHeight * .3) || (fast && dy > 40)) {
+      sh.classList.add('snap'); sh.style.transform = `translateY(${sh.offsetHeight + 20}px)`;
+      setTimeout(() => { sh.classList.remove('snap'); sh.style.transform = ''; if ($('#sheet').dataset.p === 'blood') return; closeSheet(); }, 200);
+    } else { sh.classList.add('snap'); sh.style.transform = ''; setTimeout(() => sh.classList.remove('snap'), 230); }
+  };
+  sh.addEventListener('touchend', end); sh.addEventListener('touchcancel', end);
+})();
 $('#bar').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (!b) return; if ($('#sheet').dataset.p === b.dataset.p) closeSheet(); else { setMode(null); openSheet(b.dataset.p); } });
 $('#q').addEventListener('keydown', async e => {
   if (e.key !== 'Enter') return; const v = e.target.value.trim(); if (!v) return; e.target.blur();
