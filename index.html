@@ -418,6 +418,24 @@ HM.enhance = (d, W, H) => {
     d[o] = v; d[o + 1] = v; d[o + 2] = v; d[o + 3] = 255;
   }
 };
+/* ---- sync merge: newest edit wins per item, deletions win over older edits ---- */
+HM.mergeSync = (loc, rem) => {
+  rem = rem || {}; const del = Object.assign({}, rem.del || {});
+  for (const k in loc.del || {}) del[k] = Math.max(del[k] || 0, loc.del[k]);
+  const pick = (a, b, dedupe) => {
+    const m = new Map();
+    for (const it of [...(b || []), ...(a || [])]) { const k = String(it.id), o = m.get(k); if (!o || (it.u || 0) > (o.u || 0)) m.set(k, it); }
+    let out = [...m.values()].filter(it => !(del[String(it.id)] >= (it.u || 0)));
+    if (dedupe) { const seen = new Map(); out = out.filter(it => { const k = dedupe(it); if (!k) return true; const o = seen.get(k); if (o) { if ((it.u || 0) > (o.u || 0)) { Object.assign(o, it); } return false; } seen.set(k, it); return true; }); }
+    return out.sort((x, y) => (x.u || 0) - (y.u || 0) || String(x.id).localeCompare(String(y.id)));
+  };
+  const cut = Date.now() - 180 * 864e5; for (const k in del) if (del[k] < cut) delete del[k];
+  return {
+    wps: pick(loc.wps, rem.wps, w => w.p ? w.p[0].toFixed(6) + ',' + w.p[1].toFixed(6) + '|' + (w.name || '') : null),
+    tracks: pick(loc.tracks, rem.tracks, t => t.pts && t.pts.length ? t.pts.length + '|' + t.pts[0].join(',') + '|' + t.pts[t.pts.length - 1].join(',') : null),
+    del
+  };
+};
 </script>
 <script>
 /* ======================= Hunt Map app ======================= */
@@ -441,7 +459,7 @@ const dirLink = p => `https://www.google.com/maps/dir/?api=1&destination=${p[1].
 const store = { get(k, d) { try { const v = localStorage.getItem('huntmap.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('huntmap.' + k, JSON.stringify(v)); } catch (e) { } } };
 
 const S = {
-  wps: store.get('wps', []), tracks: store.get('tracks', []), on: store.get('on', { wma: true, padus: true, parcels: true, access: false, refs: true, hill: false, nlcd: false }),
+  wps: store.get('wps', []), tracks: store.get('tracks', []), del: store.get('del', {}), gh: store.get('gh', { token: '', gist: '', last: 0 }), on: store.get('on', { wma: true, padus: true, parcels: true, access: false, refs: true, hill: false, nlcd: false }),
   base: store.get('base', 'sat'), regrid: store.get('regrid', ''), prov: store.get('prov', 'regrid'), mine: [], data: { wma: [], padus: [], parcels: [] }, status: {}, mode: null, measure: [], rec: null, me: null, heading: null,
   wind: null, windHour: 0, cone: null, hot: { species: 'deer', phase: HM.defaultPhase('deer', new Date().getMonth() + 1), publicOnly: true, picks: [] }
 };
@@ -522,7 +540,7 @@ map.on('load', () => {
   map.addLayer({ id: 'mine-fill', type: 'fill', source: 'mine', paint: { 'fill-color': '#fff', 'fill-opacity': 0 } }, 'roads');
   map.addLayer({ id: 'mine-line', type: 'line', source: 'mine', minzoom: 11, paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .4, 17, 2], 'line-opacity': .9 } }, 'roads');
   map.addLayer({ id: 'mine-lbl', type: 'symbol', source: 'mine', minzoom: 14.5, layout: { 'text-field': ['coalesce', ['get', 'owner_name'], ''], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-width': 8 }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
-  loadMine(); addRegrid(); addBuiltTiles(); applyBase(); LAYERS.forEach(l => applyVis(l.id)); drawWps(); drawTracks(); refresh(); loadWind(); openShared();
+  loadMine(); addRegrid(); addBuiltTiles(); applyBase(); LAYERS.forEach(l => applyVis(l.id)); drawWps(); drawTracks(); refresh(); loadWind(); openShared(); syncSoon(800);
 });
 
 /* ---------------- private parcels from a Regrid key (covers counties with no open data) ---------------- */
@@ -792,12 +810,62 @@ function drawMeasure() {
   if (S.mode === 'measure') $('#modeTxt').textContent = pts.length < 2 ? 'Tap each point' : pts.length + ' pts · ' + tot;
 }
 
+/* ---------------- saving + GitHub Gist sync ---------------- */
+function stampAll() {
+  const now = Date.now();
+  S.wps.forEach(w => { if (!w.id) w.id = now + Math.random(); if (!w.u) w.u = now; });
+  S.tracks.forEach(t => { if (!t.id) t.id = 't' + t.pts.length + '_' + (t.pts[0] || []).map(v => v.toFixed(5)).join('_'); if (!t.u) t.u = now; });
+}
+function saveTracks() { stampAll(); store.set('tracks', S.tracks); syncSoon(); }
+function tomb(id) { S.del[String(id)] = Date.now(); store.set('del', S.del); }
+const GH = 'https://api.github.com', GFILE = 'huntmap-data.json';
+let syncT = 0, syncing = false, syncAgain = false;
+function syncSoon(ms = 2500) { if (!S.gh.token || S.applying) return; clearTimeout(syncT); syncT = setTimeout(sync, ms); }
+async function gh(path, opt = {}) {
+  const r = await fetch(GH + path, Object.assign({}, opt, { headers: Object.assign({ Authorization: 'Bearer ' + S.gh.token, Accept: 'application/vnd.github+json' }, opt.body ? { 'Content-Type': 'application/json' } : {}), cache: 'no-store' }));
+  if (r.status === 401) throw new Error('GitHub rejected the token. Check it has the "gist" box ticked and has not expired.');
+  if (!r.ok) { const e = new Error('GitHub error ' + r.status); e.status = r.status; throw e; }
+  return r.status === 204 ? null : r.json();
+}
+function setSync(msg, bad) { S.syncMsg = msg; S.syncBad = !!bad; const el = document.getElementById('syncSt'); if (el) { el.textContent = msg; el.style.color = bad ? 'var(--bad)' : ''; } }
+async function findGist() {
+  for (let page = 1; page <= 10; page++) { const list = await gh('/gists?per_page=100&page=' + page); const g = list.find(x => x.files && x.files[GFILE]); if (g) return g.id; if (list.length < 100) break; }
+  const g = await gh('/gists', { method: 'POST', body: JSON.stringify({ public: false, description: 'Hunt Map waypoints and tracks (synced by the app)', files: { [GFILE]: { content: JSON.stringify({ v: 1, wps: [], tracks: [], del: {} }) } } }) });
+  return g.id;
+}
+const strip = d => ({ wps: d.wps.map(w => Object.assign({}, w)), tracks: d.tracks.map(t => { const c = Object.assign({}, t); delete c.hide; return c; }), del: d.del });
+async function sync() {
+  if (!S.gh.token) return; if (syncing) { syncAgain = true; return; } syncing = true; setSync('Syncing…');
+  try {
+    stampAll();
+    if (!S.gh.gist) { S.gh.gist = await findGist(); store.set('gh', S.gh); }
+    let g; try { g = await gh('/gists/' + S.gh.gist); } catch (e) { if (e.status === 404) { S.gh.gist = await findGist(); store.set('gh', S.gh); g = await gh('/gists/' + S.gh.gist); } else throw e; }
+    const f = g.files[GFILE]; let remote = { wps: [], tracks: [], del: {} };
+    if (f) { const txt = f.truncated ? await (await fetch(f.raw_url)).text() : f.content; try { remote = JSON.parse(txt || '{}'); } catch (e) { } }
+    const hidden = new Set(S.tracks.filter(t => t.hide).map(t => String(t.id)));
+    const m = HM.mergeSync(strip(S), remote), sig = d => JSON.stringify([d.wps, d.tracks, d.del]);
+    if (sig(m) !== sig(strip(S))) {
+      const before = S.wps.length + S.tracks.length; S.applying = true;
+      S.wps = m.wps; S.tracks = m.tracks.map(t => (hidden.has(String(t.id)) ? Object.assign(t, { hide: true }) : t)); S.del = m.del;
+      store.set('del', S.del); store.set('tracks', S.tracks); drawWps(); drawTracks(); S.applying = false;
+      const p = $('#sheet').dataset.p; if (p === 'saved' || p === 'track') openSheet(p);
+      const diff = S.wps.length + S.tracks.length - before; if (diff > 0) toast(`Synced: ${diff} new from your other devices`, 3000);
+    }
+    if (sig(m) !== sig({ wps: remote.wps || [], tracks: remote.tracks || [], del: remote.del || {} })) await gh('/gists/' + S.gh.gist, { method: 'PATCH', body: JSON.stringify({ files: { [GFILE]: { content: JSON.stringify(Object.assign({ v: 1, t: Date.now() }, m)) } } }) });
+    S.gh.last = Date.now(); store.set('gh', S.gh); setSync('Synced ' + hm(new Date()) + ' · ' + S.wps.length + ' waypoints, ' + S.tracks.length + ' tracks');
+  } catch (e) { console.warn('sync', e); setSync(navigator.onLine === false ? 'Offline. Will sync when you have signal.' : (e.message || 'Sync failed'), true); }
+  finally { S.applying = false; syncing = false; if (syncAgain) { syncAgain = false; syncSoon(500); } }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) syncSoon(300); });
+window.addEventListener('online', () => syncSoon(300));
+setInterval(() => { if (!document.hidden) syncSoon(0); }, 120000);
+
 /* ---------------- waypoints ---------------- */
 let wpMarkers = [];
 function drawWps() {
   wpMarkers.forEach(m => m.remove()); wpMarkers = [];
   for (const w of S.wps) { const t = WPT[w.type] || WPT.other, el = document.createElement('div'); el.className = 'wp'; el.style.background = t[1]; el.innerHTML = `<i>${t[2]}</i>`; el.title = w.name; el.addEventListener('click', ev => { ev.stopPropagation(); if (!S.mode) editWp(w); }); wpMarkers.push(new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [0, 0] }).setLngLat(w.p).addTo(map)); }
-  store.set('wps', S.wps);
+  stampAll(); store.set('wps', S.wps); syncSoon();
 }
 function editWp(w) { if (popup) popup.remove(); openSheet('wp', w); }
 
@@ -1059,7 +1127,7 @@ function bloodMark(type) {
 }
 function bloodFinish() {
   const pts = S.rec ? S.rec.pts : [];
-  if (pts.length > 1) { S.tracks.push({ name: 'Blood trail ' + new Date(B.t0).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), pts }); store.set('tracks', S.tracks); }
+  if (pts.length > 1) { S.tracks.push({ name: 'Blood trail ' + new Date(B.t0).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), pts }); saveTracks(); }
   const msg = (pts.length > 1 ? 'Trail saved: ' + fmtDist(HM.lineLen(pts)) : 'No GPS path was recorded') + (B.marks ? ', ' + B.marks + ' marks kept as waypoints' : '');
   S.rec = null; drawTracks(); B.on = false; bloodStopCam(); bel('blood').classList.remove('open'); bel('bloodChip').style.display = 'none'; toast(msg, 5000); openSheet('track');
 }
@@ -1097,7 +1165,8 @@ function openSheet(p, arg) {
     const hs = S.hot;
     h = head('Hot spots') + `<label class="fld"><span>Animal</span><select id="hotSp">${Object.entries(HM.MODES).map(([k, v]) => `<option value="${k}" ${k === hs.species ? 'selected' : ''}>${v.label}</option>`).join('')}</select></label><label class="fld"><span>Time of season</span><select id="hotPh">${Object.entries(HM.MODES[hs.species].phases).map(([k, v]) => `<option value="${k}" ${k === hs.phase ? 'selected' : ''}>${v}</option>`).join('')}</select></label><label class="row"><span class="g">Public land only</span><input type="checkbox" id="hotPub" ${hs.publicOnly ? 'checked' : ''}></label><div class="btns"><button class="btn p" data-act="hot-run">Analyze this view</button></div><div id="hotOut"></div><div class="note">This scores the visible area from land cover (timber, cattails, crops, water), terrain, distance from roads and today's wind. It is a scouting shortlist built on rules of thumb, not tracked animal data. Confirm with boots on the ground.</div>`;
   } else if (p === 'saved') {
-    h = head('Saved waypoints') + (S.wps.length ? S.wps.map(w => `<div class="row" data-act="wp-go" data-id="${w.id}" style="cursor:pointer"><span class="sw" style="background:${(WPT[w.type] || WPT.other)[1]};border-radius:50%"></span><div class="g">${esc(w.name || (WPT[w.type] || WPT.other)[0])}<br><small>${esc((WPT[w.type] || WPT.other)[0])}${w.notes ? ' · ' + esc(w.notes) : ''}</small></div></div>`).join('') : '<div class="mut">No waypoints yet. Tap Mark, or tap the map and choose "Mark this spot".</div>') +
+    h = head('Saved') + (S.wps.length ? S.wps.map(w => `<div class="row" data-act="wp-go" data-id="${w.id}" style="cursor:pointer"><span class="sw" style="background:${(WPT[w.type] || WPT.other)[1]};border-radius:50%"></span><div class="g">${esc(w.name || (WPT[w.type] || WPT.other)[0])}<br><small>${esc((WPT[w.type] || WPT.other)[0])}${w.notes ? ' · ' + esc(w.notes) : ''}</small></div></div>`).join('') : '<div class="mut">No waypoints yet. Tap Mark, or tap the map and choose "Mark this spot".</div>') +
+      `<h3>Sync between devices</h3>` + (S.gh.token ? `<div class="note" id="syncSt" style="${S.syncBad ? 'color:var(--bad)' : ''}">${esc(S.syncMsg || (S.gh.last ? 'Last synced ' + hm(new Date(S.gh.last)) : 'Not synced yet'))}</div><div class="btns"><button class="btn p" data-act="sync-now">Sync now</button><button class="btn" data-act="sync-off">Turn off on this device</button></div><div class="mut">Waypoints and tracks sync through a private Gist on your GitHub account. Blood-trail photos stay on the phone that took them.</div>` : `<div class="mut">Keep waypoints and tracks the same on your phone, computer and family phones. One-time setup:</div><ol class="mut" style="padding-left:20px;margin:6px 0"><li>Tap the button below and sign in to GitHub.</li><li>Leave only the <b>gist</b> box ticked, set Expiration to <b>No expiration</b>, and tap <b>Generate token</b>.</li><li>Copy the token, paste it here, and tap Connect. Do the same on each device.</li></ol><div class="btns"><a class="btn" href="https://github.com/settings/tokens/new?scopes=gist&description=Hunt%20Map%20sync" target="_blank" rel="noopener">Make a token on GitHub</a></div><label class="fld"><span>GitHub token</span><input id="ghTok" placeholder="ghp_…" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></label><div class="btns"><button class="btn p" data-act="sync-on">Connect</button></div>`) +
       `<h3>Backup</h3><div class="btns"><button class="btn" data-act="export">Export GPX</button><button class="btn" data-act="import">Import GPX / GeoJSON</button></div><input type="file" id="impFile" accept=".gpx,.geojson,.json" style="display:none"><div class="mut">Waypoints and tracks are stored in this browser on this device only. Export a GPX to back them up or move them to another device.</div>`;
   } else if (p === 'access') {
     h = head('Getting into ' + esc(arg.unit)) + arg.list.map(a => `<div class="row"><span class="sw" style="border-radius:50%;background:${a.kind === 'parking' ? '#2f6fde' : a.kind === 'frontage' ? '#57d38c' : '#4da3ff'}"></span><div class="g" data-act="go" data-ll="${a.p.join(',')}" style="cursor:pointer">${esc(a.name)}</div><a class="btn s" href="${dirLink(a.p)}" target="_blank" rel="noopener">Directions</a></div>`).join('') + '<div class="note">Blue is mapped parking. Green is a spot where a public road touches the boundary, where you can usually park on the shoulder and walk in. Parking lots missing from OpenStreetMap will not show, so also look for DNR signs and lots on the satellite view.</div>';
@@ -1144,7 +1213,7 @@ document.addEventListener('input', e => { if (e.target.id === 'bsens') { B.sens 
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.dataset.layer) { const id = t.dataset.layer; S.on[id] = t.checked; store.set('on', S.on); applyVis(id); if (t.checked) { delete loaded[id]; loadLayer(id); } if (id === 'wma') { delete loaded.padus; loadLayer('padus'); } }
-  else if (t.dataset.trk) { S.tracks[+t.dataset.trk].hide = !t.checked; store.set('tracks', S.tracks); drawTracks(); }
+  else if (t.dataset.trk) { S.tracks[+t.dataset.trk].hide = !t.checked; saveTracks(); drawTracks(); }
   else if (t.id === 'hotSp') { S.hot.species = t.value; S.hot.phase = HM.defaultPhase(t.value, new Date().getMonth() + 1); openSheet('hot'); }
   else if (t.id === 'hotPh') S.hot.phase = t.value;
   else if (t.id === 'hotPub') S.hot.publicOnly = t.checked;
@@ -1174,6 +1243,9 @@ document.addEventListener('click', e => {
   else if (a === 'blood-zoom') { B.zoom = B.zoom >= 4 ? 1 : B.zoom * 2; b.innerHTML = B.zoom + '&times;'; }
   else if (a === 'blood-freeze') { B.frozen = !B.frozen; b.classList.toggle('on', B.frozen); }
   else if (a === 'blood-torch') { const tr = B.stream && B.stream.getVideoTracks()[0]; if (!tr) return; B.torch = !B.torch; tr.applyConstraints({ advanced: [{ torch: B.torch }] }).then(() => b.classList.toggle('on', B.torch)).catch(() => { B.torch = false; toast('Flashlight not supported here'); }); }
+  else if (a === 'sync-on') { const t = ($('#ghTok').value || '').trim(); if (!/^(ghp_|github_pat_|gho_)/.test(t)) { toast('That does not look like a GitHub token (it should start with ghp_)', 4000); return; } S.gh = { token: t, gist: '', last: 0 }; store.set('gh', S.gh); S.syncMsg = ''; openSheet('saved'); sync(); }
+  else if (a === 'sync-now') sync();
+  else if (a === 'sync-off') { S.gh = { token: '', gist: '', last: 0 }; store.set('gh', S.gh); S.syncMsg = ''; openSheet('saved'); toast('Sync turned off on this device. Your waypoints stay here.', 3500); }
   else if (a === 'mark-me') whereAmI(p => { map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 16) }); editWp({ id: 0, p: p.slice(), type: 'stand', name: '', notes: '' }); });
   else if (a === 'mark-tap') setMode('mark');
   else if (a === 'mark-center') { const c = map.getCenter(); editWp({ id: 0, p: [c.lng, c.lat], type: 'stand', name: '', notes: '' }); }
@@ -1183,15 +1255,15 @@ document.addEventListener('click', e => {
   else if (a === 'save-area') saveArea();
   else if (a === 'mine-del') { const n = b.dataset.n; idbDo('readwrite', st => st.delete(n)).catch(() => { }); S.mine = S.mine.filter(m => m.name !== n); drawMine(); openSheet('layers'); }
   else if (a === 'regrid-save') { S.regrid = $('#rgKey').value.trim(); S.prov = $('#rgProv').value; store.set('prov', S.prov); store.set('regrid', S.regrid); addRegrid(); delete loaded.parcels; loadLayer('parcels'); toast(S.regrid ? 'Token saved. Zoom in to see parcel lines.' : 'Token removed'); openSheet('layers'); }
-  else if (a === 'wp-save') { const w = sh._wp; w.name = $('#wpName').value.trim(); w.type = $('#wpType').value; w.notes = $('#wpNotes').value.trim(); if (!w.id) { w.id = Date.now(); S.wps.push(w); } drawWps(); closeSheet(); toast('Waypoint saved'); }
-  else if (a === 'wp-del') { idbDo('readwrite', st => st.delete(sh._wp.id), 'photos').catch(() => { }); S.wps = S.wps.filter(x => x.id !== sh._wp.id); drawWps(); closeSheet(); }
+  else if (a === 'wp-save') { const w = sh._wp; w.name = $('#wpName').value.trim(); w.type = $('#wpType').value; w.notes = $('#wpNotes').value.trim(); w.u = Date.now(); if (!w.id) { w.id = Date.now(); S.wps.push(w); } drawWps(); closeSheet(); toast('Waypoint saved'); }
+  else if (a === 'wp-del') { idbDo('readwrite', st => st.delete(sh._wp.id), 'photos').catch(() => { }); tomb(sh._wp.id); S.wps = S.wps.filter(x => x.id !== sh._wp.id); drawWps(); closeSheet(); }
   else if (a === 'wp-go') { const w = S.wps.find(x => x.id == b.dataset.id); if (w) { map.flyTo({ center: w.p, zoom: Math.max(map.getZoom(), 15.5) }); editWp(w); } }
   else if (a === 'go') { map.flyTo({ center: parseLL(b.dataset.ll), zoom: +b.dataset.z || Math.max(map.getZoom(), 16) }); if (b.dataset.z) closeSheet(); }
   else if (a === 'rec-start') { S.rec = { t0: Date.now(), pts: [] }; closeSheet(); recChip(); whereAmI(p => { follow = true; $('#fLoc').classList.add('on'); map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 16) }); }); toast('Recording. Tap the green banner to stop.', 3000); }
   else if (a === 'rec-chip') openSheet('track');
-  else if (a === 'rec-stop') { recChip.pending = 1; if (S.rec.pts.length > 1) { S.tracks.push({ name: 'Track ' + new Date(S.rec.t0).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), pts: S.rec.pts }); store.set('tracks', S.tracks); } else toast('Not enough points to save'); S.rec = null; drawTracks(); recChip(); closeSheet(); toast('Track saved', 2500); }
+  else if (a === 'rec-stop') { recChip.pending = 1; if (S.rec.pts.length > 1) { S.tracks.push({ name: 'Track ' + new Date(S.rec.t0).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), pts: S.rec.pts }); saveTracks(); } else toast('Not enough points to save'); S.rec = null; drawTracks(); recChip(); closeSheet(); toast('Track saved', 2500); }
   else if (a === 'rec-cancel') { S.rec = null; drawTracks(); recChip(); closeSheet(); }
-  else if (a === 'trk-del') { S.tracks.splice(+b.dataset.i, 1); store.set('tracks', S.tracks); drawTracks(); openSheet('track'); }
+  else if (a === 'trk-del') { const tk = S.tracks[+b.dataset.i]; if (tk) tomb(tk.id); S.tracks.splice(+b.dataset.i, 1); saveTracks(); drawTracks(); openSheet('track'); }
   else if (a === 'trk-go') { const t = S.tracks[+b.dataset.i], bb = new maplibregl.LngLatBounds(); t.pts.forEach(p => bb.extend(p)); map.fitBounds(bb, { padding: 60 }); }
   else if (a === 'hot-run') analyze().catch(er => { console.warn(er); $('#hotOut').innerHTML = '<div class="note">Analysis failed: ' + esc(er.message) + '</div>'; });
   else if (a === 'hot-clear') { clearHot(); if (popup) popup.remove(); const o = $('#hotOut'); if (o) o.innerHTML = ''; toast('Hot spots cleared'); }
@@ -1218,7 +1290,7 @@ async function importFile(file) {
       const j = JSON.parse(txt), fs = j.type === 'FeatureCollection' ? j.features : [j];
       for (const f of fs) { const g = f.geometry, pr = f.properties || {}; if (!g) continue; if (g.type === 'Point') { S.wps.push({ id: Date.now() + nw, p: g.coordinates.slice(0, 2), name: pr.name || pr.title || '', notes: pr.desc || pr.notes || '', type: 'other' }); nw++; } else if (g.type === 'LineString') { S.tracks.push({ name: pr.name || 'Imported track', pts: g.coordinates.map(c => c.slice(0, 2)) }); nt++; } }
     }
-    drawWps(); store.set('tracks', S.tracks); drawTracks(); openSheet('saved'); toast(`Imported ${nw} waypoints and ${nt} tracks`);
+    drawWps(); saveTracks(); drawTracks(); openSheet('saved'); toast(`Imported ${nw} waypoints and ${nt} tracks`);
   } catch (e) { toast('Could not read that file'); }
 }
 </script>
