@@ -811,8 +811,10 @@ function drawMeasure() {
 }
 
 /* ---------------- saving + GitHub Gist sync ---------------- */
+const r6 = v => Math.round(v * 1e6) / 1e6;
 function stampAll() {
   const now = Date.now();
+  S.tracks.forEach(t => { if (!t.r6) { t.pts = t.pts.map(q => [r6(q[0]), r6(q[1])]); t.r6 = 1; } });
   S.wps.forEach(w => { if (!w.id) w.id = now + Math.random(); if (!w.u) w.u = now; });
   S.tracks.forEach(t => { if (!t.id) t.id = 't' + t.pts.length + '_' + (t.pts[0] || []).map(v => v.toFixed(5)).join('_'); if (!t.u) t.u = now; });
 }
@@ -891,7 +893,7 @@ function startGps() {
     if (pos.coords.heading != null && !isNaN(pos.coords.heading) && pos.coords.speed > .6) { S.travel = pos.coords.heading; if (S.orient === 'travel') turnMap(S.travel); if (cmpOn && (S.headT == null || Date.now() - S.headT > 3000)) drawStrip(S.travel); }
     if (!meMarker) { const el = document.createElement('div'); el.className = 'me'; el.innerHTML = '<div class="hd"></div>'; meMarker = new maplibregl.Marker({ element: el, rotationAlignment: 'map' }).setLngLat(p).addTo(map); }
     meMarker.setLngLat(p); if (follow) map.easeTo({ center: p, duration: 400 });
-    if (S.rec && pos.coords.accuracy < (S.rec.blood ? 90 : 60)) { const c = S.rec.pts, last = c[c.length - 1]; if (!last || HM.hav(last, p) > 5) { c.push(p); drawTracks(); const el = $('#recInfo'); if (el) el.textContent = recText(); recChip(); } }
+    if (S.rec && pos.coords.accuracy < (S.rec.blood ? 90 : 60)) { const c = S.rec.pts, last = c[c.length - 1]; if (!last || HM.hav(last, p) > 5) { c.push([Math.round(p[0] * 1e6) / 1e6, Math.round(p[1] * 1e6) / 1e6]); drawTracks(); const el = $('#recInfo'); if (el) el.textContent = recText(); recChip(); } }
   }, err => { toast('Location error: ' + err.message + (location.protocol === 'https:' ? '' : ' (needs an https page)'), 5000); stopGps(); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
 }
 function stopGps() { if (watchId != null) navigator.geolocation.clearWatch(watchId); watchId = null; follow = false; $('#fLoc').classList.remove('on'); }
