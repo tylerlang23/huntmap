@@ -35,6 +35,7 @@ async def main():
           const f = map.getLayer('pt-fill') ? map.queryRenderedFeatures([[0,0],[390,844]], { layers: ['pt-fill'] })[0] : null;
           return JSON.stringify({ z: map.getZoom(), pt: q('pt-fill'), ptl: q('pt-line'), lbl: q('pt-lbl'), wma: q('wma-fill'), status: S.status, props: f && f.properties, srcLayers: map.getStyle().layers.filter(x => x.source === 'pt').map(x => x.id + ':' + (x['source-layer'] || '') + ':' + (x.minzoom || '')), wind: !!S.wind }); })()'''))
         print('built parcels:', await pg.evaluate("S.built+' '+S.status.parcels"))
+        print('diag2', await pg.evaluate('''JSON.stringify({ at: map.queryRenderedFeatures([250, 520]).map(f => f.layer.id).slice(0, 12), lblVis: map.getLayoutProperty('pt-lbl', 'visibility'), lblFont: map.getLayoutProperty('pt-lbl', 'text-font'), lblField: map.getLayoutProperty('pt-lbl', 'text-field'), glyphs: map.getStyle().glyphs, order: map.getStyle().layers.map(l => l.id).join(',') })'''))
         await pg.mouse.click(250, 520); await pg.wait_for_timeout(2500); await pg.screenshot(path='shots/2-tap.png')
         await pg.evaluate("popup && popup.remove()"); await pg.evaluate("map.jumpTo({zoom:17.2})"); await pg.wait_for_timeout(9000); await pg.screenshot(path='shots/3-z17.png')
         await pg.evaluate("S.base='spring'; applyBase(); map.jumpTo({zoom:15.6})"); await pg.wait_for_timeout(14000); await pg.screenshot(path='shots/4-leafoff.png')
