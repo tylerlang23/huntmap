@@ -24,16 +24,21 @@ async def main():
         ctx = await b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True, service_workers='block', timezone_id='America/Chicago')
         await ctx.route('**/parcels.pmtiles', pm)
         await ctx.add_init_script("localStorage.setItem('huntmap.introDone','true'); localStorage.setItem('huntmap.wps', %s);" % json.dumps(json.dumps(WPS)))
-        pg = await ctx.new_page(); logs = []
+        pg = await ctx.new_page(); logs = []; fails = []
+        pg.on('requestfailed', lambda r: fails.append(r.url[:90] + ' ' + str(r.failure)))
+        pg.on('response', lambda r: fails.append('HTTP %d %s' % (r.status, r.url[:90])) if r.status >= 400 else None)
         pg.on('pageerror', lambda e: logs.append('PAGEERROR ' + str(e)[:300]))
         await pg.goto('http://localhost:8000/index.html#15.6/%s/%s' % (C[1], C[0])); await pg.wait_for_timeout(16000)
         os.makedirs('shots', exist_ok=True)
         await pg.screenshot(path='shots/1-sat.png')
+        print('diag', await pg.evaluate('''(() => { const c = map.project(map.getCenter()); const q = l => map.getLayer(l) ? map.queryRenderedFeatures([[0,0],[390,844]], { layers: [l] }).length : 'nolayer';
+          const f = map.getLayer('pt-fill') ? map.queryRenderedFeatures([[0,0],[390,844]], { layers: ['pt-fill'] })[0] : null;
+          return JSON.stringify({ z: map.getZoom(), pt: q('pt-fill'), ptl: q('pt-line'), lbl: q('pt-lbl'), wma: q('wma-fill'), status: S.status, props: f && f.properties, srcLayers: map.getStyle().layers.filter(x => x.source === 'pt').map(x => x.id + ':' + (x['source-layer'] || '') + ':' + (x.minzoom || '')), wind: !!S.wind }); })()'''))
         print('built parcels:', await pg.evaluate("S.built+' '+S.status.parcels"))
         await pg.mouse.click(250, 520); await pg.wait_for_timeout(2500); await pg.screenshot(path='shots/2-tap.png')
         await pg.evaluate("popup && popup.remove()"); await pg.evaluate("map.jumpTo({zoom:17.2})"); await pg.wait_for_timeout(9000); await pg.screenshot(path='shots/3-z17.png')
         await pg.evaluate("S.base='spring'; applyBase(); map.jumpTo({zoom:15.6})"); await pg.wait_for_timeout(14000); await pg.screenshot(path='shots/4-leafoff.png')
         await pg.evaluate("S.base='topo'; applyBase()"); await pg.wait_for_timeout(9000); await pg.screenshot(path='shots/5-topo.png')
         await pg.evaluate("S.base='sat'; applyBase(); editWp(S.wps[0])"); await pg.wait_for_timeout(4000); await pg.screenshot(path='shots/6-edit.png')
-        print('\n'.join(logs)); await b.close()
+        print('\n'.join(logs)); print('FAILS', '\n'.join(sorted(set(fails))[:30])); await b.close()
 asyncio.run(main())
