@@ -9,16 +9,14 @@ jobs:
     steps:
       - run: |
           O="Origin: https://tylerlang23.github.io"
-          echo "---- USGSImageryTopo info"; curl -sS "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer?f=json" | python3 -c "import sys,json;d=json.load(sys.stdin);t=d.get('tileInfo',{});print('fused',d.get('singleFusedMapCache'),'rows',t.get('rows'),'lods',len(t.get('lods',[])),'max',t['lods'][-1]['level'] if t.get('lods') else None,'export',d.get('exportTilesAllowed'),'copy',d.get('copyrightText'))"
-          for u in "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/16/23436/15500" \
-                   "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/17/46872/31000" \
-                   "https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/16/23436/15500" \
-                   "https://arcgis.dnr.state.mn.us/public/rest/services/gen/spring_imagery_statewide/MapServer/tile/16/23436/15500" \
-                   "https://imageserver.gisdata.mn.gov/cgi-bin/wmsll?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=hillshd&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3857&BBOX=-10514000,5590000,-10513400,5590600&WIDTH=256&HEIGHT=256" \
-                   "https://fonts.openmaptiles.org/Open%20Sans%20Bold/0-255.pbf" \
-                   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/16/23436/15500"; do
-            echo "---- $u" | cut -c1-110
-            curl -sS -o /tmp/b -D - -H "$O" "$u" | grep -iE "^HTTP|access-control-allow-origin|content-type|content-length|cache-control" | tr -d '\r'
+          echo "---- DNR spring tileinfo"; curl -sS "https://arcgis.dnr.state.mn.us/public/rest/services/gen/spring_imagery_statewide/MapServer?f=json" | python3 -c "import sys,json;d=json.load(sys.stdin);t=d['tileInfo'];print('origin',t['origin'],'rows',t['rows'],'wkid',t['spatialReference']);print([(l['level'],round(l['resolution'],4)) for l in t['lods']])"
+          echo "---- USGS services"; curl -sS "https://basemap.nationalmap.gov/arcgis/rest/services?f=json" | python3 -c "import sys,json;print([s['name'] for s in json.load(sys.stdin)['services']])"
+          echo "---- USGSImageryOnly"; curl -sS "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer?f=json" | python3 -c "import sys,json;d=json.load(sys.stdin);t=d.get('tileInfo',{});print('lods',[l['level'] for l in t.get('lods',[])],'copy',d.get('copyrightText'))"
+          for u in "https://arcgis.dnr.state.mn.us/public/rest/services/gen/spring_imagery_statewide/MapServer/tile/11/23436/15500" \
+                   "https://arcgis.dnr.state.mn.us/public/rest/services/gen/spring_imagery_statewide/MapServer/tile/12/46872/31000" \
+                   "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/16/23436/15500" \
+                   "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/17/46872/31000"; do
+            echo "---- $u" | cut -c1-120
+            curl -sS -o /tmp/b -D - -H "$O" "$u" | grep -iE "^HTTP|access-control-allow-origin|content-type|cache-control" | tr -d '\r'
             echo "bytes $(wc -c </tmp/b)"
           done
-          echo "---- pmtiles range"; curl -sS -o /dev/null -D - -H "$O" -H "Range: bytes=0-16383" https://tylerlang23.github.io/huntmap/parcels.pmtiles | grep -iE "^HTTP|etag|content-range|content-length|access-control|accept-ranges|last-modified" | tr -d '\r'
