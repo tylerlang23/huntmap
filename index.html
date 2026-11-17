@@ -127,6 +127,19 @@ input[type=checkbox]:checked{background:var(--blaze)}input[type=checkbox]:checke
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
 /* ---------- markers ---------- */
+.pin{position:relative;width:40px;height:50px;cursor:pointer;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5)) drop-shadow(0 0 1px rgba(0,0,0,.6))}
+.pin .pinb{position:absolute;inset:0;width:40px;height:50px;fill:var(--c);stroke:#F4F1E6;stroke-width:2.6;stroke-linejoin:round}
+.pin .pini{position:absolute;left:10px;top:11px;width:20px;height:20px;color:#fff;stroke-width:2.1}
+.pin .bd{position:absolute;right:1px;top:1px;width:13px;height:13px;border-radius:50%;border:2.5px solid #F4F1E6;text-decoration:none}.pin .bd.ok{background:var(--tag)}.pin .bd.no{background:var(--rust)}
+.pin .sh{position:absolute;left:0;top:0;width:16px;height:16px;border-radius:50%;border:2px solid #F4F1E6;font:700 9px/12px var(--f);color:#fff;text-align:center;text-decoration:none}
+.pin .pl{position:absolute;left:37px;top:9px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;background:rgba(21,25,20,.9);color:var(--bone);font:600 12.5px/1.35 var(--f);padding:2px 8px;border-radius:8px;border:1px solid rgba(236,234,223,.2);display:none;pointer-events:none}
+body.zl .pin .pl{display:block}
+.pin:active{transform:scale(.94)}
+.wpi{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;color:#fff;flex:none}.wpi svg{width:20px;height:20px;stroke-width:2}
+.types{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.ty{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 4px 8px;border-radius:13px;border:1px solid var(--line);background:var(--field);color:var(--lichen);font:600 12.5px/1.15 var(--f);text-align:center;min-height:72px}
+.ty span{width:32px;height:32px;border-radius:10px;background:var(--c);display:grid;place-items:center;color:#fff;opacity:.75}.ty span svg{width:19px;height:19px;stroke-width:2}
+.ty.on{border-color:var(--c);color:var(--bone);background:var(--moss)}.ty.on span{opacity:1;box-shadow:0 0 0 3px rgba(236,234,223,.85)}
 .wp{width:30px;height:30px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);border:2.5px solid var(--bone);display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.6);cursor:pointer}
 .wp i{transform:rotate(45deg);font-style:normal;font:700 13px/1 var(--f);color:#fff}
 .wp .bd{position:absolute;right:-5px;top:-5px;width:12px;height:12px;border-radius:50%;border:2px solid #fff;text-decoration:none}.wp .bd.ok{background:var(--tag)}.wp .bd.no{background:var(--rust)}
@@ -277,6 +290,18 @@ body.guiding .loc{bottom:calc(var(--tab) + var(--sb) + 112px)}body.guiding .disc
   <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2.4"/><path d="M10.5 18h3"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></symbol>
   <symbol id="i-sync" viewBox="0 0 24 24"><path d="M19.5 8.5A7.8 7.8 0 005.3 7.3"/><path d="M5 3.8v3.7h3.7"/><path d="M4.5 15.5a7.8 7.8 0 0014.2 1.2"/><path d="M19 20.2v-3.7h-3.7"/></symbol>
+  <symbol id="w-stand" viewBox="0 0 24 24"><path d="M8 21L10 6M16 21L14 6"/><path d="M9.4 11h5.2M8.8 15.5h6.4"/><path d="M6.5 6h11l-1.5-3h-8z"/></symbol>
+  <symbol id="w-blind" viewBox="0 0 24 24"><path d="M3.5 20.5V10L12 4l8.5 6v10.5z"/><path d="M8.5 12.5h7v3h-7z"/></symbol>
+  <symbol id="w-rub" viewBox="0 0 24 24"><path d="M9 21V3M15 21V3"/><path d="M11 8.5l2 1.5M11 12l2 1.5M11 15.5l2 1.5"/></symbol>
+  <symbol id="w-bed" viewBox="0 0 24 24"><ellipse cx="12" cy="13.5" rx="8" ry="5.5"/><path d="M8.5 13.5c1-1.4 2.2-2 3.5-2s2.5.6 3.5 2"/></symbol>
+  <symbol id="w-food" viewBox="0 0 24 24"><path d="M6.5 10.5h11c0 5.2-2.5 9.5-5.5 9.5s-5.5-4.3-5.5-9.5z"/><path d="M5.5 10.5c0-3 2.9-5 6.5-5s6.5 2 6.5 5"/><path d="M12 5.5V3"/></symbol>
+  <symbol id="w-cam" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16.5" rx="2.5"/><circle cx="12" cy="10.5" r="3"/><path d="M9 16.5h6"/></symbol>
+  <symbol id="w-truck" viewBox="0 0 24 24"><path d="M2.5 16.5V8.5h11v8"/><path d="M13.5 11h4.2l3.3 3v2.5h-2"/><circle cx="7" cy="17" r="1.9"/><circle cx="17" cy="17" r="1.9"/><path d="M9 16.5h6"/></symbol>
+  <symbol id="w-deer" viewBox="0 0 24 24"><path d="M12 21v-4.5"/><path d="M9.2 16.5c-2.2-.6-3.4-2.5-3.4-4.8V9.6"/><path d="M14.8 16.5c2.2-.6 3.4-2.5 3.4-4.8V9.6"/><path d="M5.8 11.6L3.6 9.4M5.8 9.6V5.8M8.2 10.6V7.8"/><path d="M18.2 11.6l2.2-2.2M18.2 9.6V5.8M15.8 10.6V7.8"/></symbol>
+  <symbol id="w-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" fill="currentColor"/></symbol>
+  <symbol id="w-blood" viewBox="0 0 24 24"><path d="M12 3.5s6 6.6 6 11a6 6 0 01-12 0c0-4.4 6-11 6-11z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="w-hit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><path d="M12 3v4.2M12 16.8V21M3 12h4.2M16.8 12H21"/></symbol>
+  <symbol id="w-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#1B1F1A"/><g fill="none" stroke="#ECEADF" stroke-linecap="round"><path d="M32 4.8c11.5 0 22.4 8.8 22.4 23.6 0 15.8-10 30.8-22.4 30.8S9.6 44.2 9.6 28.4C9.6 13.6 20.5 4.8 32 4.8z" stroke-opacity=".22" stroke-width="1.4"/><path d="M32 9.8c9 0 17.6 7.2 17.6 19 0 12.7-7.9 24.6-17.6 24.6S14.4 41.5 14.4 28.8C14.4 17 23 9.8 32 9.8z" stroke-opacity=".38" stroke-width="1.4"/></g><g fill="#FF6B1A"><path d="M30.2 48.6c-6.6.4-10.7-4.1-10.7-11.1 0-8.6 4.6-17.2 9.6-21.6.9-.8 1.9-.3 1.9.9l.6 30.2c0 .9-.6 1.5-1.4 1.6z"/><path d="M33.8 48.6c6.6.4 10.7-4.1 10.7-11.1 0-8.6-4.6-17.2-9.6-21.6-.9-.8-1.9-.3-1.9.9l-.6 30.2c0 .9.6 1.5 1.4 1.6z"/></g></symbol>
  </defs>
 </svg>
@@ -705,7 +730,8 @@ const S = {
   base: store.get('base', 'sat'), regrid: store.get('regrid', ''), prov: store.get('prov', 'regrid'), mine: [], data: { wma: [], padus: [], parcels: [] }, status: {}, mode: null, measure: [], rec: null, me: null, heading: null,
   wind: null, windHour: 0, cone: null, hot: { species: 'deer', phase: HM.defaultPhase('deer', new Date().getMonth() + 1), publicOnly: true, picks: [] }
 };
-const WPT = { blood: ['Blood', '#c1001f', 'B'], hit: ['Hit site', '#ff5a1f', 'H'], found: ['Recovered', '#1fa84a', '\u2713'], stand: ['Stand', '#e01e37', 'S'], blind: ['Blind', '#8e44ad', 'B'], sign: ['Rub / scrape', '#d35400', 'R'], bed: ['Bedding', '#16a085', 'Z'], food: ['Food source', '#b7950b', 'F'], cam: ['Trail camera', '#2c3e50', 'C'], access: ['Parking / access', '#2f6fde', 'P'], sight: ['Sighting', '#27ae60', 'D'], other: ['Other', '#566573', '•'] };
+const WPT = { stand: ['Stand', '#D9472F', 'S', 'w-stand'], blind: ['Ground blind', '#7E5CC9', 'B', 'w-blind'], sign: ['Rub / scrape', '#C46A1F', 'R', 'w-rub'], bed: ['Bedding', '#2E8C72', 'Z', 'w-bed'], food: ['Food source', '#A88A1E', 'F', 'w-food'], cam: ['Trail camera', '#46586A', 'C', 'w-cam'], access: ['Parking / truck', '#2A6FCC', 'P', 'w-truck'], sight: ['Deer sighting', '#2F9E59', 'D', 'w-deer'], other: ['Other', '#5E665B', '\u2022', 'w-dot'], blood: ['Blood', '#A80F2B', 'B', 'w-blood'], hit: ['Hit site', '#E5561A', 'H', 'w-hit'], found: ['Recovered', '#1F8F4E', '\u2713', 'w-check'] };
+const pinHtml = (t, name, badges) => `<svg class="pinb" viewBox="0 0 40 50"><path d="M20 48.5S35 34 35 21.2A15 15 0 0 0 5 21.2C5 34 20 48.5 20 48.5z"/></svg><svg class="ic pini"><use href="#${t[3]}"/></svg>${badges || ''}${name ? `<span class="pl">${esc(name)}</span>` : ''}`;
 const LAYERS = [
   { id: 'wma', name: 'MN Wildlife Management Areas', sub: 'MN DNR', min: 8, sw: '#ff9f1c' },
   { id: 'padus', name: 'Other public land', sub: 'Federal (WPA, refuge), state forest, county: USGS PAD-US', min: 9, sw: '#ff4fa3' },
@@ -716,7 +742,7 @@ const LAYERS = [
   { id: 'hill', name: 'Lidar hillshade', sub: 'MN 1 m lidar terrain: drainages, saddles, benches and low ground under the canopy', sw: '#888' },
   { id: 'nlcd', name: 'Land cover', sub: 'NLCD 2021: timber, crops, wetlands', sw: '#68ab5f' }
 ];
-const MAPL = { wma: ['wma-fill', 'wma-line'], padus: ['padus-fill', 'padus-line'], parcels: ['parcels-fill', 'parcels-line', 'parcels-lbl', 'regrid-fill', 'regrid-line', 'regrid-lbl', 'mine-fill', 'mine-line', 'mine-lbl', 'pt-fill', 'pt-line', 'pt-lbl'], access: ['access-ln', 'access-pt'], refs: ['roads', 'places'], hill: ['hill'], enh: ['enh'], nlcd: ['nlcd'] };
+const MAPL = { wma: ['wma-fill', 'wma-case', 'wma-line'], padus: ['padus-fill', 'padus-case', 'padus-line'], parcels: ['parcels-fill', 'parcels-line', 'parcels-lbl', 'regrid-fill', 'regrid-case', 'regrid-line', 'regrid-lbl', 'mine-fill', 'mine-case', 'mine-line', 'mine-lbl', 'pt-fill', 'pt-case', 'pt-line', 'pt-lbl', 'parcels-case'], access: ['access-ln', 'access-pt'], refs: ['roads', 'places'], hill: ['hill'], enh: ['enh'], nlcd: ['nlcd'] };
 
 const rt = (u, mz, at) => ({ type: 'raster', tiles: [u], tileSize: 256, maxzoom: mz, attribution: at || '' });
 const empty = () => ({ type: 'FeatureCollection', features: [] });
@@ -787,19 +813,20 @@ map.on('load', () => {
   map.addLayer({ id: 'mine-fill', type: 'fill', source: 'mine', paint: { 'fill-color': '#fff', 'fill-opacity': 0 } }, 'roads');
   map.addLayer({ id: 'mine-line', type: 'line', source: 'mine', minzoom: 11, paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .4, 17, 2], 'line-opacity': .9 } }, 'roads');
   map.addLayer({ id: 'mine-lbl', type: 'symbol', source: 'mine', minzoom: 14.5, layout: { 'text-field': ['coalesce', ['get', 'owner_name'], ''], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-width': 8 }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
+  ['parcels', 'mine'].forEach(styleParcels); ['wma', 'padus'].forEach(stylePublic); addSelLayers();
   loadMine(); addRegrid(); addBuiltTiles(); applyBase(); LAYERS.forEach(l => applyVis(l.id)); drawWps(); drawTracks(); refresh(); loadWind(); openShared(); syncSoon(800); offZoomCap(); drawParty(); if (!store.get('introDone', false)) showIntro(0);
 });
 
 /* ---------------- private parcels from a Regrid key (covers counties with no open data) ---------------- */
 function addRegrid() {
-  ['regrid-lbl', 'regrid-line', 'regrid-fill'].forEach(l => map.getLayer(l) && map.removeLayer(l)); if (map.getSource('regrid')) map.removeSource('regrid');
+  ['regrid-lbl', 'regrid-line', 'regrid-case', 'regrid-fill'].forEach(l => map.getLayer(l) && map.removeLayer(l)); if (map.getSource('regrid')) map.removeSource('regrid');
   if (!S.regrid) return;
   const lr = S.prov === 'landrecords', tk = encodeURIComponent(S.regrid);
   map.addSource('regrid', { type: 'vector', tiles: [lr ? 'https://api.landrecords.us/pro:parcel_us@EPSG:3857x2@pbf/{z}/{x}/{y}.pbf?token=' + tk : 'https://tiles.regrid.com/api/v1/parcels/{z}/{x}/{y}.mvt?token=' + tk], minzoom: 10, maxzoom: 16, attribution: lr ? 'Parcels &copy; Land Records' : 'Parcels &copy; Regrid' });
   map.addLayer({ id: 'regrid-fill', type: 'fill', source: 'regrid', 'source-layer': 'parcels', minzoom: 12, paint: { 'fill-color': '#fff', 'fill-opacity': 0 } }, 'roads');
   map.addLayer({ id: 'regrid-line', type: 'line', source: 'regrid', 'source-layer': 'parcels', minzoom: 12, paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, .5, 17, 2], 'line-opacity': .9 } }, 'roads');
   map.addLayer({ id: 'regrid-lbl', type: 'symbol', source: 'regrid', 'source-layer': 'parcels', minzoom: 14.5, layout: { 'text-field': ['coalesce', ['get', 'owner'], ['get', 'ownername'], ''], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-width': 8 }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
-  applyVis('parcels');
+  styleParcels('regrid'); applyVis('parcels');
 }
 /* ---------------- statewide parcel tiles built into the site (parcels.pmtiles next to index.html) ---------------- */
 async function addBuiltTiles() {
@@ -812,7 +839,7 @@ async function addBuiltTiles() {
     map.addLayer({ id: 'pt-fill', type: 'fill', source: 'pt', 'source-layer': 'parcels', minzoom: mz, paint: { 'fill-color': '#fff', 'fill-opacity': 0 } }, 'roads');
     map.addLayer({ id: 'pt-line', type: 'line', source: 'pt', 'source-layer': 'parcels', minzoom: mz, paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, .4, 17, 2], 'line-opacity': .9 } }, 'roads');
     map.addLayer({ id: 'pt-lbl', type: 'symbol', source: 'pt', 'source-layer': 'parcels', minzoom: 14.5, layout: { 'text-field': ['coalesce', ['get', 'owner_name'], ''], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-width': 8 }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
-    S.built = true; if (ctl.parcels) ctl.parcels.abort(); S.data.parcels = []; map.getSource('parcels').setData(empty()); applyVis('parcels'); setStatus('parcels', 'Built-in Minnesota parcels');
+    styleParcels('pt'); S.built = true; if (ctl.parcels) ctl.parcels.abort(); S.data.parcels = []; map.getSource('parcels').setData(empty()); applyVis('parcels'); setStatus('parcels', 'Built-in Minnesota parcels');
   } catch (e) { S.built = false; console.info('no built-in parcel tiles', e && e.message); }
 }
 /* ---------------- county parcel files imported onto this device (IndexedDB) ---------------- */
@@ -882,6 +909,35 @@ async function importParcels(file) {
     toast(`Added ${s.features.length.toLocaleString()} parcels` + (s.ownerField ? ` with owners from "${s.ownerField}"` : ' (no owner column found)'), 6000); openSheet('layers');
   } catch (e) { console.warn(e); toast('Import failed: ' + e.message, 7000); }
 }
+/* ---------------- property line styling: dark casing under a bright line, readable on any imagery ---------------- */
+function styleParcels(pre) {
+  const L = map.getLayer(pre + '-line'); if (!L) return; const sl = L.sourceLayer || L['source-layer'], mz = L.minzoom || 0, src = L.source;
+  if (!map.getLayer(pre + '-case')) map.addLayer(Object.assign({ id: pre + '-case', type: 'line', source: src, minzoom: mz, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0C0E0B', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 12, .35, 15, .6], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1.4, 15, 3.2, 18, 6.5] } }, sl ? { 'source-layer': sl } : {}), pre + '-line');
+  map.setLayoutProperty(pre + '-line', 'line-join', 'round');
+  map.setPaintProperty(pre + '-line', 'line-color', '#FFD447');
+  map.setPaintProperty(pre + '-line', 'line-opacity', ['interpolate', ['linear'], ['zoom'], 12, .75, 15, 1]);
+  map.setPaintProperty(pre + '-line', 'line-width', ['interpolate', ['linear'], ['zoom'], 12, .5, 15, 1.3, 18, 3]);
+  if (map.getLayer(pre + '-lbl')) {
+    map.setLayoutProperty(pre + '-lbl', 'text-size', ['interpolate', ['linear'], ['zoom'], 14.5, 10.5, 17, 13.5, 19, 16]);
+    map.setLayoutProperty(pre + '-lbl', 'text-max-width', 9); map.setLayoutProperty(pre + '-lbl', 'text-letter-spacing', .03); map.setLayoutProperty(pre + '-lbl', 'text-padding', 8);
+    map.setPaintProperty(pre + '-lbl', 'text-color', '#FFF1C2'); map.setPaintProperty(pre + '-lbl', 'text-halo-color', 'rgba(14,16,13,.92)'); map.setPaintProperty(pre + '-lbl', 'text-halo-width', 1.6); map.setPaintProperty(pre + '-lbl', 'text-halo-blur', .3);
+  }
+}
+function stylePublic(id) {
+  if (!map.getLayer(id + '-line') || map.getLayer(id + '-case')) return;
+  map.addLayer({ id: id + '-case', type: 'line', source: id, layout: { 'line-join': 'round' }, paint: { 'line-color': '#0C0E0B', 'line-opacity': .55, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 2, 15, 6, 18, 9] } }, id + '-line');
+  map.setLayoutProperty(id + '-line', 'line-join', 'round');
+  map.setPaintProperty(id + '-line', 'line-width', ['interpolate', ['linear'], ['zoom'], 8, 1.2, 15, 3, 18, 4.5]);
+  map.setPaintProperty(id + '-fill', 'fill-opacity', ['case', ['==', ['get', '_closed'], 1], .1, ['interpolate', ['linear'], ['zoom'], 10, .34, 16, .22]]);
+}
+function addSelLayers() {
+  if (map.getSource('psel')) return; map.addSource('psel', { type: 'geojson', data: empty() });
+  map.addLayer({ id: 'psel-fill', type: 'fill', source: 'psel', paint: { 'fill-color': '#FFE680', 'fill-opacity': .16 } }, 'roads');
+  map.addLayer({ id: 'psel-case', type: 'line', source: 'psel', layout: { 'line-join': 'round' }, paint: { 'line-color': '#0C0E0B', 'line-opacity': .7, 'line-width': 8 } }, 'roads');
+  map.addLayer({ id: 'psel-line', type: 'line', source: 'psel', layout: { 'line-join': 'round' }, paint: { 'line-color': '#FFF4C7', 'line-width': 3.5 } }, 'roads');
+}
+function selectShape(f) { const s = map.getSource && map.getSource('psel'); if (s) s.setData(f && f.geometry ? { type: 'Feature', properties: {}, geometry: f.geometry } : empty()); }
+
 /* ---------------- basemap + layer visibility ---------------- */
 const BASES = ['sat', 'spring', 'topo'], BASEN = { sat: 'Sat', spring: 'Leaf-off', topo: 'Topo' };
 function applyBase() {
@@ -976,6 +1032,7 @@ async function loadLayer(id) {
 }
 let rtimer; function refresh() { clearTimeout(rtimer); rtimer = setTimeout(() => LAYERS.forEach(l => l.min && loadLayer(l.id)), 350); }
 map.on('moveend', refresh);
+const zlab = () => document.body.classList.toggle('zl', map.getZoom() >= 14.6); map.on('zoomend', zlab); map.on('load', zlab);
 
 async function overpass(q, signal) {
   const r = await fetch(SRC.overpass, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, signal });
@@ -1022,7 +1079,7 @@ async function findAccess(f) {
 let popup;
 function showPopup(ll, html) { if (popup) popup.remove(); clearRuler(); popup = new maplibregl.Popup({ maxWidth: '300px', offset: 8 }).setLngLat(ll).setHTML('<div class="pp">' + html + '</div>').addTo(map); if (popup.on) popup.on('close', clearRuler); }
 function drawRuler(ll) { const s = map.getSource('ruler'); if (s && S.me) s.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [S.me, ll] } }); }
-function clearRuler() { const s = map.getSource && map.getSource('ruler'); if (s) s.setData(empty()); }
+function clearRuler() { const s = map.getSource && map.getSource('ruler'); if (s) s.setData(empty()); selectShape(null); }
 map.on('click', e => {
   const ll = [e.lngLat.lng, e.lngLat.lat];
   if (S.mode === 'measure') { S.measure.push(ll); drawMeasure(); return; }
@@ -1037,6 +1094,7 @@ map.on('click', e => {
     showPopup(ll, dline + `<div class="btns"><button class="btn s p" data-act="guide-ll" data-ll="${ll.join(',')}">Guide me here</button><button class="btn s" data-act="mark-here" data-ll="${ll.join(',')}">Mark this spot</button></div>`); drawRuler(ll); return;
   }
   if (dline) parts.push(dline);
+  selectShape(pub || par);
   if (acc) { const p = acc.properties; parts.push(`<h4>${esc(p.name)}</h4><div class="k">${p.kind === 'frontage' ? 'A public road runs along the boundary here. Park fully off the road and do not block gates or field approaches.' : p.kind === 'gate' ? 'Gate: walk-in only unless posted otherwise.' : p.kind === 'trail' ? 'Two-track: confirm it is public before driving it.' : 'Mapped in OpenStreetMap'}</div><div class="btns"><a class="btn s" href="${dirLink(acc.geometry.coordinates)}" target="_blank" rel="noopener">Directions</a></div>`); }
   if (pub) { const p = pub.properties; parts.push(`<div class="k" style="color:${esc(p._c)}">PUBLIC &middot; ${esc(p._cat)}</div><h4>${esc(p._name)}</h4><div class="k">${[p._mgr, p._acres ? Math.round(p._acres).toLocaleString() + ' ac' : '', p._acc].filter(Boolean).map(esc).join(' &middot; ')}</div><div class="btns"><button class="btn s p" data-act="access" data-src="${p._src}" data-id="${p._id}">How to get in</button><a class="btn s" href="${dirLink(ll)}" target="_blank" rel="noopener">Directions</a></div>`); }
   else if (par) {
@@ -1127,9 +1185,9 @@ function renderWps() {
   wpMarkers.forEach(m => m.remove()); wpMarkers = []; const wd = windAt(S.windHour);
   for (const w of S.wps) {
     const t = WPT[w.type] || WPT.other, el = document.createElement('div'), fit = HM.windFits(w.winds, wd && wd.dir);
-    el.className = 'wp'; el.style.background = t[1]; el.innerHTML = `<i>${t[2]}</i>` + (fit == null ? '' : `<s class="bd ${fit ? 'ok' : 'no'}"></s>`) + (w.shared && P.st ? `<s class="sh" style="background:${P.me.color || '#FF6B1A'}"></s>` : ''); el.title = w.name;
+    el.className = 'pin'; el.style.setProperty('--c', t[1]); el.innerHTML = pinHtml(t, w.name, (fit == null ? '' : `<s class="bd ${fit ? 'ok' : 'no'}" title="${fit ? 'Good wind now' : 'Bad wind now'}"></s>`) + (w.shared && P.st ? `<s class="sh" style="background:${P.me.color || '#FF6B1A'}">${initials(P.me.name)[0] || ''}</s>` : '')); el.title = w.name || t[0];
     el.addEventListener('click', ev => { ev.stopPropagation(); if (!S.mode) editWp(w); });
-    wpMarkers.push(new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [0, 0] }).setLngLat(w.p).addTo(map));
+    wpMarkers.push(new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, 2] }).setLngLat(w.p).addTo(map));
   }
   drawRings(); if (typeof drawParty === 'function') drawParty();
 }
@@ -1600,7 +1658,7 @@ function drawParty() {
   }
   const sig = st ? JSON.stringify([st.wps.map(w => w.id), st.feed.slice(0, 12).map(f => f.id)]) : '';
   if (sig === P.sig) return; P.sig = sig; P.extra.forEach(x => x.remove()); P.extra = []; if (!st) return;
-  for (const w of st.wps) { const t = WPT[w.type] || WPT.other, el = document.createElement('div'); el.className = 'wp'; el.style.background = t[1]; el.innerHTML = `<i>${t[2]}</i><s class="sh" style="background:${w.color}">${initials(w.by)[0]}</s>`; el.addEventListener('click', ev => { ev.stopPropagation(); showPopup(w.p, `<div class="k" style="color:${w.color}">Shared by ${esc(w.by)}</div><h4>${esc(w.name)}</h4><div class="k">${esc(t[0])}${w.notes ? '. ' + esc(w.notes) : ''}</div>${S.me ? `<div class="dist" style="margin-top:6px"><b>${fmtDist(HM.hav(S.me, w.p))}</b> ${HM.compass(HM.bearing(S.me, w.p))} of you</div>` : ''}<div class="btns"><button class="btn s p" data-act="guide-ll" data-ll="${w.p.join(',')}">Guide me</button><button class="btn s" data-act="p-copywp" data-id="${w.id}">Save to mine</button></div>`); }); P.extra.push(new maplibregl.Marker({ element: el, anchor: 'bottom-left' }).setLngLat(w.p).addTo(map)); }
+  for (const w of st.wps) { const t = WPT[w.type] || WPT.other, el = document.createElement('div'); el.className = 'pin'; el.style.setProperty('--c', t[1]); el.innerHTML = pinHtml(t, w.name, `<s class="sh" style="background:${w.color}">${initials(w.by)[0]}</s>`); el.addEventListener('click', ev => { ev.stopPropagation(); showPopup(w.p, `<div class="k" style="color:${w.color}">Shared by ${esc(w.by)}</div><h4>${esc(w.name)}</h4><div class="k">${esc(t[0])}${w.notes ? '. ' + esc(w.notes) : ''}</div>${S.me ? `<div class="dist" style="margin-top:6px"><b>${fmtDist(HM.hav(S.me, w.p))}</b> ${HM.compass(HM.bearing(S.me, w.p))} of you</div>` : ''}<div class="btns"><button class="btn s p" data-act="guide-ll" data-ll="${w.p.join(',')}">Guide me</button><button class="btn s" data-act="p-copywp" data-id="${w.id}">Save to mine</button></div>`); }); P.extra.push(new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, 2] }).setLngLat(w.p).addTo(map)); }
   for (const f of st.feed.slice(0, 12)) { if (!f.p || f.mine || Date.now() - f.t > 3 * 36e5 || f.k === 'note') continue; const el = document.createElement('div'); el.className = 'alertpin'; el.style.background = f.color; el.innerHTML = ico(AL[f.k][1]); el.title = f.from + ': ' + f.label; el.addEventListener('click', ev => { ev.stopPropagation(); showPopup(f.p, `<div class="k" style="color:${f.color}">${esc(f.from)}, ${ago(f.t)}</div><h4>${esc(f.k === 'msg' ? f.text : f.label)}</h4>${S.me ? `<div class="dist"><b>${fmtDist(HM.hav(S.me, f.p))}</b> ${HM.compass(HM.bearing(S.me, f.p))} of you</div>` : ''}<div class="btns"><button class="btn s p" data-act="p-fguide" data-id="${f.id}">Guide me</button></div>`); }); P.extra.push(new maplibregl.Marker({ element: el }).setLngLat(f.p).addTo(map)); }
 }
 function mateCard(id) {
@@ -1703,7 +1761,7 @@ function openSheet(p, arg) {
   else if (p === 'measure') { setMode('measure'); return; }
   else if (p === 'wp') {
     const w = arg; s._wp = w;
-    h = head(w.id ? 'Edit waypoint' : 'New waypoint') + (w.photo ? `<img class="wpimg" id="wpImg" alt="Photo at this mark">` : '') + `<label class="fld"><span>Name</span><input id="wpName" value="${esc(w.name)}" placeholder="North ridge stand"></label><label class="fld"><span>Type</span><select id="wpType">${Object.entries(WPT).map(([k, v]) => `<option value="${k}" ${k === w.type ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label><label class="fld"><span>Notes</span><textarea id="wpNotes" rows="2" placeholder="Best on a NW wind, enter from the east">${esc(w.notes)}</textarea></label>${P.st ? `<label class="row"><span class="g">Share with ${esc(P.st.name)}<br><small>Everyone in your party sees this mark</small></span><input type="checkbox" id="wpShare" ${w.shared ? 'checked' : ''}></label>` : ''}<div id="wpExtra" style="${['stand', 'blind'].includes(w.type) ? '' : 'display:none'}"><div class="fld"><span>Good winds for this stand</span><div class="wchips">${HM.DIR8.map(d => `<button class="wchip ${(w.winds || []).includes(d) ? 'on' : ''}" data-act="wp-wind" data-d="${d}">${d}</button>`).join('')}</div></div><label class="fld"><span>Range rings</span><select id="wpRings"><option value="">Off</option><option value="bow" ${w.rings === 'bow' ? 'selected' : ''}>Bow: 20, 30, 40 yd</option><option value="gun" ${w.rings === 'gun' ? 'selected' : ''}>Gun: 50 to 200 yd</option></select></label>${(() => { const ss = HM.sitStats(S.log.filter(s => s.stand == w.id)); return ss ? `<div class="note">${ss.sits} sit${ss.sits > 1 ? 's' : ''} · ${ss.perSit.toFixed(1)} deer per sit · ${ss.bucks} buck${ss.bucks === 1 ? '' : 's'}${ss.best ? ' · best on ' + ss.best.dir : ''}</div>` : ''; })()}</div><div class="mut">${w.p[1].toFixed(5)}, ${w.p[0].toFixed(5)}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) + ' ' + HM.compass(HM.bearing(S.me, w.p)) + ' of you' : ''}</div><div class="btns"><button class="btn p" data-act="wp-save">Save</button>${w.id ? '<button class="btn" data-act="guide-wp">Guide me</button>' : ''}${w.id && ['stand', 'blind'].includes(w.type) ? '<button class="btn" data-act="log-new" data-stand="' + w.id + '">Log a sit</button>' : ''}<button class="btn" data-act="wp-share">Share</button><button class="btn" data-act="cone-here" data-ll="${w.p.join(',')}">Wind check</button><a class="btn" href="${dirLink(w.p)}" target="_blank" rel="noopener">Directions</a>${w.id ? '<button class="btn" data-act="wp-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
+    h = head(w.id ? 'Edit waypoint' : 'New waypoint') + (w.photo ? `<img class="wpimg" id="wpImg" alt="Photo at this mark">` : '') + `<label class="fld"><span>Name</span><input id="wpName" value="${esc(w.name)}" placeholder="North ridge stand"></label><div class="fld"><span>Type</span><div class="types">${Object.entries(WPT).filter(([k]) => !['blood', 'hit', 'found'].includes(k) || k === w.type).map(([k, v]) => `<button class="ty${k === w.type ? ' on' : ''}" data-act="wp-type" data-k="${k}" style="--c:${v[1]}"><span>${ico(v[3])}</span>${v[0]}</button>`).join('')}</div><select id="wpType" hidden>${Object.entries(WPT).map(([k, v]) => `<option value="${k}" ${k === w.type ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></div><label class="fld"><span>Notes</span><textarea id="wpNotes" rows="2" placeholder="Best on a NW wind, enter from the east">${esc(w.notes)}</textarea></label>${P.st ? `<label class="row"><span class="g">Share with ${esc(P.st.name)}<br><small>Everyone in your party sees this mark</small></span><input type="checkbox" id="wpShare" ${w.shared ? 'checked' : ''}></label>` : ''}<div id="wpExtra" style="${['stand', 'blind'].includes(w.type) ? '' : 'display:none'}"><div class="fld"><span>Good winds for this stand</span><div class="wchips">${HM.DIR8.map(d => `<button class="wchip ${(w.winds || []).includes(d) ? 'on' : ''}" data-act="wp-wind" data-d="${d}">${d}</button>`).join('')}</div></div><label class="fld"><span>Range rings</span><select id="wpRings"><option value="">Off</option><option value="bow" ${w.rings === 'bow' ? 'selected' : ''}>Bow: 20, 30, 40 yd</option><option value="gun" ${w.rings === 'gun' ? 'selected' : ''}>Gun: 50 to 200 yd</option></select></label>${(() => { const ss = HM.sitStats(S.log.filter(s => s.stand == w.id)); return ss ? `<div class="note">${ss.sits} sit${ss.sits > 1 ? 's' : ''} · ${ss.perSit.toFixed(1)} deer per sit · ${ss.bucks} buck${ss.bucks === 1 ? '' : 's'}${ss.best ? ' · best on ' + ss.best.dir : ''}</div>` : ''; })()}</div><div class="mut">${w.p[1].toFixed(5)}, ${w.p[0].toFixed(5)}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) + ' ' + HM.compass(HM.bearing(S.me, w.p)) + ' of you' : ''}</div><div class="btns"><button class="btn p" data-act="wp-save">Save</button>${w.id ? '<button class="btn" data-act="guide-wp">Guide me</button>' : ''}${w.id && ['stand', 'blind'].includes(w.type) ? '<button class="btn" data-act="log-new" data-stand="' + w.id + '">Log a sit</button>' : ''}<button class="btn" data-act="wp-share">Share</button><button class="btn" data-act="cone-here" data-ll="${w.p.join(',')}">Wind check</button><a class="btn" href="${dirLink(w.p)}" target="_blank" rel="noopener">Directions</a>${w.id ? '<button class="btn" data-act="wp-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
   } else if (p === 'track') {
     h = head('Track') + (S.rec && S.rec.blood ? `<div class="note"><b style="color:#ff6b7d">Blood trail in progress</b> · ${recText()}</div><div class="btns"><button class="btn p" data-act="blood-open">Back to camera</button><button class="btn" data-act="blood-finish">Finish and save</button></div>` : `<button class="btn p" data-act="blood-open" style="width:100%;background:#c1001f;color:#fff">Start a blood trail</button><div class="mut" style="margin:6px 0 14px">Camera view that makes blood stand out, records your path as you follow it, and drops marks at each blood find, the hit site and the recovery.</div><h3>Walk in and out</h3>`) + (S.rec && !S.rec.blood ? `<div class="note" id="recInfo">${recText()}</div><div class="btns"><button class="btn p" data-act="rec-stop">Stop and save</button><button class="btn" data-act="rec-cancel">Discard</button></div>` : (S.rec && S.rec.blood ? '' : `<div class="note">Records your path in and out so you can retrace it in the dark. Keep this page open while recording; phones pause location when the screen locks.</div><div class="btns"><button class="btn p" data-act="rec-start">Start recording</button></div>`)) +
       `<h3>Saved tracks</h3>` + (S.tracks.length ? S.tracks.map((t, i) => `<div class="row"><div class="g" data-act="trk-go" data-i="${i}" style="cursor:pointer">${esc(t.name)}<br><small>${fmtDist(HM.lineLen(t.pts))}</small></div><input type="checkbox" data-trk="${i}" ${t.hide ? '' : 'checked'}><button class="btn s" data-act="trk-del" data-i="${i}">&times;</button></div>`).join('') : '<div class="mut">None yet.</div>');
@@ -1731,7 +1789,7 @@ function openSheet(p, arg) {
       (sits.length ? `<div class="mut" style="margin-bottom:4px">${sits.length} sit${sits.length > 1 ? 's' : ''} · ${sits.reduce((t, s) => t + seenTot(s), 0)} deer seen</div>` +
         Object.entries(byStand).filter(([k]) => k !== '_').map(([k, ss]) => { const w = S.wps.find(x => x.id == k), st = HM.sitStats(ss); return `<div class="row"><div class="g"><b>${esc(w ? w.name || 'Stand' : 'Deleted stand')}</b><br><small>${st.sits} sit${st.sits > 1 ? 's' : ''} · ${st.perSit.toFixed(1)} deer/sit · ${st.bucks} buck${st.bucks === 1 ? '' : 's'}${st.best ? ' · best on ' + st.best.dir + ' (' + st.best.rate.toFixed(1) + '/sit)' : ''}</small></div></div>`; }).join('') +
         `<details class="logs"><summary>All sits</summary>${sits.map(s => { const w = S.wps.find(x => x.id == s.stand); return `<div class="row" data-act="log-edit" data-id="${s.id}" style="cursor:pointer"><div class="g">${new Date(s.start).toLocaleDateString([], { month: 'short', day: 'numeric' })} ${hm(new Date(s.start))}–${hm(new Date(s.end))} · ${esc(w ? w.name || 'Stand' : 'Other spot')}<br><small>${seenTot(s)} deer${s.seen.bucks ? ' (' + s.seen.bucks + ' buck' + (s.seen.bucks > 1 ? 's' : '') + ')' : ''}${s.shot ? ' · harvest' : ''} · ${esc(wxLine(s.wx))}</small></div></div>`; }).join('')}</details>` : '<div class="mut">Log each sit to see which stands, winds and moon phases produce.</div>') +
-      `<h3>Waypoints</h3>` + (S.wps.length ? S.wps.map(w => `<div class="row"><span class="sw" style="background:${(WPT[w.type] || WPT.other)[1]};border-radius:50%"></span><div class="g" data-act="wp-go" data-id="${w.id}" style="cursor:pointer">${esc(w.name || (WPT[w.type] || WPT.other)[0])}<br><small>${esc((WPT[w.type] || WPT.other)[0])}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) : ''}${w.notes ? ' · ' + esc(w.notes) : ''}</small></div><button class="btn s" data-act="guide-id" data-id="${w.id}" aria-label="Guide me">Guide</button></div>`).join('') : '<div class="mut">No waypoints yet. Tap Mark, or tap the map and choose "Mark this spot".</div>') +
+      `<h3>Waypoints</h3>` + (S.wps.length ? S.wps.map(w => `<div class="row"><span class="wpi" style="background:${(WPT[w.type] || WPT.other)[1]}">${ico((WPT[w.type] || WPT.other)[3])}</span><div class="g" data-act="wp-go" data-id="${w.id}" style="cursor:pointer">${esc(w.name || (WPT[w.type] || WPT.other)[0])}<br><small>${esc((WPT[w.type] || WPT.other)[0])}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) : ''}${w.notes ? ' · ' + esc(w.notes) : ''}</small></div><button class="btn s" data-act="guide-id" data-id="${w.id}" aria-label="Guide me">Guide</button></div>`).join('') : '<div class="mut">No waypoints yet. Tap Mark, or tap the map and choose "Mark this spot".</div>') +
       `<h3>Sync between devices</h3>` + (S.gh.token ? `<div class="note" id="syncSt" style="${S.syncBad ? 'color:var(--bad)' : ''}">${esc(S.syncMsg || (S.gh.last ? 'Last synced ' + hm(new Date(S.gh.last)) : 'Not synced yet'))}</div><div class="btns"><button class="btn p" data-act="sync-now">Sync now</button><button class="btn" data-act="sync-off">Turn off on this device</button></div><div class="mut">Waypoints, tracks and your hunt log sync through a private Gist on your GitHub account. Blood-trail photos stay on the phone that took them.</div>` : `<div class="mut">Keep waypoints and tracks the same on your phone, computer and family phones. One-time setup:</div><ol class="mut" style="padding-left:20px;margin:6px 0"><li>Tap the button below and sign in to GitHub.</li><li>Leave only the <b>gist</b> box ticked, set Expiration to <b>No expiration</b>, and tap <b>Generate token</b>.</li><li>Copy the token, paste it here, and tap Connect. Do the same on each device.</li></ol><div class="btns"><a class="btn" href="https://github.com/settings/tokens/new?scopes=gist&description=Hunt%20Map%20sync" target="_blank" rel="noopener">Make a token on GitHub</a></div><label class="fld"><span>GitHub token</span><input id="ghTok" placeholder="ghp_…" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></label><div class="btns"><button class="btn p" data-act="sync-on">Connect</button></div>`) +
       `<h3>Backup</h3><div class="btns"><button class="btn" data-act="export">Export GPX</button><button class="btn" data-act="import">Import GPX / GeoJSON</button></div><input type="file" id="impFile" accept=".gpx,.geojson,.json" style="display:none"><div class="mut">Waypoints and tracks are stored in this browser on this device only. Export a GPX to back them up or move them to another device.</div>`;
   } else if (p === 'access') {
@@ -1856,6 +1914,7 @@ document.addEventListener('click', e => {
   else if (a === 'guide-stop') guideStop();
   else if (a === 'guide-center') { if (G.t) map.flyTo({ center: G.t.p, zoom: Math.max(map.getZoom(), 16) }); }
   else if (a === 'wp-wind') b.classList.toggle('on');
+  else if (a === 'wp-type') { sh.querySelectorAll('.ty').forEach(x => x.classList.toggle('on', x === b)); const sel = $('#wpType'); sel.value = b.dataset.k; sel.dispatchEvent(new Event('change', { bubbles: true })); }
   else if (a === 'log-new') openSheet('log', newSit(b.dataset.stand ? (S.wps.find(x => x.id == b.dataset.stand) || {}).id : ''));
   else if (a === 'log-edit') { const s = S.log.find(x => x.id === b.dataset.id); if (s) openSheet('log', JSON.parse(JSON.stringify(s))); }
   else if (a === 'log-inc' || a === 'log-dec') { const s = sh._sit, k = b.dataset.k; s.seen[k] = Math.max(0, (s.seen[k] || 0) + (a === 'log-inc' ? 1 : -1)); $('#c_' + k).textContent = s.seen[k]; }
