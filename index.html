@@ -2,163 +2,300 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Hunt Map</title>
+<title>Rutline</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#0f1412">
+<meta name="theme-color" content="#1B1F1A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Hunt Map">
+<meta name="apple-mobile-web-app-title" content="Rutline">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/pmtiles@3/dist/pmtiles.js"></script>
 <style>
-:root{--bg:#0f1412;--glass:rgba(24,30,27,.78);--panel:rgba(22,28,25,.92);--solid:#171d1a;--field:#0e1311;--line:rgba(255,255,255,.12);--tx:#f3f5f2;--mut:#9aa69f;--acc:#ff7a1a;--acc2:#ffb26b;--blue:#3b9bff;--bad:#ff6b5e;
- --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--tab:58px}
+:root{
+ --bark:#1B1F1A;--moss:#262C24;--moss2:#313830;--lichen:#9BA594;--bone:#ECEADF;--blaze:#FF6B1A;--blaze-dk:#C9500D;--tag:#3FB56B;--rust:#E0563B;--sky:#6FB7F2;--gold:#F2C46B;
+ --glass:rgba(27,31,26,.84);--line:rgba(236,234,223,.10);--line2:rgba(236,234,223,.18);--field:#151914;
+ --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--tab:64px;
+ --f:'Barlow',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;--fc:'Barlow Condensed','Barlow',-apple-system,system-ui,sans-serif;
+ /* legacy names used by older markup */
+ --bg:var(--bark);--panel:rgba(27,31,26,.96);--solid:var(--bark);--tx:var(--bone);--mut:var(--lichen);--acc:var(--blaze);--acc2:var(--gold);--blue:#4DA3FF;--bad:var(--rust)}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;overflow:hidden;position:fixed;inset:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
+html,body{margin:0;height:100%;background:var(--bark);color:var(--bone);font:400 16px/1.42 var(--f);overflow:hidden;position:fixed;inset:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none;overscroll-behavior:none;font-feature-settings:"tnum" 1}
 #map{position:absolute;inset:0}
 button,select,input,textarea{font:inherit;color:inherit;-webkit-appearance:none;appearance:none}
 input,textarea{-webkit-user-select:text;user-select:text}
 button{cursor:pointer;touch-action:manipulation}
-svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.glass{background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);border:.5px solid var(--line);box-shadow:0 4px 18px rgba(0,0,0,.35)}
-/* top row */
-.top{position:absolute;top:calc(var(--st) + 8px);left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);display:flex;gap:8px;z-index:5;max-width:520px}
-.search{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:46px;border-radius:14px;padding:0 12px;color:var(--mut)}
-.search input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--tx);font-size:16px;padding:0}
-.search input::placeholder{color:var(--mut)}
-.chip{height:46px;border-radius:14px;padding:0 12px;display:flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;font-size:15px}
-.chip svg{width:20px;height:20px;transition:transform .3s}
-.chip .wt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.1}.chip small{font-size:11px;font-weight:600;color:#ffcf7a;letter-spacing:-.01em}.chip small:empty{display:none}
-.sun{display:flex;gap:8px;margin:10px 0 6px}.sun div{flex:1;background:var(--field);border-radius:12px;padding:8px 10px}.sun div:last-child{flex:1.5}.sun small{display:block;font-size:11.5px;color:var(--mut);font-weight:600}.sun b{font-size:15.5px;color:#ffcf7a}
-/* right control stack */
-.stack{position:absolute;right:calc(var(--sr) + 10px);top:calc(var(--st) + 64px);z-index:5;border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
-.stack button{width:56px;height:52px;background:none;border:0;border-bottom:.5px solid var(--line);display:grid;place-items:center;color:var(--tx);font-size:10px;font-weight:700;letter-spacing:0;gap:0;padding:5px 0 3px}
+:focus-visible{outline:2px solid var(--blaze);outline-offset:2px}
+svg.i,.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);border:1px solid var(--line);box-shadow:0 6px 22px rgba(5,8,4,.45)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- top: search + wind ---------- */
+.top{position:absolute;top:calc(var(--st) + 8px);left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);display:flex;gap:8px;z-index:5;max-width:540px}
+.search{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:48px;border-radius:14px;padding:0 13px;color:var(--lichen)}
+.search input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--bone);font-size:16px;font-weight:500;padding:0}
+.search input::placeholder{color:var(--lichen);font-weight:400}
+.chip{height:48px;border-radius:14px;padding:0 12px 0 10px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.chip svg{width:22px;height:22px;transition:transform .4s}
+.chip .wt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05}
+.chip #windTxt{font:700 17px/1 var(--fc);letter-spacing:.01em}
+.chip small{font:600 12px/1.2 var(--f);color:var(--gold);margin-top:2px}.chip small:empty{display:none}
+
+/* ---------- right control stack ---------- */
+.stack{position:absolute;right:calc(var(--sr) + 10px);top:calc(var(--st) + 66px);z-index:5;border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.stack button{width:54px;height:54px;background:none;border:0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--bone);padding:0}
 .stack button:last-child{border-bottom:0}
-.stack button span{display:block;margin-top:-2px;color:var(--mut)}
-.stack button.on{color:var(--acc)}.stack button.on span{color:var(--acc)}
-.cstrip{position:absolute;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);top:calc(var(--st) + 62px);height:54px;border-radius:14px;z-index:5;display:none;overflow:hidden}
+.stack button span{font:600 10.5px/1 var(--f);color:var(--lichen)}
+.stack button.on{color:var(--blaze)}.stack button.on span{color:var(--blaze)}
+.loc{position:absolute;right:calc(var(--sr) + 10px);bottom:calc(var(--tab) + var(--sb) + 38px);z-index:5;width:54px;height:54px;border-radius:50%;color:var(--sky);display:grid;place-items:center;padding:0}
+.loc svg{width:24px;height:24px}.loc.on{background:#2C7FD6;color:#fff;border-color:transparent}.loc.on svg path{fill:currentColor}
+
+/* ---------- compass strip ---------- */
+.cstrip{position:absolute;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);top:calc(var(--st) + 64px);height:56px;border-radius:14px;z-index:5;display:none;overflow:hidden;max-width:540px}
 .cstrip canvas{position:absolute;inset:0;width:100%;height:100%}
-.cread{position:absolute;left:50%;top:4px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none;background:rgba(0,0,0,.55);border-radius:8px;padding:2px 8px 3px}
-.cread b{font-size:16px;line-height:1;margin-top:3px;color:#fff;font-variant-numeric:tabular-nums}.cread span{font-size:10px;color:var(--acc2);font-weight:700;letter-spacing:.06em}
-body.cmp .stack{top:calc(var(--st) + 126px)}body.cmp .lchips,body.cmp .modebar{top:calc(var(--st) + 126px)}
-.loc{position:absolute;right:calc(var(--sr) + 10px);bottom:calc(var(--tab) + var(--sb) + 34px);z-index:5;width:52px;height:52px;border-radius:50%;color:var(--blue);display:grid;place-items:center}
-.loc svg{width:24px;height:24px}.loc.on{background:var(--blue);color:#fff;border-color:transparent}.loc.on svg path{fill:currentColor}
-/* tab bar */
-.bar{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;padding:0 calc(var(--sr) + 4px) var(--sb) calc(var(--sl) + 4px);border-width:.5px 0 0;border-radius:0;box-shadow:none}
-.bar button{flex:1;height:var(--tab);background:none;border:0;padding:6px 0 4px;font-size:10.5px;font-weight:600;color:var(--mut);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.cread{position:absolute;left:50%;top:4px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none;background:rgba(21,25,20,.85);border-radius:8px;padding:2px 9px 3px}
+.cread b{font:700 18px/1 var(--fc);color:var(--bone)}.cread span{font:700 11px/1.2 var(--f);color:var(--gold)}
+body.cmp .stack{top:calc(var(--st) + 130px)}body.cmp .lchips,body.cmp .modebar{top:calc(var(--st) + 130px)}
+
+/* ---------- bottom bar with the raised Mark button ---------- */
+.bar{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;align-items:flex-end;padding:0 calc(var(--sr) + 6px) var(--sb) calc(var(--sl) + 6px);border-width:1px 0 0;border-radius:0;box-shadow:0 -6px 20px rgba(5,8,4,.35)}
+.bar button{flex:1;height:var(--tab);background:none;border:0;padding:8px 0 6px;font:600 11.5px/1 var(--f);color:var(--lichen);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;position:relative}
 .bar button svg{width:25px;height:25px}
-.bar button.on{color:var(--acc)}
-/* sheet */
-.sheet{position:absolute;left:0;right:0;bottom:calc(var(--tab) + var(--sb));z-index:6;background:var(--panel);-webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4);border-top:.5px solid var(--line);border-radius:20px 20px 0 0;max-height:62%;overflow:auto;padding:6px calc(var(--sr) + 16px) 20px calc(var(--sl) + 16px);display:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-shadow:0 -8px 30px rgba(0,0,0,.4)}
-.sheet.open{display:block}
+.bar button.on{color:var(--bone)}.bar button.on::before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--blaze)}
+.bar button.markbtn{color:var(--bone)}
+.bar button.markbtn .mkd{width:60px;height:60px;margin-top:-26px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#FF8436,var(--blaze) 60%,var(--blaze-dk));color:#1B1F1A;display:grid;place-items:center;box-shadow:0 0 0 5px var(--bark),0 8px 18px rgba(255,107,26,.35)}
+.bar button.markbtn .mkd svg{width:30px;height:30px;stroke-width:2.1}
+.bar button.markbtn.on::before{display:none}
+.bar .pdot{position:absolute;top:9px;left:calc(50% + 8px);min-width:17px;height:17px;border-radius:9px;background:var(--blaze);color:#1B1F1A;font:700 11px/17px var(--f);padding:0 4px;display:none}
+.bar .pdot.on{display:block}
+
+/* ---------- bottom sheet ---------- */
+.sheet{position:absolute;left:0;right:0;bottom:calc(var(--tab) + var(--sb));z-index:6;background:rgba(27,31,26,.97);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border-top:1px solid var(--line2);border-radius:22px 22px 0 0;max-height:66%;overflow:auto;padding:8px calc(var(--sr) + 18px) 22px calc(var(--sl) + 18px);display:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-shadow:0 -14px 34px rgba(5,8,4,.5)}
+.sheet.open{display:block;animation:rise .22s ease-out}
+@keyframes rise{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
 .sheet.drag{transition:none}.sheet.snap{transition:transform .22s ease}
+.sheet::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:rgba(236,234,223,.28);margin:0 auto 10px}
 @media (pointer:coarse){.sheet .x{display:none}}
-.sheet::before{content:"";display:block;width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.25);margin:2px auto 8px}
-@media(min-width:820px){.sheet{left:12px;right:auto;width:410px;bottom:84px;top:70px;max-height:none;border:.5px solid var(--line);border-radius:20px}.bar{left:12px;right:auto;width:410px;bottom:12px;border-width:.5px;border-radius:18px;padding-bottom:0}.top{max-width:410px;left:12px}}
-.sheet h2{margin:0 0 10px;font-size:20px;font-weight:700;letter-spacing:-.01em;display:flex;justify-content:space-between;align-items:center}
-.sheet h3{margin:20px 0 6px;font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);font-weight:600}
-.x{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:0;font-size:19px;line-height:1;color:var(--mut);display:grid;place-items:center;padding:0 0 2px}
-.row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:.5px solid var(--line);min-height:46px}
-.row:last-child{border-bottom:0}.row .g{flex:1;min-width:0}.row small,.mut{color:var(--mut);font-size:13px}
+@media(min-width:820px){.sheet{left:12px;right:auto;width:420px;bottom:calc(var(--tab) + 22px);top:74px;max-height:none;border:1px solid var(--line2);border-radius:22px}.bar{left:12px;right:auto;width:420px;bottom:12px;border-width:1px;border-radius:20px;padding-bottom:0}.top{max-width:420px;left:12px}}
+.sheet h2{margin:0 0 12px;font:700 22px/1.15 var(--f);letter-spacing:-.005em;display:flex;align-items:center;gap:10px}
+.sheet h2 .hi{width:36px;height:36px;border-radius:11px;background:var(--moss);display:grid;place-items:center;color:var(--blaze);flex:none}
+.sheet h2 .hi svg{width:21px;height:21px}
+.sheet h2 .ht{flex:1;min-width:0}
+.sheet h2 .hq{width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:none;color:var(--lichen);display:grid;place-items:center;padding:0}
+.sheet h2 .hq svg{width:19px;height:19px}
+.sheet h3{margin:22px 0 6px;font:600 15px/1.3 var(--f);color:var(--lichen);letter-spacing:0;text-transform:none}
+.x{width:32px;height:32px;border-radius:50%;background:var(--moss);border:0;font-size:20px;line-height:1;color:var(--lichen);display:grid;place-items:center;padding:0 0 2px}
+.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);min-height:52px}
+.row:last-child{border-bottom:0}.row .g{flex:1;min-width:0}.row small,.mut{color:var(--lichen);font-size:14px;line-height:1.4}
+.row .g b{font-weight:600}
+.row .chev{width:18px;height:18px;color:var(--lichen);flex:none}
 .sw{width:14px;height:14px;border-radius:4px;flex:none}
-input[type=checkbox]{width:50px;height:30px;border-radius:15px;background:rgba(255,255,255,.16);position:relative;flex:none;transition:background .2s;margin:0}
-input[type=checkbox]::after{content:"";position:absolute;top:2px;left:2px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:transform .2s}
-input[type=checkbox]:checked{background:var(--acc)}input[type=checkbox]:checked::after{transform:translateX(20px)}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:rgba(255,255,255,.1);border:0;border-radius:12px;padding:0 16px;font-weight:600;font-size:15.5px;text-decoration:none;color:var(--tx)}
-.btn:active{opacity:.7}
-.btn.p{background:var(--acc);color:#1a0d02}
-.btn.s{min-height:36px;padding:0 12px;font-size:14px;border-radius:10px}
-.btns{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.fld{display:block;margin:10px 0}.fld span{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
-.fld input,.fld select,.fld textarea{width:100%;background:var(--field);border:.5px solid var(--line);border-radius:12px;padding:11px 12px;font-size:16px;outline:0}
-.fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%239aa69f' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:12px;padding-right:36px}
-.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--acc)}
-.seg{display:flex;background:rgba(255,255,255,.1);border-radius:11px;padding:2px;margin-bottom:6px}.seg button{flex:1;background:none;border:0;padding:8px;border-radius:9px;font-weight:600;font-size:15px}.seg button.on{background:#5a625d;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.note{background:var(--field);border-radius:12px;padding:11px 12px;font-size:13.5px;color:var(--mut);margin:10px 0;line-height:1.45}
-.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--tab) + var(--sb) + 16px);z-index:9;padding:10px 16px;border-radius:22px;font-size:14.5px;font-weight:500;display:none;max-width:86%;text-align:center}
-.modebar{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--st) + 64px);z-index:7;background:var(--acc);color:#1a0d02;border-radius:22px;padding:6px 6px 6px 14px;font-weight:700;font-size:14.5px;display:none;gap:6px;align-items:center;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+input[type=checkbox]{width:52px;height:32px;border-radius:16px;background:var(--moss2);position:relative;flex:none;transition:background .2s;margin:0;border:0}
+input[type=checkbox]::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--bone);box-shadow:0 1px 3px rgba(0,0,0,.4);transition:transform .2s}
+input[type=checkbox]:checked{background:var(--blaze)}input[type=checkbox]:checked::after{transform:translateX(20px)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;background:var(--moss);border:1px solid var(--line);border-radius:13px;padding:0 18px;font:600 16px/1 var(--f);text-decoration:none;color:var(--bone)}
+.btn:active{transform:scale(.98);opacity:.85}
+.btn.p{background:var(--blaze);border-color:var(--blaze);color:#1B1F1A}
+.btn.s{min-height:38px;padding:0 13px;font-size:14.5px;border-radius:11px}
+.btn.w{width:100%}
+.btn.d{color:var(--rust)}
+.btn[disabled]{opacity:.45}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.fld{display:block;margin:12px 0}.fld span{display:block;font-size:14px;font-weight:500;color:var(--lichen);margin-bottom:6px}
+.fld input,.fld select,.fld textarea{width:100%;background:var(--field);border:1px solid var(--line2);border-radius:12px;padding:12px 13px;font-size:16px;outline:0;color:var(--bone)}
+.fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%239BA594' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:12px;padding-right:36px}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--blaze)}
+.fld input[type=date],.fld input[type=time]{min-height:48px}
+.seg{display:flex;background:var(--field);border:1px solid var(--line);border-radius:13px;padding:3px;margin-bottom:8px}.seg button{flex:1;background:none;border:0;padding:10px 6px;border-radius:10px;font-weight:600;font-size:15px;color:var(--lichen)}.seg button.on{background:var(--moss2);color:var(--bone);box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.note{background:var(--field);border:1px solid var(--line);border-radius:13px;padding:12px 13px;font-size:14px;color:var(--lichen);margin:12px 0;line-height:1.45}
+.note b{color:var(--bone)}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--tab) + var(--sb) + 18px);z-index:9;padding:11px 18px;border-radius:24px;font-size:15px;font-weight:500;display:none;max-width:88%;text-align:center}
+.modebar{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--st) + 66px);z-index:7;background:var(--blaze);color:#1B1F1A;border-radius:24px;padding:6px 6px 6px 16px;font-weight:700;font-size:15px;display:none;gap:6px;align-items:center;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.45)}
 .modebar span{margin-right:4px}
-.modebar button{background:rgba(0,0,0,.82);color:#fff;border:0;border-radius:16px;height:32px;padding:0 12px;font-size:13.5px;font-weight:600}
-.hotchip{position:absolute;left:calc(var(--sl) + 10px);top:calc(var(--st) + 64px);z-index:5;display:none;background:#e01e37;color:#fff;border:0;border-radius:20px;height:38px;padding:0 14px;font-weight:700;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.4)}
-.wp{width:30px;height:30px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);border:2.5px solid #fff;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.6);cursor:pointer}
-.wp i{transform:rotate(45deg);font-style:normal;font-weight:800;font-size:13px;color:#fff}
-.hs{width:30px;height:30px;border-radius:50%;background:#e01e37;border:2.5px solid #fff;color:#fff;font-weight:800;font-size:14px;display:grid;place-items:center;box-shadow:0 0 0 5px rgba(224,30,55,.3),0 2px 6px rgba(0,0,0,.5);cursor:pointer;flex:none}
-.ml{background:rgba(10,12,11,.85);color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:11px;padding:2px 8px;font-size:13px;font-weight:700;white-space:nowrap;pointer-events:none}.ml.tot{background:var(--acc);color:#1a0d02;border-color:#1a0d02;font-size:14px}
-.lchips{position:absolute;left:calc(var(--sl) + 10px);top:calc(var(--st) + 64px);z-index:5;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
-.lchips .hotchip{position:static}
-.bloodchip,.recchip{background:#7a0012;display:none;align-items:center;gap:8px}.recchip{background:#0b5e3c}.bloodchip .dot,.recchip .dot{width:10px;height:10px;border-radius:50%;background:#ff3b5c;animation:pulse 1.2s infinite}
+.modebar button{background:rgba(27,31,26,.9);color:var(--bone);border:0;border-radius:18px;height:34px;padding:0 13px;font-size:14px;font-weight:600}
+.lchips{position:absolute;left:calc(var(--sl) + 10px);top:calc(var(--st) + 66px);z-index:5;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.hotchip{display:none;background:#B4122F;color:#fff;border:0;border-radius:20px;height:40px;padding:0 15px;font-weight:600;font-size:14.5px;box-shadow:0 4px 14px rgba(0,0,0,.4);align-items:center;gap:8px}
+#hotChip{display:none}
+.bloodchip,.recchip{background:#7a0012}.recchip{background:#1D6B42}
+.bloodchip .dot,.recchip .dot,.livedot{width:10px;height:10px;border-radius:50%;background:#ff3b5c;animation:pulse 1.2s infinite;flex:none}.recchip .dot{background:#7CF0AE}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ---------- markers ---------- */
+.wp{width:30px;height:30px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);border:2.5px solid var(--bone);display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.6);cursor:pointer}
+.wp i{transform:rotate(45deg);font-style:normal;font:700 13px/1 var(--f);color:#fff}
+.wp .bd{position:absolute;right:-5px;top:-5px;width:12px;height:12px;border-radius:50%;border:2px solid #fff;text-decoration:none}.wp .bd.ok{background:var(--tag)}.wp .bd.no{background:var(--rust)}
+.wp .sh{position:absolute;left:-7px;bottom:-7px;width:16px;height:16px;border-radius:50%;border:2px solid #fff;transform:rotate(45deg);font:700 8px/12px var(--f);color:#fff;text-align:center;text-decoration:none}
+.hs{width:30px;height:30px;border-radius:50%;background:#B4122F;border:2.5px solid #fff;color:#fff;font:700 14px/1 var(--f);display:grid;place-items:center;box-shadow:0 0 0 5px rgba(180,18,47,.3),0 2px 6px rgba(0,0,0,.5);cursor:pointer;flex:none}
+.ml{background:rgba(21,25,20,.88);color:var(--bone);border:1px solid rgba(236,234,223,.5);border-radius:11px;padding:2px 8px;font:700 13.5px/1.3 var(--fc);white-space:nowrap;pointer-events:none}.ml.tot{background:var(--blaze);color:#1B1F1A;border-color:#1B1F1A;font-size:14.5px}
+.me{width:24px;height:24px;position:relative}
+.me:before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 7px rgba(77,163,255,.25),0 1px 4px rgba(0,0,0,.5)}
+.me .hd{position:absolute;left:50%;top:-16px;margin-left:-8px;border:8px solid transparent;border-bottom:14px solid var(--blue);border-top:0;display:none}
+.mate{display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.mate .av{width:34px;height:34px;border-radius:50%;border:3px solid #fff;display:grid;place-items:center;font:700 14px/1 var(--f);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.55)}
+.mate.stale .av{filter:grayscale(.85) brightness(.8)}
+.mate .nm{margin-top:3px;background:rgba(21,25,20,.88);color:var(--bone);border-radius:8px;padding:1px 6px;font:600 11.5px/1.35 var(--f);white-space:nowrap}
+.mate.fresh .av{animation:ping 2.4s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,255,255,.45),0 2px 8px rgba(0,0,0,.55)}70%{box-shadow:0 0 0 12px rgba(255,255,255,0),0 2px 8px rgba(0,0,0,.55)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0),0 2px 8px rgba(0,0,0,.55)}}
+.alertpin{width:34px;height:34px;border-radius:10px;background:var(--blaze);color:#1B1F1A;display:grid;place-items:center;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.55);cursor:pointer}.alertpin svg{width:20px;height:20px}
+
+/* ---------- popups ---------- */
+.maplibregl-popup-content{background:var(--bark);color:var(--bone);border-radius:18px;padding:15px 17px 13px;max-width:310px;border:1px solid var(--line2);font:inherit;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.55)}
+.maplibregl-popup-close-button{color:var(--lichen);font-size:22px;padding:2px 10px;right:2px;top:2px}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip{border-top-color:var(--bark)}.maplibregl-popup-anchor-top .maplibregl-popup-tip{border-bottom-color:var(--bark)}.maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:var(--bark)}.maplibregl-popup-anchor-right .maplibregl-popup-tip{border-left-color:var(--bark)}
+.pp h4{margin:1px 0 4px;font:700 18px/1.2 var(--f);padding-right:18px}.pp .k{color:var(--lichen);font-size:13.5px;line-height:1.4}.pp .k:first-child{font-weight:700;font-size:12.5px;letter-spacing:.02em}.pp hr{border:0;border-top:1px solid var(--line);margin:11px 0}
+.pp a,.sheet a:not(.btn){color:var(--sky)}
+.pp .btns{margin:11px 0 2px}
+.dist{font-size:14.5px;color:var(--gold);margin:0 0 7px}.dist b{font:700 19px/1 var(--fc)}
+.disc{position:absolute;left:calc(var(--sl) + 10px);bottom:calc(var(--tab) + var(--sb) + 10px);z-index:4;font-size:10.5px;color:rgba(236,234,223,.8);text-shadow:0 0 3px #000,0 0 3px #000;max-width:60%;pointer-events:none}
+.maplibregl-ctrl-bottom-left{bottom:calc(var(--tab) + var(--sb) + 24px);left:calc(var(--sl) + 2px)}.maplibregl-ctrl-bottom-right{display:none}
+.maplibregl-ctrl-scale{background:rgba(21,25,20,.55);color:var(--bone);border-color:var(--bone);font-size:10px}
+
+/* ---------- wind panel ---------- */
+.windbig{font:700 30px/1.05 var(--fc);letter-spacing:.005em}
+.hr{display:flex;gap:8px;overflow-x:auto;padding:10px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none}.hr::-webkit-scrollbar{display:none}
+.hr div{flex:none;text-align:center;font-size:13px;background:var(--field);border:1.5px solid transparent;border-radius:13px;padding:8px 8px;min-width:58px;font-weight:600;color:var(--lichen)}.hr div.on{border-color:var(--blaze);color:var(--bone)}
+.hr svg{width:20px;height:20px;display:block;margin:4px auto}
+.sun{display:flex;gap:8px;margin:10px 0 6px}.sun div{flex:1;background:var(--field);border:1px solid var(--line);border-radius:13px;padding:9px 11px}.sun div:last-child{flex:1.5}.sun small{display:block;font-size:12.5px;color:var(--lichen);font-weight:500}.sun b{font:700 19px/1.15 var(--fc);color:var(--gold)}
+.wx2{display:flex;gap:12px;align-items:center;background:var(--field);border:1px solid var(--line);border-radius:13px;padding:9px 11px;margin:8px 0}.wx2>div{min-width:136px}.wx2 small{display:block;font-size:12.5px;color:var(--lichen);font-weight:500}.wx2 b{display:block;font:700 19px/1.15 var(--fc)}.wx2 span{font-size:13px;color:var(--lichen)}.wx2 span.up{color:var(--tag)}.wx2 span.dn{color:#F08A74}
+.spark{flex:1;height:40px;min-width:0}
+.moon{display:flex;gap:12px;align-items:center;background:var(--field);border:1px solid var(--line);border-radius:13px;padding:9px 11px;margin:8px 0}.moon .mg{font-size:30px;line-height:1}.moon b{display:block;font-weight:600;font-size:15.5px}.moon small{color:var(--lichen);font-size:13px}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}.dot.ok{background:var(--tag)}.dot.no{background:var(--rust)}.okt{color:var(--tag);font-size:14px}.not{color:#F08A74;font-size:14px}
+.wchips{display:flex;flex-wrap:wrap;gap:7px}.wchip{min-width:50px;height:42px;border-radius:12px;border:1px solid var(--line2);background:var(--field);font:700 16px/1 var(--fc);color:var(--lichen)}.wchip.on{background:#1F6E43;border-color:var(--tag);color:#fff}
+.trio{display:flex;gap:8px}.trio .fld{flex:1;min-width:0;margin:8px 0}
+.ctr{display:flex;align-items:center;gap:10px;padding:6px 0}.ctr span{flex:1;font-weight:500}.ctr b{min-width:30px;text-align:center;font:700 24px/1 var(--fc)}.ctr .btn{width:48px;padding:0;font-size:22px}
+details.logs summary{cursor:pointer;color:var(--gold);font-weight:600;padding:10px 0}
+.prog{background:var(--field);border-radius:12px;height:38px;position:relative;overflow:hidden;margin:8px 0}.prog i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#1E6CC4,#4DA3FF);width:0}.prog span{position:relative;display:block;text-align:center;line-height:38px;font-size:14px;font-weight:600}
+
+/* ---------- tools hub ---------- */
+.tool{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--bone)}
+.tool:last-child{border-bottom:0}
+.tool .ti{width:44px;height:44px;border-radius:13px;background:var(--moss);display:grid;place-items:center;color:var(--blaze);flex:none}
+.tool .ti svg{width:24px;height:24px}
+.tool .tt{flex:1;min-width:0}.tool .tt b{display:block;font-weight:600;font-size:16.5px}.tool .tt small{display:block;color:var(--lichen);font-size:14px;margin-top:1px}
+.tool .chev{width:18px;height:18px;color:var(--lichen)}
+
+/* ---------- party ---------- */
+.demo{display:flex;gap:10px;align-items:flex-start;background:rgba(242,196,107,.1);border:1px solid rgba(242,196,107,.35);color:var(--gold);border-radius:13px;padding:10px 12px;font-size:13.5px;margin:4px 0 10px}
+.demo svg{width:18px;height:18px;flex:none;margin-top:1px}
+.pcode{font:700 30px/1 var(--fc);letter-spacing:.12em;color:var(--bone)}
+.alerts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.alerts button{background:var(--moss);border:1px solid var(--line);border-radius:14px;padding:12px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;font:600 13.5px/1.15 var(--f);color:var(--bone);min-height:78px}
+.alerts button svg{width:26px;height:26px;color:var(--blaze)}
+.alerts button.hot{background:#3A1C12;border-color:rgba(255,107,26,.5)}
+.av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:700 15px/1 var(--f);color:#fff;flex:none;border:2px solid rgba(255,255,255,.85)}
+.feed .row small b{color:var(--bone);font-weight:600}
+.banner{position:absolute;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);top:calc(var(--st) + 64px);z-index:12;max-width:540px;border-radius:18px;padding:12px 14px;display:none;gap:12px;align-items:center;background:#2A1A10;border:1px solid rgba(255,107,26,.6);box-shadow:0 10px 30px rgba(0,0,0,.55);animation:rise .25s ease-out}
+.banner.on{display:flex}.banner{flex-wrap:wrap;row-gap:10px}.banner .bt{flex:1 1 calc(100% - 100px);min-width:0}.banner .btn{flex:none}.banner .btn:first-of-type{margin-left:auto}.banner .bt b{display:block;font-size:16px}.banner .bt small{color:var(--lichen);font-size:13.5px}
+
+/* ---------- guide card ---------- */
+.guide{position:absolute;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);bottom:calc(var(--tab) + var(--sb) + 14px);z-index:6;border-radius:20px;padding:11px 13px;display:none;align-items:center;gap:13px;max-width:540px}
+.guide.on{display:flex}.garr{width:68px;height:68px;border-radius:50%;background:var(--field);border:1px solid var(--line);display:grid;place-items:center;flex:none;padding:0}.garr svg{width:52px;height:52px;transition:transform .25s}
+.gtx{flex:1;min-width:0;line-height:1.15}.gtx b{display:block;font:700 30px/1 var(--fc)}.gtx span{display:block;font-size:15px;color:var(--gold);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}.gtx small{color:var(--lichen);font-size:12.5px}
+body.guiding .loc{bottom:calc(var(--tab) + var(--sb) + 112px)}body.guiding .disc{display:none}
+
+/* ---------- blood trail camera ---------- */
 .blood{position:absolute;inset:0;z-index:20;background:#000;display:none;flex-direction:column}
 .blood.open{display:flex}
 .blood video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .blood canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.btop{position:absolute;top:0;left:0;right:0;padding:calc(var(--st) + 8px) 12px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(rgba(0,0,0,.75),transparent)}
-.bttl{text-align:center;line-height:1.15}.bttl b{display:block;font-size:16px}.bttl span{font-size:12.5px;color:#ffb3bd}
-.bbtn{height:40px;padding:0 14px;border-radius:12px;border:0;background:rgba(255,255,255,.18);color:#fff;font-weight:600;font-size:15px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-.bbtn.sq{width:46px;height:46px;padding:0;font-size:16px}.bbtn.on{background:var(--acc);color:#1a0d02}
+.btop{position:absolute;top:0;left:0;right:0;padding:calc(var(--st) + 8px) 12px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(rgba(0,0,0,.78),transparent)}
+.bttl{text-align:center;line-height:1.15}.bttl b{display:block;font-size:17px}.bttl span{font-size:13px;color:#ffb3bd}
+.bbtn{height:42px;padding:0 15px;border-radius:13px;border:0;background:rgba(236,234,223,.18);color:#fff;font-weight:600;font-size:15.5px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.bbtn.sq{width:48px;height:48px;padding:0;font-size:16px}.bbtn.on{background:var(--blaze);color:#1B1F1A}
 .bside{position:absolute;right:calc(var(--sr) + 10px);top:50%;transform:translateY(-70%);display:flex;flex-direction:column;gap:10px}
-.bbot{position:absolute;left:0;right:0;bottom:0;padding:10px calc(var(--sr) + 12px) calc(var(--sb) + 10px) calc(var(--sl) + 12px);background:linear-gradient(transparent,rgba(0,0,0,.85) 30%)}
-.bsens{display:flex;align-items:center;gap:10px;font-size:13px;color:#fff;font-weight:600}.bsens span:last-child{min-width:96px;text-align:right;color:#ffd1d8;font-weight:500}
+.bbot{position:absolute;left:0;right:0;bottom:0;padding:10px calc(var(--sr) + 12px) calc(var(--sb) + 12px) calc(var(--sl) + 12px);background:linear-gradient(transparent,rgba(0,0,0,.86) 30%)}
+.bsens{display:flex;align-items:center;gap:10px;font-size:13.5px;color:#fff;font-weight:600}.bsens span:last-child{min-width:96px;text-align:right;color:#ffd1d8;font-weight:500}
 .bsens input{flex:1;height:34px;background:none;margin:0;accent-color:#00e5ff}
 .bsens input::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(90deg,#ff2d55,#00e5ff);border:1px solid rgba(255,255,255,.4)}
 .bsens input::-moz-range-track{height:8px;border-radius:4px;background:linear-gradient(90deg,#ff2d55,#00e5ff)}
 .bsens input::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:30px;height:30px;margin-top:-12px;border-radius:50%;background:#fff;border:3px solid #00e5ff;box-shadow:0 2px 8px rgba(0,0,0,.7)}
 .bsens input::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid #00e5ff;box-shadow:0 2px 8px rgba(0,0,0,.7)}
-.bseg{background:rgba(255,255,255,.14);margin:8px 0}
-.bmarks{display:flex;gap:8px}.bmarks .btn{flex:1;padding:0 6px;background:rgba(255,255,255,.16)}.bmarks .mark-blood{background:#c1001f;color:#fff;flex:1.4}
-.binfo{margin-top:8px;font-size:13px;color:#ddd;text-align:center;min-height:18px}
-.wpimg{width:100%;border-radius:12px;margin:6px 0;display:block}
-.dist{font-size:14px;color:#ffcf7a;margin:0 0 6px}.dist b{font-size:16px}
-.wx2{display:flex;gap:10px;align-items:center;background:var(--field);border-radius:12px;padding:8px 10px;margin:6px 0}.wx2>div{min-width:132px}.wx2 small{display:block;font-size:11.5px;color:var(--mut);font-weight:600}.wx2 b{display:block;font-size:15.5px}.wx2 span{font-size:12.5px;color:var(--mut)}.wx2 span.up{color:#57d38c}.wx2 span.dn{color:#ff8a7a}
-.spark{flex:1;height:40px;min-width:0}
-.moon{display:flex;gap:10px;align-items:center;background:var(--field);border-radius:12px;padding:8px 10px;margin:6px 0}.moon .mg{font-size:30px;line-height:1}.moon b{display:block;font-size:15px}.moon small{color:var(--mut);font-size:12.5px}
-.dot{width:12px;height:12px;border-radius:50%;flex:none}.dot.ok{background:#2fd16b}.dot.no{background:#ff4d4d}.okt{color:#57d38c;font-size:13px}.not{color:#ff8a7a;font-size:13px}
-.wp .bd{position:absolute;right:-5px;top:-5px;width:12px;height:12px;border-radius:50%;border:2px solid #fff;text-decoration:none}.wp .bd.ok{background:#2fd16b}.wp .bd.no{background:#ff3b3b}
-.wchips{display:flex;flex-wrap:wrap;gap:6px}.wchip{min-width:46px;height:38px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.08);font-weight:700;font-size:14px}.wchip.on{background:#1f9d55;border-color:#2fd16b;color:#fff}
-.trio{display:flex;gap:8px}.trio .fld{flex:1;min-width:0;margin:6px 0}.fld input[type=date],.fld input[type=time]{min-height:44px}
-.ctr{display:flex;align-items:center;gap:10px;padding:5px 0}.ctr span{flex:1}.ctr b{min-width:28px;text-align:center;font-size:18px}.ctr .btn{width:44px;font-size:20px}
-details.logs summary{cursor:pointer;color:var(--acc2);font-weight:600;padding:8px 0}
-.prog{background:var(--field);border-radius:10px;height:34px;position:relative;overflow:hidden;margin:6px 0}.prog i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#1f6fd1,#3b9bff);width:0}.prog span{position:relative;display:block;text-align:center;line-height:34px;font-size:13px;font-weight:600}
-.btn[disabled]{opacity:.45}
-.guide{position:absolute;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);bottom:calc(var(--tab) + var(--sb) + 12px);z-index:6;border-radius:18px;padding:10px 12px;display:none;align-items:center;gap:12px;max-width:520px}
-.guide.on{display:flex}.garr{width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.35);border:0;display:grid;place-items:center;flex:none;padding:0}.garr svg{width:50px;height:50px;transition:transform .25s}
-.gtx{flex:1;min-width:0;line-height:1.2}.gtx b{display:block;font-size:22px}.gtx span{display:block;font-size:14px;color:var(--acc2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gtx small{color:var(--mut);font-size:11.5px}
-body.guiding .loc{bottom:calc(var(--tab) + var(--sb) + 104px)}body.guiding .disc{display:none}
-.me{width:24px;height:24px;position:relative}
-.me:before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 7px rgba(59,155,255,.25),0 1px 4px rgba(0,0,0,.5)}
-.me .hd{position:absolute;left:50%;top:-16px;margin-left:-8px;border:8px solid transparent;border-bottom:14px solid var(--blue);border-top:0;display:none}
-.maplibregl-popup-content{background:var(--solid);color:var(--tx);border-radius:16px;padding:14px 16px 12px;max-width:300px;border:.5px solid var(--line);font:inherit;font-size:15px;box-shadow:0 8px 28px rgba(0,0,0,.5)}
-.maplibregl-popup-close-button{color:var(--mut);font-size:22px;padding:2px 10px;right:2px;top:2px}
-.maplibregl-popup-anchor-bottom .maplibregl-popup-tip{border-top-color:var(--solid)}.maplibregl-popup-anchor-top .maplibregl-popup-tip{border-bottom-color:var(--solid)}.maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:var(--solid)}.maplibregl-popup-anchor-right .maplibregl-popup-tip{border-left-color:var(--solid)}
-.pp h4{margin:1px 0 3px;font-size:17px;font-weight:700;letter-spacing:-.01em;padding-right:18px}.pp .k{color:var(--mut);font-size:13px;line-height:1.4}.pp .k:first-child{font-weight:700;font-size:11.5px;letter-spacing:.05em}.pp hr{border:0;border-top:.5px solid var(--line);margin:10px 0}
-.pp a,.sheet a:not(.btn){color:#7cc4ff}
-.pp .btns{margin:10px 0 2px}
-.disc{position:absolute;left:calc(var(--sl) + 10px);bottom:calc(var(--tab) + var(--sb) + 6px);z-index:4;font-size:10px;color:rgba(255,255,255,.8);text-shadow:0 0 3px #000,0 0 3px #000;max-width:62%;pointer-events:none}
-.maplibregl-ctrl-bottom-left{bottom:calc(var(--tab) + var(--sb) + 20px);left:calc(var(--sl) + 2px)}.maplibregl-ctrl-bottom-right{display:none}
-.maplibregl-ctrl-scale{background:rgba(0,0,0,.45);color:#fff;border-color:#fff;font-size:10px}
-.hr{display:flex;gap:8px;overflow-x:auto;padding:8px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none}.hr::-webkit-scrollbar{display:none}
-.hr div{flex:none;text-align:center;font-size:12.5px;background:var(--field);border:1.5px solid transparent;border-radius:12px;padding:7px 8px;min-width:56px;font-weight:600}.hr div.on{border-color:var(--acc);color:var(--acc2)}
-.hr svg{width:20px;height:20px;display:block;margin:3px auto}
+.bseg{background:rgba(236,234,223,.14);margin:8px 0}
+.bmarks{display:flex;gap:8px}.bmarks .btn{flex:1;padding:0 6px;background:rgba(236,234,223,.16);border:0}.bmarks .mark-blood{background:#B4122F;color:#fff;flex:1.4}
+.binfo{margin-top:8px;font-size:13.5px;color:#ddd;text-align:center;min-height:18px}
+.wpimg{width:100%;border-radius:13px;margin:6px 0;display:block}
+
+/* ---------- first-time guide + help ---------- */
+.intro{position:fixed;inset:0;z-index:40;background:var(--bark);display:none;flex-direction:column;padding:calc(var(--st) + 14px) calc(var(--sr) + 24px) calc(var(--sb) + 18px) calc(var(--sl) + 24px)}
+.intro.on{display:flex}
+.intro .skip{align-self:flex-end;background:none;border:0;color:var(--lichen);font-weight:600;font-size:16px;padding:8px 4px;min-height:44px}
+.intro .art{flex:1;display:grid;place-items:center;min-height:0}
+.intro .art>svg{width:min(78vw,330px);height:auto;max-height:42vh}
+.intro .perm{width:100%}
+.intro h1{font:700 32px/1.08 var(--fc);letter-spacing:.005em;margin:6px 0 10px;max-width:22ch}
+.intro p{color:var(--lichen);font-size:17px;line-height:1.48;margin:0 0 6px;max-width:36ch}
+.intro .steps{display:flex;gap:7px;margin:20px 0 16px}.intro .steps i{width:8px;height:8px;border-radius:4px;background:var(--moss2);transition:width .25s,background .25s}.intro .steps i.on{width:26px;background:var(--blaze)}
+.intro .act{display:flex;gap:10px}.intro .act .btn{flex:1;min-height:54px;font-size:17px}
+.intro .perm{display:flex;flex-direction:column;gap:10px;margin:10px 0 0}
+.intro .perm .btn{justify-content:flex-start;padding:0 16px;gap:12px}.intro .perm .btn svg{color:var(--blaze)}
+.intro .perm .btn.done{color:var(--tag)}.intro .perm .btn.done svg{color:var(--tag)}
+.helpq{display:flex;align-items:center;gap:8px;background:var(--field);border:1px solid var(--line2);border-radius:12px;padding:0 12px;height:48px;margin:2px 0 6px;color:var(--lichen)}
+.helpq input{flex:1;background:none;border:0;outline:0;font-size:16px;color:var(--bone)}
+.topic{line-height:1.5}.topic ol,.topic ul{padding-left:22px;margin:8px 0}.topic li{margin:6px 0}.topic p{margin:8px 0}
+.topic .key{display:inline-flex;align-items:center;gap:4px;background:var(--moss);border-radius:7px;padding:0 7px;font-weight:600;color:var(--bone);vertical-align:baseline;line-height:1.5}.topic .key svg{width:15px;height:15px}
+.brand{display:flex;align-items:center;gap:12px;margin:2px 0 16px}.brand svg{width:46px;height:46px;flex:none}.brand b{display:block;font:700 26px/1 var(--fc);letter-spacing:.01em}.brand small{color:var(--lichen);font-size:14px}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5l8.5 4.6L12 12.7 3.5 8.1z"/><path d="M3.5 12.2L12 16.8l8.5-4.6"/><path d="M3.5 16.2L12 20.8l8.5-4.6"/></symbol>
+  <symbol id="i-tools" viewBox="0 0 24 24"><rect x="3" y="7.5" width="18" height="12.5" rx="2.5"/><path d="M8.5 7.5V5.8A1.8 1.8 0 0110.3 4h3.4a1.8 1.8 0 011.8 1.8v1.7"/><path d="M3 12.5h18"/><path d="M10 12.5v2h4v-2"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><path d="M12 21.5s6.8-6.2 6.8-11.3A6.8 6.8 0 005.2 10.2C5.2 15.3 12 21.5 12 21.5z"/><path d="M12 7.2v6M9 10.2h6"/></symbol>
+  <symbol id="i-party" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.3"/><path d="M3.2 19.5c.6-3.3 2.9-5.2 5.8-5.2s5.2 1.9 5.8 5.2"/><circle cx="16.8" cy="9" r="2.6"/><path d="M15.6 14.4c2.6-.3 4.6 1.2 5.2 4.3"/></symbol>
+  <symbol id="i-saved" viewBox="0 0 24 24"><path d="M6.5 3.5h11v17.3L12 16.6l-5.5 4.2z"/></symbol>
+  <symbol id="i-measure" viewBox="0 0 24 24"><path d="M3.5 16.5L16.5 3.5l4 4-13 13z"/><path d="M7.5 12.5l1.8 1.8M10.5 9.5l1.8 1.8M13.5 6.5l1.8 1.8"/></symbol>
+  <symbol id="i-track" viewBox="0 0 24 24"><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="18.5" cy="5.5" r="2.2"/><path d="M7.7 18.5h7.8a3.3 3.3 0 000-6.6H8.5a3.3 3.3 0 010-6.6h7.8"/></symbol>
+  <symbol id="i-blood" viewBox="0 0 24 24"><path d="M12 3.5s6 6.6 6 11a6 6 0 01-12 0c0-4.4 6-11 6-11z"/><path d="M9.3 15.2a2.8 2.8 0 002.4 2.6"/></symbol>
+  <symbol id="i-hot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.6"/><path d="M12 2v3.2M12 18.8V22M2 12h3.2M18.8 12H22"/></symbol>
+  <symbol id="i-offline" viewBox="0 0 24 24"><path d="M12 4v10.5"/><path d="M7.8 10.6L12 14.8l4.2-4.2"/><path d="M4.5 15.5v2.7a1.8 1.8 0 001.8 1.8h11.4a1.8 1.8 0 001.8-1.8v-2.7"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 015 .9c0 1.8-2.5 2.2-2.5 3.8"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></symbol>
+  <symbol id="i-wind" viewBox="0 0 24 24"><path d="M3 9h11.5a2.8 2.8 0 10-2.8-2.8"/><path d="M3 13.5h15a2.8 2.8 0 11-2.8 2.8"/><path d="M3 18h6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></symbol>
+  <symbol id="i-basemap" viewBox="0 0 24 24"><path d="M9 4.5L3.5 6.6v13l5.5-2.1 6 2.1 5.5-2.1v-13L15 6.6z"/><path d="M9 4.5v13M15 6.6v13"/></symbol>
+  <symbol id="i-3d" viewBox="0 0 24 24"><path d="M2.5 19l6.5-11 4 6.5 2.2-3.2L21.5 19z"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z"/></symbol>
+  <symbol id="i-north" viewBox="0 0 24 24"><path d="M12 3l6 17-6-4-6 4z"/></symbol>
+  <symbol id="i-guide" viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.6l7 2.4 2.4 7z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3.5v11"/><path d="M8 7.3l4-3.8 4 3.8"/><path d="M6 11.5H5.3a1.8 1.8 0 00-1.8 1.8v5.4a1.8 1.8 0 001.8 1.8h13.4a1.8 1.8 0 001.8-1.8v-5.4a1.8 1.8 0 00-1.8-1.8H18"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5.5l6.5 6.5L9 18.5"/></symbol>
+  <symbol id="i-deer" viewBox="0 0 24 24"><path d="M12 21v-5"/><path d="M9 15.5c-2.3-.6-3.6-2.6-3.6-5V8.2"/><path d="M15 15.5c2.3-.6 3.6-2.6 3.6-5V8.2"/><path d="M5.4 10.5L3 8.2M5.4 8.2V4.5M8 9.3V6.6"/><path d="M18.6 10.5L21 8.2M18.6 8.2V4.5M16 9.3V6.6"/><path d="M9.5 16.5h5"/></symbol>
+  <symbol id="i-coming" viewBox="0 0 24 24"><path d="M3.5 12h11"/><path d="M10.5 7.5L15 12l-4.5 4.5"/><circle cx="18.5" cy="7" r="2"/><path d="M18.5 9v6.5M16.5 20l2-4.5 2 4.5"/></symbol>
+  <symbol id="i-sos" viewBox="0 0 24 24"><path d="M12 3.8l9 15.7H3z"/><path d="M12 9.8v4.6"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 4h4.5a1.5 1.5 0 011.5 1.5v13a1.5 1.5 0 01-1.5 1.5H14"/><path d="M4 12h11"/><path d="M11 8l4 4-4 4"/></symbol>
+  <symbol id="i-stand" viewBox="0 0 24 24"><path d="M7 21L9.5 3.5M17 21L14.5 3.5"/><path d="M8.6 9.5h6.8M8 14h8M7.4 18.5h9.2"/><path d="M6 3.5h12"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5.5h16a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5h-9.5L6 21v-3.5H4A1.5 1.5 0 012.5 16V7A1.5 1.5 0 014 5.5z"/></symbol>
+  <symbol id="i-log" viewBox="0 0 24 24"><path d="M6 3.5h10.5a2 2 0 012 2v15H8a2 2 0 01-2-2z"/><path d="M6 18.5a2 2 0 012-2h10.5"/><path d="M9.5 8h5.5M9.5 11.5h4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".6" fill="currentColor"/></symbol>
+  <symbol id="i-loc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2.4"/><path d="M10.5 18h3"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24"><path d="M19.5 8.5A7.8 7.8 0 005.3 7.3"/><path d="M5 3.8v3.7h3.7"/><path d="M4.5 15.5a7.8 7.8 0 0014.2 1.2"/><path d="M19 20.2v-3.7h-3.7"/></symbol>
+  <symbol id="logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#1B1F1A"/><g fill="none" stroke="#ECEADF" stroke-linecap="round"><path d="M32 4.8c11.5 0 22.4 8.8 22.4 23.6 0 15.8-10 30.8-22.4 30.8S9.6 44.2 9.6 28.4C9.6 13.6 20.5 4.8 32 4.8z" stroke-opacity=".22" stroke-width="1.4"/><path d="M32 9.8c9 0 17.6 7.2 17.6 19 0 12.7-7.9 24.6-17.6 24.6S14.4 41.5 14.4 28.8C14.4 17 23 9.8 32 9.8z" stroke-opacity=".38" stroke-width="1.4"/></g><g fill="#FF6B1A"><path d="M30.2 48.6c-6.6.4-10.7-4.1-10.7-11.1 0-8.6 4.6-17.2 9.6-21.6.9-.8 1.9-.3 1.9.9l.6 30.2c0 .9-.6 1.5-1.4 1.6z"/><path d="M33.8 48.6c6.6.4 10.7-4.1 10.7-11.1 0-8.6-4.6-17.2-9.6-21.6-.9-.8-1.9-.3-1.9.9l-.6 30.2c0 .9.6 1.5 1.4 1.6z"/></g></symbol>
+ </defs>
+</svg>
 <div id="map"></div>
 <div class="top">
-  <label class="search glass"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" placeholder="Search a place or lat, lng" enterkeyhint="search" autocomplete="off" autocorrect="off"></label>
-  <button class="chip glass" id="windChip" aria-label="Wind"><svg viewBox="0 0 24 24" id="windArrow"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#7cc4ff"/></svg><span class="wt"><span id="windTxt">Wind</span><small id="sunTxt"></small></span></button>
+  <label class="search glass"><svg class="ic"><use href="#i-search"/></svg><input id="q" placeholder="Search places" enterkeyhint="search" autocomplete="off" autocorrect="off" aria-label="Search"></label>
+  <button class="chip glass" id="windChip" aria-label="Wind, sunrise and sunset"><svg viewBox="0 0 24 24" id="windArrow"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#6FB7F2"/></svg><span class="wt"><span id="windTxt">Wind</span><small id="sunTxt"></small></span></button>
 </div>
 <div class="cstrip glass" id="cstrip"><canvas id="ccan"></canvas><div class="cread"><b id="cdeg">--</b><span id="cdir"></span></div></div>
 <div class="stack glass">
-  <button id="fBase" aria-label="Switch basemap"><svg class="i" viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Sat</span></button>
-  <button id="f3d" aria-label="3D terrain"><svg class="i" viewBox="0 0 24 24"><path d="M2.5 19l6.5-11 4 6.5 2.2-3.2L21.5 19z"/></svg><span>3D</span></button>
-  <button id="fCmp" aria-label="Compass"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg><span>Compass</span></button>
-  <button id="fOrient" aria-label="Map orientation"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l6 17-6-4-6 4z"/></svg><span id="orientTxt">N up</span></button>
+  <button id="fBase" aria-label="Switch map style"><svg class="ic"><use href="#i-basemap"/></svg><span>Sat</span></button>
+  <button id="f3d" aria-label="3D terrain"><svg class="ic"><use href="#i-3d"/></svg><span>3D</span></button>
+  <button id="fCmp" aria-label="Compass"><svg class="ic"><use href="#i-compass"/></svg><span>Compass</span></button>
+  <button id="fOrient" aria-label="Map orientation"><svg class="ic"><use href="#i-north"/></svg><span id="orientTxt">N up</span></button>
 </div>
 <div class="modebar" id="modebar"><span id="modeTxt"></span><button data-act="mode-undo" id="modeUndo">Undo</button><button data-act="mode-clear" id="modeClear">Clear</button><button data-act="mode-done">Done</button></div>
 <button class="loc glass" id="fLoc" aria-label="Go to my location"><svg viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.6l7 2.4 2.4 7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
-<div class="lchips"><button class="hotchip" id="hotChip" data-act="hot-clear">Clear hot spots &times;</button><button class="hotchip recchip" id="recChip" data-act="rec-chip"><span class="dot"></span><span id="recChipTxt">Recording</span></button><button class="hotchip bloodchip" id="bloodChip" data-act="blood-open"><span class="dot"></span>Blood trail recording &middot; back to camera</button></div>
+<div class="lchips"><button class="hotchip" id="hotChip" data-act="hot-clear">Clear hot spots &times;</button><button class="hotchip recchip" id="recChip" data-act="rec-chip"><span class="dot"></span><span id="recChipTxt">Recording</span></button><button class="hotchip bloodchip" id="bloodChip" data-act="blood-open"><span class="dot"></span>Blood trail recording, back to camera</button></div>
+<div class="banner" id="banner"></div>
 <div id="blood" class="blood">
   <video id="bvid" playsinline muted autoplay></video>
   <canvas id="bcan"></canvas>
@@ -179,18 +316,18 @@ body.guiding .loc{bottom:calc(var(--tab) + var(--sb) + 104px)}body.guiding .disc
     <div class="binfo" id="binfo">Waiting for GPS</div>
   </div>
 </div>
-<div class="sheet" id="sheet"></div>
-<nav class="bar glass" id="bar">
-  <button data-p="layers"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>Layers</button>
-  <button data-p="mark"><svg class="i" viewBox="0 0 24 24"><path d="M12 21.5s7-6.4 7-11.5a7 7 0 10-14 0c0 5.100 7 11.500 7 11.500z"/><circle cx="12" cy="10" r="2.6"/></svg>Mark</button>
-  <button data-p="measure"><svg class="i" viewBox="0 0 24 24"><path d="M3 16.500L16.500 3l4.500 4.500L7.500 21z"/><path d="M7 12.500l2 2M10 9.500l2 2M13 6.500l2 2"/></svg>Measure</button>
-  <button data-p="track"><svg class="i" viewBox="0 0 24 24"><circle cx="5.500" cy="18.500" r="2.500"/><circle cx="18.500" cy="5.500" r="2.500"/><path d="M8 18.500h7.500a3.500 3.500 0 000-7h-7a3.500 3.500 0 010-7H16"/></svg>Track</button>
-  <button data-p="hot"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.800"/><path d="M12 1.500v4M12 18.500v4M1.500 12h4M18.500 12h4"/></svg>Hot spots</button>
-  <button data-p="saved"><svg class="i" viewBox="0 0 24 24"><path d="M6.500 3h11v18l-5.500-4.200L6.500 21z"/></svg>Saved</button>
+<div class="sheet" id="sheet" role="dialog" aria-modal="false"></div>
+<nav class="bar glass" id="bar" aria-label="Main">
+  <button data-p="layers"><svg class="ic"><use href="#i-layers"/></svg>Layers</button>
+  <button data-p="tools"><svg class="ic"><use href="#i-tools"/></svg>Tools</button>
+  <button data-p="mark" class="markbtn" aria-label="Mark a spot"><span class="mkd"><svg class="ic"><use href="#i-mark"/></svg></span>Mark</button>
+  <button data-p="party"><svg class="ic"><use href="#i-party"/></svg>Party<span class="pdot" id="pdot"></span></button>
+  <button data-p="saved"><svg class="ic"><use href="#i-saved"/></svg>Saved</button>
 </nav>
-<div class="guide glass" id="guide"><button class="garr" data-act="guide-center" aria-label="Show target"><svg id="gArrow" viewBox="0 0 48 48"><path d="M24 3l13 36-13-8-13 8z" fill="#ff7a1a" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></button><div class="gtx"><b id="gDist">Waiting for GPS</b><span id="gName"></span><small id="gSrc"></small></div><button class="btn s" data-act="guide-stop">Stop</button></div>
-<div class="toast glass" id="toast"></div>
+<div class="guide glass" id="guide"><button class="garr" data-act="guide-center" aria-label="Show target"><svg id="gArrow" viewBox="0 0 48 48"><path d="M24 3l13 36-13-8-13 8z" fill="#FF6B1A" stroke="#ECEADF" stroke-width="2" stroke-linejoin="round"/></svg></button><div class="gtx"><b id="gDist">Waiting for GPS</b><span id="gName"></span><small id="gSrc"></small></div><button class="btn s" data-act="guide-stop">Stop</button></div>
+<div class="toast glass" id="toast" role="status" aria-live="polite"></div>
 <div class="disc">Boundaries are approximate, not a survey. Data may be out of date.</div>
+<div class="intro" id="intro" role="dialog" aria-label="Welcome"></div>
 <script>
 /* ---------- Hunt Map core: geometry + habitat scoring (no DOM) ---------- */
 const HM = {};
@@ -536,7 +673,11 @@ HM.mergeSync = (loc, rem) => {
 };
 </script>
 <script>
-/* ======================= Hunt Map app ======================= */
+/* ======================= Rutline app ======================= */
+const APP = 'Rutline';
+const ico = (id, cls) => `<svg class="ic${cls ? ' ' + cls : ''}"><use href="#${id}"/></svg>`;
+const toolRow = (act, icon, title, sub, extra) => `<button class="tool" data-act="${act}"${extra || ''}><span class="ti">${ico(icon)}</span><span class="tt"><b>${title}</b><small>${sub}</small></span>${ico('i-chev', 'chev')}</button>`;
+
 const SRC = {
   wma: 'https://arcgis.metc.state.mn.us/server/rest/services/GDRS/DNR_bdry_wildlife_management_area_boundaries_publicly_accessible/MapServer/0',
   padus: 'https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/Fee_Managers_PADUS/FeatureServer/0',
@@ -646,7 +787,7 @@ map.on('load', () => {
   map.addLayer({ id: 'mine-fill', type: 'fill', source: 'mine', paint: { 'fill-color': '#fff', 'fill-opacity': 0 } }, 'roads');
   map.addLayer({ id: 'mine-line', type: 'line', source: 'mine', minzoom: 11, paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .4, 17, 2], 'line-opacity': .9 } }, 'roads');
   map.addLayer({ id: 'mine-lbl', type: 'symbol', source: 'mine', minzoom: 14.5, layout: { 'text-field': ['coalesce', ['get', 'owner_name'], ''], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-width': 8 }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
-  loadMine(); addRegrid(); addBuiltTiles(); applyBase(); LAYERS.forEach(l => applyVis(l.id)); drawWps(); drawTracks(); refresh(); loadWind(); openShared(); syncSoon(800); offZoomCap();
+  loadMine(); addRegrid(); addBuiltTiles(); applyBase(); LAYERS.forEach(l => applyVis(l.id)); drawWps(); drawTracks(); refresh(); loadWind(); openShared(); syncSoon(800); offZoomCap(); drawParty(); if (!store.get('introDone', false)) showIntro(0);
 });
 
 /* ---------------- private parcels from a Regrid key (covers counties with no open data) ---------------- */
@@ -950,7 +1091,7 @@ async function gh(path, opt = {}) {
 function setSync(msg, bad) { S.syncMsg = msg; S.syncBad = !!bad; const el = document.getElementById('syncSt'); if (el) { el.textContent = msg; el.style.color = bad ? 'var(--bad)' : ''; } }
 async function findGist() {
   for (let page = 1; page <= 10; page++) { const list = await gh('/gists?per_page=100&page=' + page); const g = list.find(x => x.files && x.files[GFILE]); if (g) return g.id; if (list.length < 100) break; }
-  const g = await gh('/gists', { method: 'POST', body: JSON.stringify({ public: false, description: 'Hunt Map waypoints and tracks (synced by the app)', files: { [GFILE]: { content: JSON.stringify({ v: 1, wps: [], tracks: [], del: {} }) } } }) });
+  const g = await gh('/gists', { method: 'POST', body: JSON.stringify({ public: false, description: APP + ' waypoints, tracks and hunt log (synced by the app)', files: { [GFILE]: { content: JSON.stringify({ v: 1, wps: [], tracks: [], del: {} }) } } }) });
   return g.id;
 }
 const strip = d => ({ wps: d.wps.map(w => Object.assign({}, w)), tracks: d.tracks.map(t => { const c = Object.assign({}, t); delete c.hide; return c; }), log: (d.log || []).map(s => Object.assign({}, s)), del: d.del });
@@ -986,11 +1127,11 @@ function renderWps() {
   wpMarkers.forEach(m => m.remove()); wpMarkers = []; const wd = windAt(S.windHour);
   for (const w of S.wps) {
     const t = WPT[w.type] || WPT.other, el = document.createElement('div'), fit = HM.windFits(w.winds, wd && wd.dir);
-    el.className = 'wp'; el.style.background = t[1]; el.innerHTML = `<i>${t[2]}</i>` + (fit == null ? '' : `<s class="bd ${fit ? 'ok' : 'no'}"></s>`); el.title = w.name;
+    el.className = 'wp'; el.style.background = t[1]; el.innerHTML = `<i>${t[2]}</i>` + (fit == null ? '' : `<s class="bd ${fit ? 'ok' : 'no'}"></s>`) + (w.shared && P.st ? `<s class="sh" style="background:${P.me.color || '#FF6B1A'}"></s>` : ''); el.title = w.name;
     el.addEventListener('click', ev => { ev.stopPropagation(); if (!S.mode) editWp(w); });
     wpMarkers.push(new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [0, 0] }).setLngLat(w.p).addTo(map));
   }
-  drawRings();
+  drawRings(); if (typeof drawParty === 'function') drawParty();
 }
 function drawWps() { renderWps(); stampAll(); store.set('wps', S.wps); syncSoon(); }
 const RINGS = { bow: [20, 30, 40], gun: [50, 100, 150, 200] };
@@ -1012,7 +1153,7 @@ function editWp(w) { if (popup) popup.remove(); openSheet('wp', w); }
 async function shareWp(w) {
   const t = WPT[w.type] || WPT.other, name = w.name || t[0], lat = w.p[1].toFixed(6), lng = w.p[0].toFixed(6);
   const app = /^https?:/.test(location.protocol) ? `${location.origin}${location.pathname}?wp=${encodeURIComponent([lat, lng, w.type, name, w.notes || ''].join('|'))}#16/${lat}/${lng}` : '';
-  const text = `${name} (${t[0]})${w.notes ? '\n' + w.notes : ''}\n${lat}, ${lng}\nGoogle Maps: https://maps.google.com/?q=${lat},${lng}` + (app ? `\nOpen in Hunt Map: ${app}` : '');
+  const text = `${name} (${t[0]})${w.notes ? '\n' + w.notes : ''}\n${lat}, ${lng}\nGoogle Maps: https://maps.google.com/?q=${lat},${lng}` + (app ? `\nOpen in Rutline: ${app}` : '');
   try { if (navigator.share) { await navigator.share({ title: name, text }); return; } } catch (e) { if (e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(text); toast('Waypoint copied. Paste it into a text or email.', 4000); } catch (e) { openSheet('sharetxt', text); }
 }
@@ -1383,20 +1524,186 @@ function offZoomCap() { const mx = S.offAreas.reduce((m, a) => Math.max(m, a.det
 window.addEventListener('offline', () => { offZoomCap(); toast('No signal. Using your saved maps.', 3000); });
 window.addEventListener('online', offZoomCap);
 
+/* ---------------- party hunting ----------------
+   The UI talks to P.transport. Today that is Demo (sample hunters on this phone).
+   A real server only needs the same few calls: start, join, send, and a stream of updates. */
+const P = { st: store.get('party', null), me: store.get('pme', { name: '', color: '#FF6B1A' }), marks: {}, extra: [], sig: '', unread: 0 };
+const AL = { down: ['Deer down', 'i-deer'], coming: ['Coming your way', 'i-coming'], help: ['Need help', 'i-sos'], out: ['Heading out', 'i-out'], stand: ['On stand', 'i-stand'], msg: ['Message', 'i-chat'], note: ['Update', 'i-info'], join: ['Joined', 'i-party'] };
+const ago = t => { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : Math.round(m / 60) + ' h ago'; };
+const initials = n => (n || '?').trim().split(/\s+/).map(x => x[0]).join('').slice(0, 2).toUpperCase();
+function partySave() { store.set('party', P.st); }
+const Demo = {
+  crew: [['Dale', '#E0563B', 'On stand, east ridge'], ['Kurt', '#3FB56B', 'Walking the slough edge'], ['Jen', '#4DA3FF', 'On stand, oak flat'], ['Tom', '#B07CF0', 'At the truck']],
+  start(name, code) {
+    const c = S.me || [map.getCenter().lng, map.getCenter().lat], now = Date.now();
+    const members = this.crew.map((x, i) => ({ id: 'm' + i, name: x[0], color: x[1], status: x[2], p: HM.dest(c, 40 + i * 95, 260 + i * 210), t: i === 3 ? now - 26 * 6e4 : now - i * 50e3, moving: i === 1 }));
+    return {
+      id: 'demo' + now, demo: true, name, code: code || Array.from({ length: 6 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 31)]).join(''), shareLoc: true, members,
+      wps: [{ id: 'sw1', by: 'Dale', color: '#E0563B', type: 'access', name: 'Truck', notes: 'Field approach off the gravel road', p: HM.dest(c, 200, 520) }, { id: 'sw2', by: 'Kurt', color: '#3FB56B', type: 'sign', name: 'Scrape line', notes: 'Fresh, six scrapes along the edge', p: HM.dest(c, 75, 330) }],
+      feed: [{ id: 'f0', from: 'Dale', color: '#E0563B', k: 'join', label: 'Started the party', t: now - 40 * 6e4 }]
+    };
+  },
+  tick(st) {
+    let ev = null; const now = Date.now();
+    for (const m of st.members) {
+      if (now - m.t > 20 * 6e4) continue; // stale hunters stay put
+      if (m.moving || Math.random() < .08) m.p = HM.dest(m.p, (m.hd = (m.hd == null ? Math.random() * 360 : m.hd + (Math.random() - .5) * 50)), m.moving ? 3 + Math.random() * 4 : 2);
+      if (Math.random() < .25) m.t = now;
+    }
+    if (!this.next) this.next = now + 45e3;
+    if (now > this.next) { this.next = now + 120e3 + Math.random() * 120e3; const m = st.members[1]; ev = { from: m.name, color: m.color, k: 'coming', p: m.p.slice() }; }
+    if (this.reply && now > this.reply.at) { ev = this.reply.ev; this.reply = null; }
+    return ev;
+  },
+  sent(st, k) {
+    const m = st.members[0], now = Date.now();
+    if (k === 'help') { this.reply = { at: now + 7000, ev: { from: m.name, color: m.color, k: 'msg', text: 'On my way. Stay put.', p: m.p.slice() } }; m.moving = true; }
+    if (k === 'down') { const j = st.members[2]; this.reply = { at: now + 9000, ev: { from: j.name, color: j.color, k: 'msg', text: 'Nice! Need a hand dragging?', p: j.p.slice() } }; }
+  }
+};
+P.transport = Demo;
+function partyStart(name, code) { P.st = P.transport.start(name, code); partySave(); drawParty(); openSheet('party'); toast('Party started. Share the code to invite people.', 3500); }
+function partyLeave() { P.st = null; partySave(); drawParty(); renderWps(); }
+function partyNote(text) { if (!P.st) return; P.st.feed.unshift({ id: 'f' + Date.now(), from: P.me.name || 'You', color: P.me.color, k: 'note', label: 'Update', text, t: Date.now(), mine: true }); partySave(); }
+function partySend(k, text, withLoc = true) {
+  if (!P.st) return; const go = p => {
+    P.st.feed.unshift({ id: 'f' + Date.now(), from: P.me.name || 'You', color: P.me.color, k, label: AL[k][0], text: text || '', p: withLoc && p ? p.slice() : null, t: Date.now(), mine: true });
+    partySave(); P.transport.sent(P.st, k); drawParty(); toast(AL[k][0] + ' sent to ' + P.st.name, 2500); if ($('#sheet').dataset.p === 'party' || $('#sheet').dataset.p === 'alertmsg') openSheet('party');
+  };
+  if (!withLoc) return go(null);
+  if (S.me && Date.now() - (S.meT || 0) < 12e4) go(S.me); else whereAmI(go);
+}
+function partyIncoming(ev) {
+  const f = Object.assign({ id: 'f' + Date.now(), t: Date.now(), label: AL[ev.k][0] }, ev); P.st.feed.unshift(f); P.st.feed = P.st.feed.slice(0, 80); partySave();
+  if ($('#sheet').dataset.p === 'party') openSheet('party'); else { P.unread++; pdot(); }
+  showBanner(f); try { navigator.vibrate && navigator.vibrate([150, 80, 150]); } catch (e) { }
+}
+function pdot() { const d = $('#pdot'); if (!d) return; d.textContent = P.unread; d.classList.toggle('on', P.unread > 0); }
+function relTo(p) { return S.me && p ? fmtDist(HM.hav(S.me, p)) + ' ' + HM.compass(HM.bearing(S.me, p)) : ''; }
+function showBanner(f) {
+  const el = $('#banner'); el.innerHTML = `<span class="alertpin" style="background:${f.color}">${ico(AL[f.k][1])}</span><div class="bt"><b>${esc(f.from)}: ${esc(f.k === 'msg' ? f.text : f.label)}</b><small>${ago(f.t)}${f.p && S.me ? ', ' + relTo(f.p) + ' of you' : ''}</small></div><button class="x" data-act="p-hidebanner" aria-label="Dismiss" style="display:grid;align-self:flex-start">&times;</button>${f.p ? `<button class="btn s" data-act="p-feed" data-id="${f.id}">Show on map</button><button class="btn s p" data-act="p-fguide" data-id="${f.id}">Guide me</button>` : ''}`;
+  el.classList.add('on'); clearTimeout(showBanner.t); showBanner.t = setTimeout(hideBanner, 15000);
+}
+function hideBanner() { $('#banner').classList.remove('on'); }
+function confirmBox(title, text, yes, f) {
+  confirmBox.f = f; clearTimeout(showBanner.t); const el = $('#banner');
+  el.innerHTML = `<div class="bt"><b>${esc(title)}</b><small>${esc(text)}</small></div><button class="btn s" data-act="cb-no">Cancel</button><button class="btn s p" data-act="cb-yes">${esc(yes)}</button>`; el.classList.add('on');
+}
+function drawParty() {
+  if (!map.getSource) return; const st = P.st;
+  for (const id in P.marks) if (!st || !st.members.find(m => m.id === id)) { P.marks[id].remove(); delete P.marks[id]; }
+  if (st) for (const m of st.members) {
+    let mk = P.marks[m.id];
+    if (!mk) { const el = document.createElement('div'); el.className = 'mate'; el.innerHTML = `<div class="av" style="background:${m.color}">${initials(m.name)}</div><div class="nm"></div>`; el.addEventListener('click', ev => { ev.stopPropagation(); mateCard(m.id); }); mk = P.marks[m.id] = new maplibregl.Marker({ element: el, anchor: 'top' }).setLngLat(m.p).addTo(map); }
+    const el = mk.getElement ? mk.getElement() : mk.el, stale = Date.now() - m.t > 15 * 6e4; mk.setLngLat(m.p);
+    if (el) { el.className = 'mate ' + (stale ? 'stale' : 'fresh'); el.querySelector('.nm').textContent = m.name + (stale ? ', ' + ago(m.t) : ''); }
+  }
+  const sig = st ? JSON.stringify([st.wps.map(w => w.id), st.feed.slice(0, 12).map(f => f.id)]) : '';
+  if (sig === P.sig) return; P.sig = sig; P.extra.forEach(x => x.remove()); P.extra = []; if (!st) return;
+  for (const w of st.wps) { const t = WPT[w.type] || WPT.other, el = document.createElement('div'); el.className = 'wp'; el.style.background = t[1]; el.innerHTML = `<i>${t[2]}</i><s class="sh" style="background:${w.color}">${initials(w.by)[0]}</s>`; el.addEventListener('click', ev => { ev.stopPropagation(); showPopup(w.p, `<div class="k" style="color:${w.color}">Shared by ${esc(w.by)}</div><h4>${esc(w.name)}</h4><div class="k">${esc(t[0])}${w.notes ? '. ' + esc(w.notes) : ''}</div>${S.me ? `<div class="dist" style="margin-top:6px"><b>${fmtDist(HM.hav(S.me, w.p))}</b> ${HM.compass(HM.bearing(S.me, w.p))} of you</div>` : ''}<div class="btns"><button class="btn s p" data-act="guide-ll" data-ll="${w.p.join(',')}">Guide me</button><button class="btn s" data-act="p-copywp" data-id="${w.id}">Save to mine</button></div>`); }); P.extra.push(new maplibregl.Marker({ element: el, anchor: 'bottom-left' }).setLngLat(w.p).addTo(map)); }
+  for (const f of st.feed.slice(0, 12)) { if (!f.p || f.mine || Date.now() - f.t > 3 * 36e5 || f.k === 'note') continue; const el = document.createElement('div'); el.className = 'alertpin'; el.style.background = f.color; el.innerHTML = ico(AL[f.k][1]); el.title = f.from + ': ' + f.label; el.addEventListener('click', ev => { ev.stopPropagation(); showPopup(f.p, `<div class="k" style="color:${f.color}">${esc(f.from)}, ${ago(f.t)}</div><h4>${esc(f.k === 'msg' ? f.text : f.label)}</h4>${S.me ? `<div class="dist"><b>${fmtDist(HM.hav(S.me, f.p))}</b> ${HM.compass(HM.bearing(S.me, f.p))} of you</div>` : ''}<div class="btns"><button class="btn s p" data-act="p-fguide" data-id="${f.id}">Guide me</button></div>`); }); P.extra.push(new maplibregl.Marker({ element: el }).setLngLat(f.p).addTo(map)); }
+}
+function mateCard(id) {
+  const m = P.st && P.st.members.find(x => x.id === id); if (!m) return;
+  showPopup(m.p, `<div class="k" style="color:${m.color}">Party member</div><h4>${esc(m.name)}</h4><div class="k">${esc(m.status)}. Updated ${ago(m.t)}.</div>${S.me ? `<div class="dist" style="margin-top:6px"><b>${fmtDist(HM.hav(S.me, m.p))}</b> ${HM.compass(HM.bearing(S.me, m.p))} of you</div>` : ''}<div class="btns"><button class="btn s p" data-act="p-guide" data-id="${m.id}">Guide me to ${esc(m.name)}</button></div>`);
+}
+function partyHtml() {
+  const st = P.st;
+  if (!st) return `<p class="mut" style="font-size:15.5px;margin:0 0 6px">See where everyone in your group is, send quick alerts like Deer down, and share stands, sign and sits.</p><div class="demo">${ico('i-info')}<span>Demo mode for now. Starting or joining a party adds sample hunters so you can try it. Real groups need a server, which is the next step.</span></div><div class="btns"><button class="btn p w" data-act="p-new">Start a party</button><button class="btn w" data-act="p-joinform">Join with a code</button></div>`;
+  P.unread = 0; pdot();
+  const mates = st.members.slice().sort((x, y) => (Date.now() - x.t > 9e5) - (Date.now() - y.t > 9e5));
+  return (st.demo ? `<div class="demo">${ico('i-info')}<span>Demo party. These are sample hunters that move around so you can see how it works.</span></div>` : '') +
+    `<div class="row"><div class="g"><small>Party code</small><div class="pcode">${esc(st.code)}</div></div><button class="btn s" data-act="p-share">${ico('i-share')}Invite</button></div>` +
+    `<h3>Quick alerts</h3><div class="alerts">${['down', 'coming', 'help', 'out', 'stand', 'msg'].map(k => `<button data-act="${k === 'msg' ? 'p-msg' : 'p-alert'}" data-k="${k}" class="${k === 'down' || k === 'help' ? 'hot' : ''}">${ico(AL[k][1])}${AL[k][0]}</button>`).join('')}</div><div class="mut">Alerts send your location so your group can find you.</div>` +
+    `<h3>Your group</h3><label class="row"><span class="av" style="background:${P.me.color}">${initials(P.me.name)}</span><span class="g"><b>${esc(P.me.name || 'You')}</b><br><small>${st.shareLoc ? 'Sharing your location' : 'Location sharing paused'}</small></span><input type="checkbox" data-act="p-loc" ${st.shareLoc ? 'checked' : ''} aria-label="Share my location"></label>` +
+    mates.map(m => { const stale = Date.now() - m.t > 9e5; return `<div class="row"><span class="av" style="background:${m.color};${stale ? 'filter:grayscale(.8)' : ''}">${initials(m.name)}</span><div class="g" data-act="p-mate" data-id="${m.id}" style="cursor:pointer"><b>${esc(m.name)}</b><br><small>${esc(m.status)}, ${ago(m.t)}${S.me ? '<br>' + relTo(m.p) + ' of you' : ''}</small></div><button class="btn s" data-act="p-guide" data-id="${m.id}">Guide</button></div>`; }).join('') +
+    `<h3>Recent activity</h3><div class="feed">${st.feed.slice(0, 15).map(f => `<div class="row" ${f.p ? `data-act="p-feed" data-id="${f.id}" style="cursor:pointer"` : ''}><span class="alertpin" style="background:${f.color};width:30px;height:30px;border-radius:9px">${ico(AL[f.k][1])}</span><div class="g">${esc(f.from)}: ${esc(f.k === 'msg' || f.k === 'note' ? f.text : f.label)}<br><small>${ago(f.t)}${f.p && S.me ? ', ' + relTo(f.p) + ' of you' : ''}</small></div>${f.p ? ico('i-chev', 'chev') : ''}</div>`).join('')}</div>` +
+    `<h3>Shared marks</h3>` + (st.wps.length || S.wps.some(w => w.shared) ? st.wps.map(w => `<div class="row"><span class="dot" style="background:${w.color}"></span><div class="g" data-act="go" data-ll="${w.p.join(',')}" style="cursor:pointer">${esc(w.name)}<br><small>From ${esc(w.by)}</small></div></div>`).join('') + S.wps.filter(w => w.shared).map(w => `<div class="row"><span class="dot" style="background:${P.me.color}"></span><div class="g" data-act="go" data-ll="${w.p.join(',')}" style="cursor:pointer">${esc(w.name || 'Mark')}<br><small>Shared by you</small></div></div>`).join('') : '<div class="mut">Open any of your marks and turn on Share with the party.</div>') +
+    `<div class="btns" style="margin-top:18px"><button class="btn d w" data-act="p-leave">Leave party</button></div>`;
+}
+setInterval(() => {
+  if (!P.st) return; const ev = P.transport.tick(P.st); drawParty();
+  if (ev) partyIncoming(ev);
+  if (Date.now() - (P.lastSave || 0) > 3e4) { P.lastSave = Date.now(); partySave(); }
+}, 3000);
+
+/* ---------------- help topics ---------------- */
+const K = (i, t) => `<span class="key">${ico(i)}${t}</span>`;
+const HELP = [
+  { id: 'start', g: 'Getting started', t: 'What each button does', b: `<p>The map fills the screen. Five buttons sit along the bottom:</p><ul><li>${K('i-layers', 'Layers')} changes the map style and shows what is public and private.</li><li>${K('i-tools', 'Tools')} holds measuring, track recording, blood trailing, hot spots, offline maps and this help.</li><li>The orange ${K('i-mark', 'Mark')} button saves a spot: a stand, sign, the truck.</li><li>${K('i-party', 'Party')} shows your hunting group and quick alerts.</li><li>${K('i-saved', 'Saved')} lists your marks, your hunt log and sync.</li></ul><p>The buttons on the right switch the map style, tilt it in 3D, show a compass and turn the map. The round blue arrow at the bottom right centers the map on you.</p><p>The wind button at the top shows wind speed and direction, with today's sunrise and sunset under it. Tap it for the hour-by-hour forecast.</p>` },
+  { id: 'home', g: 'Getting started', t: 'Put ' + APP + ' on your Home Screen', b: `<p>On a home screen the app opens full screen like a regular app, and your saved marks and maps are kept safely.</p><p><b>iPhone</b></p><ol><li>Open the app in Safari.</li><li>Tap the Share button (the square with an arrow pointing up).</li><li>Scroll down and tap Add to Home Screen, then Add.</li><li>From now on, open ${APP} from the new icon.</li></ol><p><b>Android</b></p><ol><li>Open the app in Chrome.</li><li>Tap the three dots at the top right.</li><li>Tap Install app or Add to Home screen.</li></ol>` },
+  { id: 'perm', g: 'Getting started', t: 'Turn on location and compass', b: `<p>The app asks the first time you use your location or the compass. Tap Allow.</p><p>If you tapped Don't Allow on an iPhone:</p><ol><li>Open Settings, then Privacy & Security, then Location Services.</li><li>Make sure Location Services is on, tap Safari Websites, and choose While Using the App.</li><li>For the compass, open Settings, then Apps, then Safari, and turn on Motion & Orientation Access.</li><li>Come back to ${APP} and pull down to reload.</li></ol>` },
+  { id: 'layers', g: 'Reading the map', t: 'Public land and private owners', b: `<p>Shaded areas are public land you can usually hunt. Orange is a state Wildlife Management Area, pink is federal land like a Waterfowl Production Area, blue is other state land, and purple is county or city land.</p><p>Yellow lines are private parcels. Zoom in and tap inside one to see the owner's name and acres. Owner names come from county records shared by the state and cover 60 of Minnesota's 87 counties.</p><p>Tap a public unit and choose How to get in to find parking and places where a public road touches the boundary.</p><p>Boundaries are close but not a survey. Watch for posted signs, and check the DNR's rules for each unit.</p>` },
+  { id: 'basemaps', g: 'Reading the map', t: 'Satellite, leaf-off, topo and lidar', b: `<p>Switch styles with the map button on the right or in ${K('i-layers', 'Layers')}.</p><ul><li><b>Satellite</b>: recent summer photos.</li><li><b>Leaf-off</b>: spring photos before the leaves come out. Trails, edges and beds show through the timber.</li><li><b>Topo</b>: contour lines, creeks and roads.</li></ul><p>In Layers you can add <b>Lidar hillshade</b>, which shows the ground's shape under the trees: drainages, saddles and benches. <b>Trail enhancer</b> sharpens the photos so faint paths stand out.</p>` },
+  { id: 'wind', g: 'Reading the map', t: 'Wind, sun, moon and pressure', b: `<p>Tap the wind button at the top. The arrow points the way the wind is blowing; the letters say where it is coming from.</p><ul><li>Tap an hour in the strip to see the wind for a morning or evening sit.</li><li>Place scent cone shows where your scent drifts from a spot.</li><li>Shooting light is half an hour before sunrise to half an hour after sunset. Always confirm in the current regulations.</li><li>Pressure shows whether the barometer is rising, steady or falling.</li><li>The moon section shows phase and when the moon rises, sets, and is overhead or underfoot.</li><li>Your stands are listed as good or bad for the hour you picked.</li></ul>` },
+  { id: 'mark', g: 'In the field', t: 'Marking stands, sign and the truck', b: `<ol><li>Tap the orange ${K('i-mark', 'Mark')} button.</li><li>Choose Where I am, Tap the map, or Center of the screen.</li><li>Give it a name, pick a type such as Stand or Rub, and tap Save.</li></ol><p>For a stand or blind you can also tick the winds it hunts well on and turn on range rings for bow or gun distances.</p><p>Tap any mark later to edit it, get directions, share it, or have the app guide you to it.</p>` },
+  { id: 'guide', g: 'In the field', t: 'Guide me back to a spot', b: `<p>Open a mark and tap Guide me, or tap Guide next to it in ${K('i-saved', 'Saved')}. You can also tap any spot on the map and choose Guide me here.</p><p>A card at the bottom shows a big arrow, how many yards are left, and the direction. Hold the phone flat in front of you. The arrow uses the compass when it is on, and otherwise the direction you are walking.</p><p>When you arrive it says You're there. Tap Stop to close it.</p>` },
+  { id: 'measure', g: 'In the field', t: 'Measuring distance and acres', b: `<ol><li>Open ${K('i-tools', 'Tools')} and tap Measure.</li><li>Tap points on the map. Each leg shows its distance on the line.</li><li>With three or more points you also get the total and the acres inside.</li><li>Undo removes the last point, Clear starts over, Done keeps the lines on the map.</li></ol><p>With GPS on, tapping anything on the map also shows how far it is from you.</p>` },
+  { id: 'track', g: 'In the field', t: 'Recording your path', b: `<ol><li>Open ${K('i-tools', 'Tools')} and tap Record a track, then Start recording.</li><li>The map follows you and a green banner shows the distance.</li><li>Tap the green banner, then Stop and save.</li></ol><p>Keep the screen on while recording; phones pause the GPS when the screen locks.</p>` },
+  { id: 'blood', g: 'In the field', t: 'Following a blood trail', b: `<ol><li>Open ${K('i-tools', 'Tools')} and tap Blood trail. Allow the camera.</li><li>Point the phone at the ground. In Highlight view, anything blood-colored turns bright blue.</li><li>Use the slider: lower for fresh red blood only, higher to catch dark or dried blood.</li><li>Tap Hit site where the deer was standing, Mark blood at each find, and Found it at the deer.</li><li>Tap Finish to save the trail you walked.</li></ol><p>Red leaves and some bark can light up too. Use it to help your eyes, not replace them.</p>` },
+  { id: 'hot', g: 'In the field', t: 'Hot spots for scouting', b: `<p>Hot spots scores the area on your screen using land cover, terrain, distance from roads and today's wind. Pick the animal and the time of season, then tap Analyze this view.</p><p>Numbered pins show the best spots and why. Treat it as a short list to go look at, not a guarantee. Tap the red Clear hot spots button to remove them.</p>` },
+  { id: 'offline', g: 'In the field', t: 'Using the map with no signal', b: `<ol><li>At home, with signal, zoom the map to the property.</li><li>Open ${K('i-tools', 'Tools')} and tap Offline maps.</li><li>Pick the map styles you want, then Standard detail.</li><li>Tap Download this area and keep the app open until it finishes.</li></ol><p>In the field, the saved area works with no bars: photos, parcels, public land and the last wind forecast. Turn on airplane mode at home once to check it.</p>` },
+  { id: 'party', g: 'Your group', t: 'Hunting as a party', b: `<p>${K('i-party', 'Party')} lets a group see each other on the map and send quick alerts.</p><ol><li>One person taps Start a party and shares the 6-letter code.</li><li>Everyone else taps Join with a code.</li><li>Members appear on the map with their initials. Grey means they have not updated in a while.</li><li>Tap Deer down, Coming your way, Need help and the rest to alert everyone with your location.</li><li>Turn on Share with the party on any mark or sit to share it.</li></ol><p>You can pause location sharing at any time. Right now the party runs in demo mode with sample hunters, until a group server is set up.</p>` },
+  { id: 'log', g: 'Saving and syncing', t: 'Your hunt log', b: `<p>Log each sit so you learn which stands produce and on which winds.</p><ol><li>Open ${K('i-saved', 'Saved')} and tap Log a sit, or open a stand and tap Log a sit.</li><li>Pick the stand and times, and tap + for each deer you saw.</li><li>Tap Save sit. Wind, temperature, pressure and the moon are filled in for you.</li></ol><p>Saved shows deer per sit for each stand and which wind has been best.</p>` },
+  { id: 'sync', g: 'Saving and syncing', t: 'Keeping phone and computer in sync', b: `<p>Your marks, tracks and log can stay the same on every device through a private file on your GitHub account.</p><ol><li>Open ${K('i-saved', 'Saved')} and scroll to Sync between devices.</li><li>Tap Make a token on GitHub, keep only the gist box ticked, and generate the token.</li><li>Paste it and tap Connect. Do the same on each device.</li></ol><p>Treat the token like a password.</p>` },
+  { id: 'trouble', g: 'Troubleshooting', t: 'Something is not working', b: `<ul><li><b>The blue dot does not appear.</b> Location is off for Safari. See Turn on location and compass.</li><li><b>The compass strip shows dashes.</b> Motion & Orientation Access is off, or the phone has no compass.</li><li><b>No yellow parcel lines.</b> Zoom in closer. Some counties do not share owner data.</li><li><b>The map is blank with no signal.</b> That area was not saved. See Using the map with no signal.</li><li><b>Something looks out of date.</b> Close the app fully and open it again with signal.</li></ul>` }
+];
+function helpList(q) {
+  q = (q || '').trim().toLowerCase(); const hits = HELP.filter(x => !q || (x.t + ' ' + x.b.replace(/<[^>]+>/g, ' ')).toLowerCase().includes(q));
+  if (!hits.length) return `<div class="mut" style="padding:12px 0">Nothing matches "${esc(q)}". Try a shorter word, like wind or offline.</div>`;
+  let g = '', out = ''; for (const x of hits) { if (x.g !== g) { g = x.g; out += `<h3>${esc(g)}</h3>`; } out += `<button class="tool" data-act="help" data-t="${x.id}"><span class="tt"><b>${esc(x.t)}</b></span>${ico('i-chev', 'chev')}</button>`; }
+  return out;
+}
+
+/* ---------------- first-time tour ---------------- */
+const ART = {
+  welcome: `<svg viewBox="0 0 320 240"><use href="#logo" x="105" y="40" width="110" height="110"/><text x="160" y="196" text-anchor="middle" fill="#ECEADF" font-family="Barlow Condensed,Barlow,sans-serif" font-weight="700" font-size="34" letter-spacing="1">Rutline</text></svg>`,
+  land: `<svg viewBox="0 0 320 240"><rect x="10" y="10" width="300" height="220" rx="22" fill="#262C24"/><path d="M10 120h300M120 10v220M220 10v220" stroke="#ffe45c" stroke-width="2" opacity=".8"/><path d="M30 30h80v80H30z" fill="#ff9f1c" fill-opacity=".38" stroke="#ff9f1c" stroke-width="3"/><path d="M230 130h70v90h-70z" fill="#ff4fa3" fill-opacity=".34" stroke="#ff4fa3" stroke-width="3"/><g transform="translate(150 150)"><rect x="-6" y="-60" width="148" height="56" rx="12" fill="#1B1F1A" stroke="rgba(236,234,223,.25)"/><text x="6" y="-38" fill="#ffe45c" font-family="Barlow,sans-serif" font-size="12" font-weight="700">PRIVATE LAND</text><text x="6" y="-18" fill="#ECEADF" font-family="Barlow,sans-serif" font-size="16" font-weight="700">Owner and acres</text><circle cx="16" cy="12" r="9" fill="#FF6B1A" stroke="#ECEADF" stroke-width="3"/></g><text x="70" y="76" text-anchor="middle" fill="#ECEADF" font-family="Barlow,sans-serif" font-size="14" font-weight="600">WMA</text></svg>`,
+  mark: `<svg viewBox="0 0 320 240"><rect x="10" y="10" width="300" height="220" rx="22" fill="#262C24"/><path d="M70 190C110 150 150 170 190 120s70-50 70-50" fill="none" stroke="#FF6B1A" stroke-width="4" stroke-dasharray="10 8"/><g transform="translate(250 66) rotate(-45)"><rect x="-17" y="-17" width="34" height="34" rx="17" fill="#e01e37" stroke="#ECEADF" stroke-width="3"/></g><text x="250" y="72" text-anchor="middle" fill="#fff" font-family="Barlow,sans-serif" font-size="15" font-weight="700">S</text><circle cx="70" cy="190" r="12" fill="#4DA3FF" stroke="#fff" stroke-width="4"/><g transform="translate(118 64)"><rect x="-56" y="-26" width="112" height="52" rx="14" fill="#1B1F1A" stroke="rgba(236,234,223,.25)"/><text x="0" y="-2" text-anchor="middle" fill="#ECEADF" font-family="Barlow Condensed,Barlow,sans-serif" font-size="24" font-weight="700">212 yd NE</text><text x="0" y="17" text-anchor="middle" fill="#F2C46B" font-family="Barlow,sans-serif" font-size="12" font-weight="600">North ridge stand</text></g></svg>`,
+  wind: `<svg viewBox="0 0 320 240"><rect x="10" y="10" width="300" height="220" rx="22" fill="#262C24"/><path d="M150 120l120-50v100z" fill="#6FB7F2" fill-opacity=".28" stroke="#6FB7F2" stroke-width="2"/><g transform="translate(150 120)"><rect x="-17" y="-17" width="34" height="34" rx="17" transform="rotate(-45)" fill="#e01e37" stroke="#ECEADF" stroke-width="3"/><circle cx="14" cy="-14" r="7" fill="#3FB56B" stroke="#fff" stroke-width="2"/></g><g transform="translate(70 62) rotate(110)"><path d="M0-26l13 22h-8.5v28h-9v-28H-13z" fill="#6FB7F2"/></g><text x="66" y="118" text-anchor="middle" fill="#ECEADF" font-family="Barlow Condensed,Barlow,sans-serif" font-size="22" font-weight="700">NW 9</text><text x="66" y="196" fill="#F2C46B" font-family="Barlow,sans-serif" font-size="13" font-weight="600" text-anchor="middle">Sunrise 7:11a</text><text x="230" y="196" fill="#3FB56B" font-family="Barlow,sans-serif" font-size="13" font-weight="700" text-anchor="middle">Good wind</text></svg>`,
+  party: `<svg viewBox="0 0 320 240"><rect x="10" y="10" width="300" height="220" rx="22" fill="#262C24"/><g font-family="Barlow,sans-serif" font-weight="700" font-size="16" fill="#fff" text-anchor="middle"><circle cx="80" cy="80" r="22" fill="#E0563B" stroke="#fff" stroke-width="4"/><text x="80" y="86">D</text><circle cx="230" cy="70" r="22" fill="#3FB56B" stroke="#fff" stroke-width="4"/><text x="230" y="76">K</text><circle cx="120" cy="175" r="22" fill="#4DA3FF" stroke="#fff" stroke-width="4"/><text x="120" y="181">J</text></g><g transform="translate(212 150)"><rect x="-62" y="-30" width="124" height="60" rx="16" fill="#2A1A10" stroke="#FF6B1A" stroke-width="2"/><text x="0" y="-4" text-anchor="middle" fill="#ECEADF" font-family="Barlow,sans-serif" font-size="16" font-weight="700">Deer down</text><text x="0" y="16" text-anchor="middle" fill="#9BA594" font-family="Barlow,sans-serif" font-size="12">Kurt, 340 yd NE</text></g></svg>`
+};
+const TOUR = [
+  { art: 'welcome', t: 'Your hunting map for Minnesota', p: 'Public land, who owns the private ground next to it, the wind and your group, all on one map.' },
+  { art: 'land', t: "Know whose ground you're on", p: 'Shaded areas are public land. Yellow lines are private parcels. Tap one to see the owner.' },
+  { art: 'mark', t: 'Mark it, then find your way back', p: 'The orange Mark button saves a stand, sign or the truck. Guide me points you back to it, even in the dark.' },
+  { art: 'wind', t: 'Hunt the wind', p: 'Tap the wind button for the hourly forecast, shooting light, and which of your stands work today.' },
+  { art: 'party', t: 'Hunt together', p: 'Start a party to see your group on the map and send quick alerts like Deer down or Need help.' },
+  { setup: true, t: 'Two quick things before you go', p: 'Allow location and the compass when asked. Adding the app to your Home Screen keeps your marks and saved maps safe.' }
+];
+let tourI = 0;
+function showIntro(i) { tourI = i || 0; $('#intro').classList.add('on'); renderIntro(); }
+function introStep(d) { tourI = Math.max(0, Math.min(TOUR.length - 1, tourI + d)); renderIntro(); }
+function renderIntro() {
+  const s = TOUR[tourI], last = tourI === TOUR.length - 1, ios = /iP(hone|ad|od)/.test(navigator.userAgent), standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  $('#intro').innerHTML = `<button class="skip" data-act="intro-done">${last ? '' : 'Skip'}</button>` +
+    (s.setup ? `<div class="art" style="place-items:start stretch;align-content:center"><div class="perm"><button class="btn${S.me ? ' done' : ''}" data-act="intro-loc">${ico('i-loc')}<span>${S.me ? 'Location is on' : 'Allow location'}</span></button><button class="btn${sensorOn ? ' done' : ''}" data-act="intro-cmp">${ico('i-compass')}<span>${sensorOn ? 'Compass is on' : 'Allow compass'}</span></button>${standalone ? '' : `<button class="btn" data-act="intro-home">${ico('i-home')}<span>Add to Home Screen</span></button><div class="note" id="homeHow" style="display:none">${ios ? 'In Safari, tap the Share button (square with an up arrow), scroll down, tap <b>Add to Home Screen</b>, then <b>Add</b>.' : 'In Chrome, tap the three dots at the top right, then <b>Install app</b> or <b>Add to Home screen</b>.'}</div>`}</div></div>` : `<div class="art">${ART[s.art]}</div>`) +
+    `<h1>${s.t}</h1><p>${s.p}</p><div class="steps">${TOUR.map((_, k) => `<i class="${k === tourI ? 'on' : ''}"></i>`).join('')}</div>` +
+    `<div class="act">${tourI ? '<button class="btn" data-act="intro-back">Back</button>' : ''}<button class="btn p" data-act="${last ? 'intro-done' : 'intro-next'}">${last ? 'Start hunting' : 'Next'}</button></div>`;
+}
+
 /* ---------------- panels ---------------- */
+const SHEETS = { layers: ['i-layers', 'layers'], tools: ['i-tools', 'start'], mark: ['i-mark', 'mark'], party: ['i-party', 'party'], saved: ['i-saved', 'log'], wind: ['i-wind', 'wind'], wp: ['i-mark', 'mark'], track: ['i-track', 'track'], hot: ['i-hot', 'hot'], offline: ['i-offline', 'offline'], log: ['i-log', 'log'], access: ['i-guide', 'layers'], search: ['i-search', null], sharetxt: ['i-share', null], help: ['i-help', null], topic: ['i-help', null], pjoin: ['i-party', 'party'], alertmsg: ['i-chat', 'party'] };
 function closeSheet() { drawOffAreas(false); const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
 function openSheet(p, arg) {
   const s = $('#sheet'); s.dataset.p = p; s.classList.add('open'); document.querySelectorAll('#bar button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
-  const head = t => `<h2>${t}<button class="x" data-act="close">&times;</button></h2>`; let h = '';
+  const meta = SHEETS[p] || ['i-info', null], head = t => `<h2><span class="hi"><svg class="ic"><use href="#${meta[0]}"/></svg></span><span class="ht">${t}</span>${meta[1] ? `<button class="hq" data-act="help" data-t="${meta[1]}" aria-label="How this works"><svg class="ic"><use href="#i-help"/></svg></button>` : ''}<button class="x" data-act="close" aria-label="Close">&times;</button></h2>`; let h = '';
   if (p === 'layers') {
-    h = head('Map layers') + `<button class="btn p" data-act="offline-open" style="width:100%;margin-bottom:10px">Offline maps${S.offAreas.length ? ' (' + S.offAreas.length + ' saved)' : ''}</button>` + `<div class="seg"><button data-act="base" data-b="sat" class="${S.base === 'sat' ? 'on' : ''}">Satellite</button><button data-act="base" data-b="spring" class="${S.base === 'spring' ? 'on' : ''}">Leaf-off</button><button data-act="base" data-b="topo" class="${S.base === 'topo' ? 'on' : ''}">Topo</button></div><div class="mut" style="margin-bottom:4px">Leaf-off is Minnesota's spring aerial photography: no leaves, so trails, edges and beds show through the timber.</div>` +
-      LAYERS.map(l => `<label class="row"><span class="sw" style="background:${l.sw}"></span><span class="g">${l.name}<br><small>${l.sub}</small><br><small data-st="${l.id}" style="color:var(--acc)">${esc(S.status[l.id] || '')}</small></span><input type="checkbox" data-layer="${l.id}" ${S.on[l.id] ? 'checked' : ''}></label>`).join('') +
-      `<h3>Private land owners</h3><div class="note">Yellow lines are private parcels. 60 Minnesota counties, McLeod included, come free from the state. Each area is fetched once, then kept on this device so it opens instantly, even with no signal.</div><div class="btns"><button class="btn p" data-act="save-area">Save parcels for this view</button></div><div class="mut">Zoom to a hunting area or a whole county and tap this before you leave home.</div><h3>Option 1: add a county's own parcel file (free)</h3><div class="mut">Download the county's parcel shapefile (.zip) and add it here. It stays on this device only.</div>${S.mine.map(m => `<div class="row"><div class="g">${esc(m.name)}<br><small>${m.features.length.toLocaleString()} parcels on this device</small></div><button class="btn s" data-act="mine-del" data-n="${esc(m.name)}">Remove</button></div>`).join('')}<div class="btns"><button class="btn p" data-act="mine-add">Add parcel file</button><button class="btn" data-act="mine-export">Export parcels.json</button></div><div class="mut">To build added counties into the app for your family, export parcels.json and upload it to GitHub next to index.html. Every phone that opens the app then gets them automatically.</div><input type="file" id="mineFile" accept=".zip,.geojson,.json" style="display:none"><h3>Option 2: statewide parcel subscription</h3><label class="fld"><span>Provider</span><select id="rgProv"><option value="regrid" ${S.prov === 'regrid' ? 'selected' : ''}>Regrid</option><option value="landrecords" ${S.prov === 'landrecords' ? 'selected' : ''}>Land Records (landrecords.us)</option></select></label><label class="fld"><span>API token</span><input id="rgKey" value="${esc(S.regrid)}" placeholder="paste token" autocapitalize="off" autocomplete="off"></label><div class="btns"><button class="btn" data-act="regrid-save">Save token</button></div><h3>Public land colors</h3><div class="row"><span class="sw" style="background:#ff9f1c"></span><span class="g">State WMA</span></div><div class="row"><span class="sw" style="background:#ff4fa3"></span><span class="g">Federal: WPA, refuge</span></div><div class="row"><span class="sw" style="background:#3fa9ff"></span><span class="g">Other state land</span></div><div class="row"><span class="sw" style="background:#b388ff"></span><span class="g">County or local</span></div><div class="row"><span class="sw" style="background:#b8c0c0"></span><span class="g">Conservation land, access not confirmed</span></div><div class="note">Tap any shaded unit or parcel for details. "How to get in" finds parking and where public roads touch the boundary.</div>`;
-  } else if (p === 'mark') h = head('Drop a waypoint') + `<div class="btns" style="flex-direction:column"><button class="btn p" data-act="mark-me">At my current location</button><button class="btn" data-act="mark-tap">Tap a spot on the map</button><button class="btn" data-act="mark-center">At the center of the screen</button></div><div class="mut">You can also tap anywhere on the map and choose "Mark this spot".</div>`;
+    h = head('Map layers') + `<div class="seg"><button data-act="base" data-b="sat" class="${S.base === 'sat' ? 'on' : ''}">Satellite</button><button data-act="base" data-b="spring" class="${S.base === 'spring' ? 'on' : ''}">Leaf-off</button><button data-act="base" data-b="topo" class="${S.base === 'topo' ? 'on' : ''}">Topo</button></div><div class="mut" style="margin-bottom:6px">${S.base === 'spring' ? 'Spring photos with no leaves on the trees, so trails, edges and beds show through the timber.' : S.base === 'topo' ? 'USGS topographic map with contour lines, creeks and roads.' : 'Current satellite photos.'}</div>` +
+      `<h3>Who owns it</h3><div class="row"><span class="sw" style="background:#ff9f1c"></span><span class="g">State Wildlife Management Area</span></div><div class="row"><span class="sw" style="background:#ff4fa3"></span><span class="g">Federal: Waterfowl Production Area, refuge</span></div><div class="row"><span class="sw" style="background:#3fa9ff"></span><span class="g">Other state land, state forest</span></div><div class="row"><span class="sw" style="background:#b388ff"></span><span class="g">County or city land</span></div><div class="row"><span class="sw" style="border:2px solid #ffe45c;background:none"></span><span class="g">Private parcel. Tap it to see the owner.</span></div>` +
+      `<h3>Show on the map</h3>` + LAYERS.map(l => `<label class="row"><span class="sw" style="background:${l.sw}"></span><span class="g">${l.name}<br><small>${l.sub}</small>${S.status[l.id] ? `<br><small data-st="${l.id}" style="color:var(--gold)">${esc(S.status[l.id])}</small>` : `<small data-st="${l.id}" style="color:var(--gold)"></small>`}</span><input type="checkbox" data-layer="${l.id}" ${S.on[l.id] ? 'checked' : ''}></label>`).join('') +
+      `<h3>Without signal</h3>` + toolRow('offline-open', 'i-offline', 'Offline maps', S.offAreas.length ? S.offAreas.length + ' area' + (S.offAreas.length > 1 ? 's' : '') + ' saved on this phone' : 'Save a property so the map works with no bars') +
+      `<details class="logs"><summary>More parcel sources</summary><div class="mut">60 Minnesota counties come free from the state. For the others, add the county's own parcel file or a paid statewide subscription.</div><div class="btns"><button class="btn s" data-act="save-area">Save parcels for this view</button></div>${S.mine.map(m => `<div class="row"><div class="g">${esc(m.name)}<br><small>${m.features.length.toLocaleString()} parcels on this device</small></div><button class="btn s" data-act="mine-del" data-n="${esc(m.name)}">Remove</button></div>`).join('')}<div class="btns"><button class="btn s" data-act="mine-add">Add a county parcel file</button><button class="btn s" data-act="mine-export">Export parcels.json</button></div><input type="file" id="mineFile" accept=".zip,.geojson,.json" style="display:none"><label class="fld"><span>Statewide subscription provider</span><select id="rgProv"><option value="regrid" ${S.prov === 'regrid' ? 'selected' : ''}>Regrid</option><option value="landrecords" ${S.prov === 'landrecords' ? 'selected' : ''}>Land Records (landrecords.us)</option></select></label><label class="fld"><span>Subscription token</span><input id="rgKey" value="${esc(S.regrid)}" placeholder="Paste token" autocapitalize="off" autocomplete="off"></label><div class="btns"><button class="btn s" data-act="regrid-save">Save token</button></div></details>`;
+  } else if (p === 'tools') {
+    h = head('Tools') + toolRow('open', 'i-measure', 'Measure', 'Distance between points and the acres inside', ' data-p="measure"') + toolRow('open', 'i-track', 'Record a track', S.rec && !S.rec.blood ? 'Recording now. Tap to stop.' : 'Save your path in and out', ' data-p="track"') +
+      toolRow('blood-open', 'i-blood', 'Blood trail', B.on ? 'In progress. Tap to go back to the camera.' : 'Camera view that makes blood stand out') + toolRow('open', 'i-hot', 'Hot spots', 'Likely spots for deer, turkey, pheasant and ducks', ' data-p="hot"') +
+      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('open', 'i-wind', 'Wind, sun and moon', 'Hourly wind, shooting light, pressure and moon', ' data-p="wind"') +
+      `<h3>Help</h3>` + toolRow('open', 'i-help', 'How to use ' + APP, 'Short guides for every part of the app', ' data-p="help"') + toolRow('intro', 'i-phone', 'Replay the welcome tour', 'The quick tour from the first time you opened the app');
+  } else if (p === 'mark') h = head('Mark a spot') + toolRow('mark-me', 'i-loc', 'Where I am', 'Drops a mark at your GPS position') + toolRow('mark-tap', 'i-mark', 'Tap the map', 'Then tap the spot you want to mark') + toolRow('mark-center', 'i-north', 'Center of the screen', 'Marks the middle of what you are looking at') + `<div class="mut" style="margin-top:8px">You can also tap anything on the map and choose Mark this spot.</div>`;
   else if (p === 'measure') { setMode('measure'); return; }
   else if (p === 'wp') {
     const w = arg; s._wp = w;
-    h = head(w.id ? 'Edit waypoint' : 'New waypoint') + (w.photo ? `<img class="wpimg" id="wpImg" alt="Photo at this mark">` : '') + `<label class="fld"><span>Name</span><input id="wpName" value="${esc(w.name)}" placeholder="North ridge stand"></label><label class="fld"><span>Type</span><select id="wpType">${Object.entries(WPT).map(([k, v]) => `<option value="${k}" ${k === w.type ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label><label class="fld"><span>Notes</span><textarea id="wpNotes" rows="2" placeholder="Best on a NW wind, enter from the east">${esc(w.notes)}</textarea></label><div id="wpExtra" style="${['stand', 'blind'].includes(w.type) ? '' : 'display:none'}"><div class="fld"><span>Good winds for this stand</span><div class="wchips">${HM.DIR8.map(d => `<button class="wchip ${(w.winds || []).includes(d) ? 'on' : ''}" data-act="wp-wind" data-d="${d}">${d}</button>`).join('')}</div></div><label class="fld"><span>Range rings</span><select id="wpRings"><option value="">Off</option><option value="bow" ${w.rings === 'bow' ? 'selected' : ''}>Bow: 20, 30, 40 yd</option><option value="gun" ${w.rings === 'gun' ? 'selected' : ''}>Gun: 50 to 200 yd</option></select></label>${(() => { const ss = HM.sitStats(S.log.filter(s => s.stand == w.id)); return ss ? `<div class="note">${ss.sits} sit${ss.sits > 1 ? 's' : ''} · ${ss.perSit.toFixed(1)} deer per sit · ${ss.bucks} buck${ss.bucks === 1 ? '' : 's'}${ss.best ? ' · best on ' + ss.best.dir : ''}</div>` : ''; })()}</div><div class="mut">${w.p[1].toFixed(5)}, ${w.p[0].toFixed(5)}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) + ' ' + HM.compass(HM.bearing(S.me, w.p)) + ' of you' : ''}</div><div class="btns"><button class="btn p" data-act="wp-save">Save</button>${w.id ? '<button class="btn" data-act="guide-wp">Guide me</button>' : ''}${w.id && ['stand', 'blind'].includes(w.type) ? '<button class="btn" data-act="log-new" data-stand="' + w.id + '">Log a sit</button>' : ''}<button class="btn" data-act="wp-share">Share</button><button class="btn" data-act="cone-here" data-ll="${w.p.join(',')}">Wind check</button><a class="btn" href="${dirLink(w.p)}" target="_blank" rel="noopener">Directions</a>${w.id ? '<button class="btn" data-act="wp-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
+    h = head(w.id ? 'Edit waypoint' : 'New waypoint') + (w.photo ? `<img class="wpimg" id="wpImg" alt="Photo at this mark">` : '') + `<label class="fld"><span>Name</span><input id="wpName" value="${esc(w.name)}" placeholder="North ridge stand"></label><label class="fld"><span>Type</span><select id="wpType">${Object.entries(WPT).map(([k, v]) => `<option value="${k}" ${k === w.type ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label><label class="fld"><span>Notes</span><textarea id="wpNotes" rows="2" placeholder="Best on a NW wind, enter from the east">${esc(w.notes)}</textarea></label>${P.st ? `<label class="row"><span class="g">Share with ${esc(P.st.name)}<br><small>Everyone in your party sees this mark</small></span><input type="checkbox" id="wpShare" ${w.shared ? 'checked' : ''}></label>` : ''}<div id="wpExtra" style="${['stand', 'blind'].includes(w.type) ? '' : 'display:none'}"><div class="fld"><span>Good winds for this stand</span><div class="wchips">${HM.DIR8.map(d => `<button class="wchip ${(w.winds || []).includes(d) ? 'on' : ''}" data-act="wp-wind" data-d="${d}">${d}</button>`).join('')}</div></div><label class="fld"><span>Range rings</span><select id="wpRings"><option value="">Off</option><option value="bow" ${w.rings === 'bow' ? 'selected' : ''}>Bow: 20, 30, 40 yd</option><option value="gun" ${w.rings === 'gun' ? 'selected' : ''}>Gun: 50 to 200 yd</option></select></label>${(() => { const ss = HM.sitStats(S.log.filter(s => s.stand == w.id)); return ss ? `<div class="note">${ss.sits} sit${ss.sits > 1 ? 's' : ''} · ${ss.perSit.toFixed(1)} deer per sit · ${ss.bucks} buck${ss.bucks === 1 ? '' : 's'}${ss.best ? ' · best on ' + ss.best.dir : ''}</div>` : ''; })()}</div><div class="mut">${w.p[1].toFixed(5)}, ${w.p[0].toFixed(5)}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) + ' ' + HM.compass(HM.bearing(S.me, w.p)) + ' of you' : ''}</div><div class="btns"><button class="btn p" data-act="wp-save">Save</button>${w.id ? '<button class="btn" data-act="guide-wp">Guide me</button>' : ''}${w.id && ['stand', 'blind'].includes(w.type) ? '<button class="btn" data-act="log-new" data-stand="' + w.id + '">Log a sit</button>' : ''}<button class="btn" data-act="wp-share">Share</button><button class="btn" data-act="cone-here" data-ll="${w.p.join(',')}">Wind check</button><a class="btn" href="${dirLink(w.p)}" target="_blank" rel="noopener">Directions</a>${w.id ? '<button class="btn" data-act="wp-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
   } else if (p === 'track') {
     h = head('Track') + (S.rec && S.rec.blood ? `<div class="note"><b style="color:#ff6b7d">Blood trail in progress</b> · ${recText()}</div><div class="btns"><button class="btn p" data-act="blood-open">Back to camera</button><button class="btn" data-act="blood-finish">Finish and save</button></div>` : `<button class="btn p" data-act="blood-open" style="width:100%;background:#c1001f;color:#fff">Start a blood trail</button><div class="mut" style="margin:6px 0 14px">Camera view that makes blood stand out, records your path as you follow it, and drops marks at each blood find, the hit site and the recovery.</div><h3>Walk in and out</h3>`) + (S.rec && !S.rec.blood ? `<div class="note" id="recInfo">${recText()}</div><div class="btns"><button class="btn p" data-act="rec-stop">Stop and save</button><button class="btn" data-act="rec-cancel">Discard</button></div>` : (S.rec && S.rec.blood ? '' : `<div class="note">Records your path in and out so you can retrace it in the dark. Keep this page open while recording; phones pause location when the screen locks.</div><div class="btns"><button class="btn p" data-act="rec-start">Start recording</button></div>`)) +
       `<h3>Saved tracks</h3>` + (S.tracks.length ? S.tracks.map((t, i) => `<div class="row"><div class="g" data-act="trk-go" data-i="${i}" style="cursor:pointer">${esc(t.name)}<br><small>${fmtDist(HM.lineLen(t.pts))}</small></div><input type="checkbox" data-trk="${i}" ${t.hide ? '' : 'checked'}><button class="btn s" data-act="trk-del" data-i="${i}">&times;</button></div>`).join('') : '<div class="mut">None yet.</div>');
@@ -1435,7 +1742,7 @@ function openSheet(p, arg) {
     h = head(s.id ? 'Edit sit' : 'Log a sit') + `<label class="fld"><span>Where</span><select id="lgStand"><option value="">Somewhere else</option>${stands.map(w => `<option value="${w.id}" ${w.id == s.stand ? 'selected' : ''}>${esc(w.name || 'Stand')}</option>`).join('')}</select></label>` +
       `<label class="fld"><span>Date</span><input type="date" id="lgDate" value="${dIn(s.start)}"></label><div class="trio"><label class="fld"><span>From</span><input type="time" id="lgFrom" value="${tIn(s.start)}"></label><label class="fld"><span>To</span><input type="time" id="lgTo" value="${tIn(s.end)}"></label></div>` +
       `<h3>Deer seen</h3>${ctr('does', 'Does')}${ctr('bucks', 'Bucks')}${ctr('fawns', 'Fawns')}${ctr('unk', 'Unknown')}` +
-      `<label class="row"><span class="g">Harvested a deer</span><input type="checkbox" id="lgShot" ${s.shot ? 'checked' : ''}></label><label class="fld"><span>Notes</span><textarea id="lgNotes" rows="2" placeholder="Buck chasing at 7:40 from the north slough">${esc(s.notes)}</textarea></label>` +
+      (P.st ? `<label class="row"><span class="g">Share with ${esc(P.st.name)}</span><input type="checkbox" id="lgShare" ${s.shared !== false ? 'checked' : ''}></label>` : '') + `<label class="row"><span class="g">Harvested a deer</span><input type="checkbox" id="lgShot" ${s.shot ? 'checked' : ''}></label><label class="fld"><span>Notes</span><textarea id="lgNotes" rows="2" placeholder="Buck chasing at 7:40 from the north slough">${esc(s.notes)}</textarea></label>` +
       `<div class="mut" id="lgWx">${s.wx ? 'Weather: ' + esc(wxLine(s.wx)) : 'Wind, temperature, pressure and moon fill in automatically when you save.'}</div>` +
       `<div class="btns"><button class="btn p" data-act="log-save">Save sit</button>${s.id ? '<button class="btn" data-act="log-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
   } else if (p === 'offline') {
@@ -1450,6 +1757,21 @@ function openSheet(p, arg) {
       `<div class="btns"><button class="btn p" data-act="off-go" ${offState.run ? 'disabled' : ''}>Download this area</button>${offState.run ? '<button class="btn" data-act="off-stop">Stop</button>' : ''}</div><div class="prog" id="offProg" style="display:${offState.run ? 'block' : 'none'}"><i></i><span></span></div>` +
       `<h3>Saved areas</h3>` + (S.offAreas.length ? S.offAreas.map(a => `<div class="row"><div class="g" data-act="go-box" data-b="${a.b.join(',')}" style="cursor:pointer">${esc(a.name)}<br><small>${a.mb} MB · ${({ 15: 'light', 16: 'standard', 17: 'close-up' })[a.detail] || ''} · ${new Date(a.t).toLocaleDateString([], { month: 'short', day: 'numeric' })}</small></div><button class="btn s" data-act="off-del" data-id="${a.id}">Delete</button></div>`).join('') : '<div class="mut">None yet.</div>') +
       `<div class="mut" style="margin-top:8px">Offline, satellite comes from USGS imagery (a bit less sharp than online), and the map stops zooming at the detail you saved.</div>`;
+  } else if (p === 'party') {
+    h = head(P.st ? esc(P.st.name) : 'Party') + partyHtml();
+  } else if (p === 'pjoin') {
+    const mode = arg;
+    h = head(mode === 'join' ? 'Join a party' : 'Start a party') + `<div class="demo">${ico('i-info')}<span>Demo mode. Real group sharing needs a server, which is not set up yet. For now you'll join sample hunters so you can try every feature.</span></div>` +
+      `<label class="fld"><span>Your name, as your group will see it</span><input id="pName" value="${esc(P.me.name || '')}" placeholder="Tyler" autocomplete="given-name"></label>` +
+      (mode === 'join' ? `<label class="fld"><span>Party code</span><input id="pCode" placeholder="6 letters, like RUT4KX" autocapitalize="characters" autocomplete="off" maxlength="6" style="letter-spacing:.12em;font-weight:700"></label>` : `<label class="fld"><span>Party name</span><input id="pPName" placeholder="Opener at the farm"></label>`) +
+      `<div class="btns"><button class="btn p w" data-act="${mode === 'join' ? 'p-join' : 'p-create'}">${mode === 'join' ? 'Join party' : 'Start party'}</button></div>`;
+  } else if (p === 'alertmsg') {
+    h = head('Send a message') + `<label class="fld"><span>Message to the party</span><input id="pMsg" placeholder="Pushing the north slough at 9" maxlength="120"></label><label class="row"><span class="g">Include my location</span><input type="checkbox" id="pMsgLoc" checked></label><div class="btns"><button class="btn p w" data-act="p-sendmsg">Send</button></div>`;
+  } else if (p === 'help') {
+    h = head('How to use ' + APP) + `<label class="helpq">${ico('i-search')}<input id="helpQ" placeholder="Search, for example: offline" autocomplete="off"></label><div id="helpList">${helpList('')}</div>`;
+  } else if (p === 'topic') {
+    const tp = HELP.find(x => x.id === arg) || HELP[0];
+    h = head(tp.t) + `<div class="topic">${tp.b}</div><div class="btns"><button class="btn" data-act="open" data-p="help">All help topics</button></div>`;
   } else if (p === 'sharetxt') { h = head('Share waypoint') + `<div class="mut">Copy this text and send it:</div><label class="fld"><textarea rows="6" readonly onclick="this.select()">${esc(arg)}</textarea></label>`;
   } else if (p === 'search') {
     h = head('Search results') + (arg.length ? arg.map(r => `<div class="row" data-act="go" data-ll="${r.lon},${r.lat}" data-z="13" style="cursor:pointer"><div class="g">${esc(r.display_name)}</div></div>`).join('') : '<div class="mut">Nothing found.</div>');
@@ -1489,7 +1811,7 @@ $('#q').addEventListener('keydown', async e => {
   const m = v.match(/^\s*(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)\s*$/); if (m) { map.flyTo({ center: [+m[2], +m[1]], zoom: 15 }); return; }
   try { const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=us&q=' + encodeURIComponent(v)); openSheet('search', await r.json()); } catch (er) { toast('Search failed'); }
 });
-document.addEventListener('input', e => { if (e.target.id === 'bsens') { B.sens = e.target.value / 100; bel('bsensv').textContent = B.sens < .25 ? 'fresh red only' : B.sens < .65 ? 'fresh to dried' : 'dark and dried too'; } });
+document.addEventListener('input', e => { if (e.target.id === 'helpQ') { $('#helpList').innerHTML = helpList(e.target.value); return; } if (e.target.id === 'bsens') { B.sens = e.target.value / 100; bel('bsensv').textContent = B.sens < .25 ? 'fresh red only' : B.sens < .65 ? 'fresh to dried' : 'dark and dried too'; } });
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.dataset.layer) { const id = t.dataset.layer; S.on[id] = t.checked; store.set('on', S.on); applyVis(id); if (t.checked) { delete loaded[id]; loadLayer(id); } if (id === 'wma') { delete loaded.padus; loadLayer('padus'); } }
@@ -1540,10 +1862,10 @@ document.addEventListener('click', e => {
   else if (a === 'log-save') {
     const s = sh._sit, day = $('#lgDate').value, f = $('#lgFrom').value, t = $('#lgTo').value; if (!day || !f || !t) { toast('Fill in the date and times'); return; }
     s.start = new Date(day + 'T' + f).getTime(); s.end = new Date(day + 'T' + t).getTime(); if (s.end <= s.start) s.end += 864e5;
-    s.stand = $('#lgStand').value; s.shot = $('#lgShot').checked; s.notes = $('#lgNotes').value.trim();
+    s.stand = $('#lgStand').value; s.shot = $('#lgShot').checked; if ($('#lgShare')) s.shared = $('#lgShare').checked; s.notes = $('#lgNotes').value.trim();
     const wx = wxFor((s.start + s.end) / 2); if (wx) s.wx = wx; s.u = Date.now();
     const i = S.log.findIndex(x => x.id === s.id); if (i >= 0 && s.id) S.log[i] = s; else { s.id = ''; S.log.push(s); }
-    delete s._edit; saveLog(); toast(wx || s.wx ? 'Sit saved with ' + wxLine(s.wx) : 'Sit saved (no weather for that time)', 3500); openSheet('saved');
+    delete s._edit; saveLog(); if (P.st && s.shared !== false) { const w = S.wps.find(x => x.id == s.stand); partyNote(`logged a sit${w ? ' at ' + (w.name || 'a stand') : ''}: ${seenTot(s)} deer${s.seen.bucks ? ', ' + s.seen.bucks + ' buck' + (s.seen.bucks > 1 ? 's' : '') : ''}${s.shot ? ', harvested' : ''}`); } toast(wx || s.wx ? 'Sit saved with ' + wxLine(s.wx) : 'Sit saved (no weather for that time)', 3500); openSheet('saved');
   }
   else if (a === 'log-del') { const s = sh._sit; tomb(s.id); S.log = S.log.filter(x => x.id !== s.id); saveLog(); openSheet('saved'); }
   else if (a === 'offline-open') openSheet('offline');
@@ -1552,6 +1874,36 @@ document.addEventListener('click', e => {
   else if (a === 'off-stop') offState.cancel = true;
   else if (a === 'off-del') offDelete(b.dataset.id);
   else if (a === 'go-box') { const v = b.dataset.b.split(',').map(Number); map.fitBounds([[v[0], v[1]], [v[2], v[3]]], { padding: 30 }); }
+  else if (a === 'open') openSheet(b.dataset.p);
+  else if (a === 'help') openSheet('topic', b.dataset.t);
+  else if (a === 'intro') { closeSheet(); showIntro(0); }
+  else if (a === 'p-new') openSheet('pjoin', 'create');
+  else if (a === 'p-joinform') openSheet('pjoin', 'join');
+  else if (a === 'p-create' || a === 'p-join') {
+    const nm = ($('#pName').value || '').trim(); if (!nm) { toast('Add your name so your group knows who you are'); $('#pName').focus(); return; }
+    let code = ''; if (a === 'p-join') { code = ($('#pCode').value || '').trim().toUpperCase(); if (!/^[A-Z0-9]{6}$/.test(code)) { toast('Party codes are 6 letters or numbers'); return; } }
+    P.me.name = nm; store.set('pme', P.me); partyStart(a === 'p-join' ? 'Party ' + code : (($('#pPName') || {}).value || '').trim() || 'Hunting party', code);
+  }
+  else if (a === 'p-alert') partySend(b.dataset.k);
+  else if (a === 'p-msg') openSheet('alertmsg');
+  else if (a === 'p-sendmsg') { const t = ($('#pMsg').value || '').trim(); if (!t) { toast('Type a message first'); return; } partySend('msg', t, $('#pMsgLoc').checked); }
+  else if (a === 'p-leave') confirmBox('Leave this party?', 'You will stop seeing your group and they will stop seeing you.', 'Leave party', () => { partyLeave(); openSheet('party'); });
+  else if (a === 'p-share') { const t = `Join my ${APP} party "${P.st.name}" with code ${P.st.code}` + (/^https?:/.test(location.protocol) ? `\n${location.origin}${location.pathname}` : ''); (navigator.share ? navigator.share({ title: APP + ' party', text: t }) : navigator.clipboard.writeText(t).then(() => toast('Invite copied'))).catch(() => { }); }
+  else if (a === 'p-mate') { const m = P.st && P.st.members.find(x => x.id === b.dataset.id); if (m && m.p) { closeSheet(); map.flyTo({ center: m.p, zoom: Math.max(map.getZoom(), 15.5) }); mateCard(m); } }
+  else if (a === 'p-guide') { const m = P.st && P.st.members.find(x => x.id === b.dataset.id); if (m && m.p) guideTo(m.p, m.name); }
+  else if (a === 'p-feed') { const f = P.st && P.st.feed.find(x => x.id === b.dataset.id); if (f && f.p) { closeSheet(); hideBanner(); map.flyTo({ center: f.p, zoom: Math.max(map.getZoom(), 16) }); } }
+  else if (a === 'p-fguide') { const f = P.st && P.st.feed.find(x => x.id === b.dataset.id); if (f && f.p) { hideBanner(); guideTo(f.p, f.from + ': ' + f.label); } }
+  else if (a === 'p-copywp') { const w = P.st && P.st.wps.find(x => x.id == b.dataset.id); if (w) { S.wps.push({ id: Date.now(), p: w.p.slice(), type: w.type, name: w.name, notes: 'From ' + w.by + (w.notes ? '. ' + w.notes : ''), u: Date.now() }); drawWps(); if (popup) popup.remove(); toast('Saved to your waypoints'); } }
+  else if (a === 'p-hidebanner') hideBanner();
+  else if (a === 'p-loc') { P.st.shareLoc = !P.st.shareLoc; partySave(); openSheet('party'); toast(P.st.shareLoc ? 'Your group can see where you are' : 'Location sharing paused'); }
+  else if (a === 'cb-yes') { const f = confirmBox.f; confirmBox.f = null; $('#banner').classList.remove('on'); f && f(); }
+  else if (a === 'cb-no') { confirmBox.f = null; $('#banner').classList.remove('on'); }
+  else if (a === 'intro-next') introStep(+1);
+  else if (a === 'intro-back') introStep(-1);
+  else if (a === 'intro-done') { store.set('introDone', true); $('#intro').classList.remove('on'); }
+  else if (a === 'intro-loc') whereAmI(() => { b.classList.add('done'); b.querySelector('span').textContent = 'Location is on'; });
+  else if (a === 'intro-cmp') startSensor().then(ok => { if (ok) { b.classList.add('done'); b.querySelector('span').textContent = 'Compass is on'; } });
+  else if (a === 'intro-home') { const el = $('#homeHow'); if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
   else if (a === 'mark-me') whereAmI(p => { map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 16) }); editWp({ id: 0, p: p.slice(), type: 'stand', name: '', notes: '' }); });
   else if (a === 'mark-tap') setMode('mark');
   else if (a === 'mark-center') { const c = map.getCenter(); editWp({ id: 0, p: [c.lng, c.lat], type: 'stand', name: '', notes: '' }); }
@@ -1561,7 +1913,7 @@ document.addEventListener('click', e => {
   else if (a === 'save-area') saveArea();
   else if (a === 'mine-del') { const n = b.dataset.n; idbDo('readwrite', st => st.delete(n)).catch(() => { }); S.mine = S.mine.filter(m => m.name !== n); drawMine(); openSheet('layers'); }
   else if (a === 'regrid-save') { S.regrid = $('#rgKey').value.trim(); S.prov = $('#rgProv').value; store.set('prov', S.prov); store.set('regrid', S.regrid); addRegrid(); delete loaded.parcels; loadLayer('parcels'); toast(S.regrid ? 'Token saved. Zoom in to see parcel lines.' : 'Token removed'); openSheet('layers'); }
-  else if (a === 'wp-save') { const w = sh._wp; w.name = $('#wpName').value.trim(); w.type = $('#wpType').value; w.notes = $('#wpNotes').value.trim(); w.u = Date.now(); if (['stand', 'blind'].includes(w.type)) { w.winds = [...sh.querySelectorAll('.wchip.on')].map(x => x.dataset.d); w.rings = $('#wpRings').value; } if (!w.id) { w.id = Date.now(); S.wps.push(w); } drawWps(); closeSheet(); toast('Waypoint saved'); }
+  else if (a === 'wp-save') { const w = sh._wp; w.name = $('#wpName').value.trim(); w.type = $('#wpType').value; w.notes = $('#wpNotes').value.trim(); w.u = Date.now(); if ($('#wpShare')) { const was = w.shared; w.shared = $('#wpShare').checked; if (w.shared && !was) partyNote('shared ' + (w.name || (WPT[w.type] || WPT.other)[0])); } if (['stand', 'blind'].includes(w.type)) { w.winds = [...sh.querySelectorAll('.wchip.on')].map(x => x.dataset.d); w.rings = $('#wpRings').value; } if (!w.id) { w.id = Date.now(); S.wps.push(w); } drawWps(); closeSheet(); toast('Waypoint saved'); }
   else if (a === 'wp-del') { idbDo('readwrite', st => st.delete(sh._wp.id), 'photos').catch(() => { }); tomb(sh._wp.id); S.wps = S.wps.filter(x => x.id !== sh._wp.id); drawWps(); closeSheet(); }
   else if (a === 'wp-go') { const w = S.wps.find(x => x.id == b.dataset.id); if (w) { map.flyTo({ center: w.p, zoom: Math.max(map.getZoom(), 15.5) }); editWp(w); } }
   else if (a === 'go') { map.flyTo({ center: parseLL(b.dataset.ll), zoom: +b.dataset.z || Math.max(map.getZoom(), 16) }); if (b.dataset.z) closeSheet(); }
@@ -1580,7 +1932,7 @@ document.addEventListener('click', e => {
 
 /* ---------------- GPX import / export ---------------- */
 function exportGpx() {
-  const x = s => esc(s), g = ['<?xml version="1.0" encoding="UTF-8"?>', '<gpx version="1.1" creator="Hunt Map" xmlns="http://www.topografix.com/GPX/1/1">'];
+  const x = s => esc(s), g = ['<?xml version="1.0" encoding="UTF-8"?>', '<gpx version="1.1" creator="Rutline" xmlns="http://www.topografix.com/GPX/1/1">'];
   S.wps.forEach(w => g.push(`<wpt lat="${w.p[1]}" lon="${w.p[0]}"><name>${x(w.name || (WPT[w.type] || WPT.other)[0])}</name><desc>${x(w.notes)}</desc><type>${x(w.type)}</type></wpt>`));
   S.tracks.forEach(t => g.push(`<trk><name>${x(t.name)}</name><trkseg>${t.pts.map(p => `<trkpt lat="${p[1]}" lon="${p[0]}"/>`).join('')}</trkseg></trk>`)); g.push('</gpx>');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([g.join('\n')], { type: 'application/gpx+xml' })); a.download = 'hunt-map-' + new Date().toISOString().slice(0, 10) + '.gpx'; document.body.appendChild(a); a.click(); a.remove();

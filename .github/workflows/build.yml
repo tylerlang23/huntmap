@@ -1,4 +1,4 @@
-name: Build and publish Hunt Map
+name: Build and publish Rutline
 on:
   workflow_dispatch:
     inputs:
@@ -53,7 +53,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p site
-          cp index.html sw.js site/
+          cp index.html sw.js manifest.webmanifest icon-*.png site/
           [ -f parcels.json ] && cp parcels.json site/ || true
           touch site/.nojekyll
           ls -lh site

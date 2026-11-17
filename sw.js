@@ -3,7 +3,7 @@
    - map tiles: served from the "hm-tiles" cache when a download put them there
    - Esri satellite: falls back to downloaded USGS imagery for the same tile when offline
    - parcels.pmtiles: byte ranges cached as they load, replayed when offline */
-const V = 'v1', SHELL = 'hm-shell-' + V, TILES = 'hm-tiles', PM = 'hm-pm';
+const V = 'v2', SHELL = 'hm-shell-' + V, TILES = 'hm-tiles', PM = 'hm-pm';
 const LIBS = ['https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js', 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css', 'https://unpkg.com/pmtiles@3/dist/pmtiles.js'];
 const TILE_HOSTS = ['server.arcgisonline.com', 'basemap.nationalmap.gov', 'imageserver.gisdata.mn.gov'];
 const EMPTY_PNG = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='), c => c.charCodeAt(0));
@@ -23,7 +23,7 @@ function tileKey(url) {
 const empty = () => new Response(EMPTY_PNG, { headers: { 'Content-Type': 'image/png', 'Access-Control-Allow-Origin': '*', 'X-HM-Empty': '1' } });
 const timeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 
-self.addEventListener('install', e => { e.waitUntil(caches.open(SHELL).then(c => Promise.all(['./', ...LIBS].map(u => c.add(new Request(u, { mode: u.startsWith('http') ? 'cors' : 'same-origin' })).catch(() => { })))).then(() => self.skipWaiting())); });
+self.addEventListener('install', e => { e.waitUntil(caches.open(SHELL).then(c => Promise.all(['./', 'manifest.webmanifest', 'icon-192.png', ...LIBS].map(u => c.add(new Request(u, { mode: u.startsWith('http') ? 'cors' : 'same-origin' })).catch(() => { })))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('hm-shell-') && k !== SHELL).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 
 self.addEventListener('fetch', e => {
@@ -31,7 +31,7 @@ self.addEventListener('fetch', e => {
   const u = new URL(req.url);
   if (u.origin === location.origin && u.pathname.endsWith('/parcels.pmtiles')) { e.respondWith(pmtiles(req)); return; }
   if (req.mode === 'navigate' || (u.origin === location.origin && /\/(index\.html)?$/.test(u.pathname))) { e.respondWith(page(req)); return; }
-  if (/^(unpkg\.com|cdn\.jsdelivr\.net|fonts\.openmaptiles\.org)$/.test(u.host)) { e.respondWith(cacheFirst(req, SHELL)); return; }
+  if (/^(unpkg\.com|cdn\.jsdelivr\.net|fonts\.openmaptiles\.org|fonts\.googleapis\.com|fonts\.gstatic\.com)$/.test(u.host)) { e.respondWith(cacheFirst(req, SHELL)); return; }
   if (TILE_HOSTS.includes(u.host) && (/\/tile\/\d+\/\d+\/\d+/.test(u.pathname) || /GetMap/i.test(u.search))) { e.respondWith(tile(req)); return; }
 });
 
