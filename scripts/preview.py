@@ -13,8 +13,11 @@ WPS = [
 ]
 async def pm(route):
     req = route.request; hdr = {k: v for k, v in req.headers.items() if k.lower() == 'range'}
-    r = await route.fetch(url=LIVE, headers=hdr)
-    await route.fulfill(response=r, headers={**r.headers, 'access-control-allow-origin': '*'})
+    hdr['accept-encoding'] = 'identity'
+    try: r = await route.fetch(url=LIVE, headers=hdr)
+    except Exception as e: print('pm fetch failed', e); return await route.abort()
+    h = {k: v for k, v in r.headers.items() if k.lower() not in ('content-encoding', 'transfer-encoding')}; h['access-control-allow-origin'] = '*'
+    await route.fulfill(status=r.status, body=await r.body(), headers=h)
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])
