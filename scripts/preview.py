@@ -32,12 +32,22 @@ async def main():
         pg.on('console', lambda m: print('CONSOLE', m.type, m.text[:300]) if m.type in ('warning','error') else None)
         await pg.goto('http://localhost:8000/index.html#15.6/%s/%s' % (C[1], C[0])); await pg.wait_for_timeout(16000)
         os.makedirs('shots', exist_ok=True)
-        await pg.evaluate("S.wps.push({id:1, p:[-94.4531,44.80198], type:'stand', name:'North ridge', notes:''}, {id:2, p:[-94.4510,44.8030], type:'bed', name:'Bedding thicket', notes:''}); drawWps()")
-        await pg.evaluate("askStart({ll:[-94.4531,44.80198]})"); await pg.wait_for_timeout(9000)
-        await pg.screenshot(path='shots/1-ask.png')
-        ok = await pg.evaluate("ASK.pic ? ASK.pic.url.length : 'none'"); print('pic', ok)
-        if ok != 'none':
-            import base64
-            d = await pg.evaluate("ASK.pic.url"); open('shots/2-pic.jpg','wb').write(base64.b64decode(d.split(',')[1]))
+        import json as _j
+        cap = {}
+        async def fake(route):
+            body = _j.loads(route.request.post_data); cap['img'] = body['messages'][0]['content'][0]['source']['data']; cap['txt'] = body['messages'][0]['content'][1]['text']
+            spots = {"summary":"Hunt the edge where the grass meets the timber on the west wind.","spots":[{"x":500,"y":500,"type":"stand","name":"Center check","why":"Grid center test.","winds":["W","NW"],"approach":"From the road","when":"evening"},{"x":250,"y":250,"type":"bed","name":"Upper left","why":"Quarter test.","winds":[],"approach":"","when":"all day"},{"x":800,"y":850,"type":"travel","name":"Lower right","why":"Test.","winds":["N"],"approach":"","when":"morning"}]}
+            await route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin':'*'}, body=_j.dumps({"content":[{"type":"text","text":"```json\n"+_j.dumps(spots)+"\n```"}]}))
+        await pg.route('https://api.anthropic.com/**', fake)
+        await pg.evaluate("localStorage.setItem('huntmap.akey', JSON.stringify('sk-ant-test'))"); await pg.reload(); await pg.wait_for_timeout(14000)
+        await pg.evaluate("map.jumpTo({zoom:15.2})"); await pg.wait_for_timeout(5000)
+        await pg.evaluate("openSheet('scout')"); await pg.wait_for_timeout(500); await pg.screenshot(path='shots/1-scout.png')
+        await pg.evaluate("document.getElementById('scPub').checked=false"); await pg.click('[data-act=sc-run]'); await pg.wait_for_timeout(9000)
+        await pg.screenshot(path='shots/2-results.png')
+        print('centers', await pg.evaluate("JSON.stringify([map.getCenter(), SC.res && SC.res.spots.map(s=>[s.n,s.ll,s.pub])])"))
+        await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(600); await pg.screenshot(path='shots/3-pins.png')
+        import base64
+        open('shots/4-scoutpic.jpg','wb').write(base64.b64decode(cap.get('img','')))
+        print('PROMPT', cap.get('txt','')[:2500])
         print('\n'.join(logs)); print('FAILS', '\n'.join(sorted(set(fails))[:30])); await b.close()
 asyncio.run(main())
