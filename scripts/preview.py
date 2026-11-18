@@ -41,18 +41,24 @@ async def main():
         await pg.route('https://api.anthropic.com/**', fake)
         await pg.evaluate("localStorage.setItem('huntmap.akey', JSON.stringify('sk-ant-test'))"); await pg.reload(); await pg.wait_for_timeout(14000)
         await pg.evaluate("map.jumpTo({zoom:15.2})"); await pg.wait_for_timeout(5000)
-        await pg.unroute('https://api.anthropic.com/**')
-        async def fake3(route):
-            body = _j.loads(route.request.post_data); cap['txt'] = body['messages'][0]['content'][1]['text']
-            d = {"summary":"Evening: does leave the cattail bedding and work north along the timber edge to the field.","routes":[{"n":1,"from":"cattail bedding","to":"north field","when":"last hour of light","confidence":"medium","why":"Edge travel with the wind in their face.","pts":[[300,750],[350,650],[420,560],[480,480],[520,380],[560,260]]},{"n":2,"from":"timber","to":"field corner","when":"evening","confidence":"low","why":"Inside corner.","pts":[[800,700],[720,600],[650,450],[600,300]]}],"trails":[{"pts":[[100,520],[200,500],[300,470],[400,450]]}],"ambush":[{"x":560,"y":460,"label":"Edge pinch","winds":["NW","W"],"why":"Downwind of route 1."}]}
-            await route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin':'*'}, body=_j.dumps({"usage":{"input_tokens":3500,"output_tokens":1200},"content":[{"type":"text","text":_j.dumps(d)}]}))
-        await pg.route('https://api.anthropic.com/**', fake3)
-        await pg.evaluate("map.jumpTo({zoom:12.5})"); await pg.wait_for_timeout(3000)
-        await pg.evaluate("openSheet('move')"); await pg.wait_for_timeout(500); await pg.screenshot(path='shots/1-gate.png')
-        await pg.click('[data-act=zoom-in-gate]'); await pg.wait_for_timeout(4000)
-        await pg.click('[data-act=mv-run]'); await pg.wait_for_timeout(10000); await pg.screenshot(path='shots/2-res.png')
-        await pg.click('[data-act=mv-hide]'); await pg.wait_for_timeout(1500); await pg.screenshot(path='shots/3-map.png')
-        print('mv', await pg.evaluate("MV.res ? [MV.res.routes.length, MV.res.trails.length, MV.res.spots.length] : 'none'"))
-        print('PROMPT', cap.get('txt','')[:4000])
+        import datetime, math
+        def om(route):
+            from urllib.parse import urlparse, parse_qs
+            q = parse_qs(urlparse(route.request.url).query); la = q['latitude'][0].split(','); n = len(la)
+            base = datetime.datetime.now().replace(minute=0, second=0, microsecond=0)
+            times = [(base + datetime.timedelta(hours=k-2)).strftime('%Y-%m-%dT%H:%M') for k in range(80)]
+            def one(idx):
+                return {"hourly":{"time":times,"wind_speed_10m":[6+8*abs(math.sin(k/9))+idx*.6 for k in range(80)],"wind_direction_10m":[(300+k*3+idx*6)%360 for k in range(80)],"wind_gusts_10m":[14+k%7 for k in range(80)],"temperature_2m":[33]*80,"precipitation_probability":[10]*80,"pressure_msl":[1015]*80,"weather_code":[2]*80,"is_day":[1]*80},
+                        "current":{"temperature_2m":33,"apparent_temperature":27,"relative_humidity_2m":70,"weather_code":2,"is_day":1,"wind_speed_10m":9,"wind_direction_10m":300,"wind_gusts_10m":16},
+                        "daily":{"time":[t[:10] for t in times[::24]][:4],"sunrise":[t[:10]+'T07:12' for t in times[::24]][:4],"sunset":[t[:10]+'T16:44' for t in times[::24]][:4],"weather_code":[2,3,71,0],"temperature_2m_max":[36,30,28,40],"temperature_2m_min":[22,20,15,25],"precipitation_probability_max":[10,40,60,0],"wind_speed_10m_max":[12,18,20,8],"wind_direction_10m_dominant":[300,320,340,200]}}
+            body = [one(k) for k in range(n)] if n > 1 else one(0)
+            return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin':'*'}, body=_j.dumps(body))
+        await pg.route('https://api.open-meteo.com/**', om)
+        await pg.evaluate("loadWind && loadWind(true)"); await pg.wait_for_timeout(1500)
+        await pg.evaluate("map.jumpTo({zoom:13.5})"); await pg.wait_for_timeout(3000)
+        await pg.click('#fWind'); await pg.wait_for_timeout(3500); await pg.screenshot(path='shots/1-wind.png')
+        await pg.evaluate("map.jumpTo({zoom:9})"); await pg.wait_for_timeout(4000); await pg.screenshot(path='shots/2-wind-far.png')
+        await pg.click('#wbPlay'); await pg.wait_for_timeout(5000); await pg.screenshot(path='shots/3-playing.png')
+        print('wf', await pg.evaluate("JSON.stringify([WF.src, WF.field && WF.field.n, WF.field && WF.field.nx, WF.t.toFixed(1), WF.parts.length])"))
         print('\n'.join(logs)); print('FAILS', '\n'.join(sorted(set(fails))[:30])); await b.close()
 asyncio.run(main())

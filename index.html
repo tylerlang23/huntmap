@@ -87,6 +87,10 @@ body.cmp .stack{top:calc(var(--st) + 130px)}body.cmp .lchips,body.cmp .modebar{t
 .sheet h2 .hi{width:36px;height:36px;border-radius:11px;background:var(--moss);display:grid;place-items:center;color:var(--blaze);flex:none}
 .sheet h2 .hi svg{width:21px;height:21px}
 .sheet h2 .ht{flex:1;min-width:0}
+.sheet h2 .bk{width:38px;height:38px;margin:0 -2px 0 -6px;border-radius:50%;border:0;background:var(--moss);color:var(--bone);display:grid;place-items:center;padding:0;flex:none;cursor:pointer}
+.sheet h2 .bk svg{width:20px;height:20px;transform:rotate(180deg)}
+.sheet h2 .bk:active{background:var(--blaze);color:#1B1F1A}
+.sheet h2 .bk + .hi{display:none}
 .sheet h2 .hq{width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:none;color:var(--lichen);display:grid;place-items:center;padding:0}
 .sheet h2 .hq svg{width:19px;height:19px}
 .sheet h3{margin:22px 0 6px;font:600 15px/1.3 var(--f);color:var(--lichen);letter-spacing:0;text-transform:none}
@@ -253,6 +257,31 @@ pre.ctx{white-space:pre-wrap;font:13px/1.45 var(--f);color:var(--lichen);backgro
 .vref{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:11px;border:0;background:var(--blaze);color:#1B1F1A;font:700 13px/1 var(--fc);vertical-align:1px;margin:0 2px;cursor:pointer}
 .mvn{width:28px;height:28px;border-style:solid}.mvn b{font-size:13px}
 .mvleg{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 4px;font-size:13px;color:var(--lichen)}.mvleg span{display:flex;align-items:center;gap:6px}.mvleg i{display:inline-block;width:26px;height:0;border-top:4px dashed #FF6B1A}.mvleg i.lt{border-top:3px dotted #F7E27A}.mvleg i.ls{width:12px;height:12px;border:0;border-radius:50%;background:#D9472F}
+
+.hpdays{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.hpd{flex:none;width:52px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 6px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--bone);cursor:pointer;font:inherit}
+.hpd small{font-size:11.5px;color:var(--lichen)}.hpd b{font:700 18px/1 var(--fc)}.hpd .wxi{width:20px;height:20px}
+.hpd.on{background:var(--blaze);border-color:var(--blaze);color:#1B1F1A}.hpd.on small{color:#1B1F1A}
+.hpsum{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13.5px;color:var(--lichen);line-height:1.35}.hpsum .wxi{width:24px;height:24px}
+
+/* ---------- wind flow ---------- */
+.wfcv,.wfdim{position:absolute;inset:0;pointer-events:none;display:none}
+.wfdim{background:radial-gradient(ellipse at 50% 40%,rgba(8,14,20,.22),rgba(8,14,20,.42))}
+.windbar{position:absolute;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 74px);bottom:calc(var(--tab) + var(--sb) + 30px);z-index:6;border-radius:20px;padding:12px 14px 10px;display:none;flex-direction:column;gap:8px}
+.windbar.open{display:flex}
+body.wflow .maplibregl-ctrl-bottom-left{display:none}
+.wbtop{display:flex;align-items:center;gap:10px}
+.wbdial{width:50px;height:50px;border-radius:50%;flex:none;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,rgba(143,214,255,.22),rgba(143,214,255,.04) 70%);border:1px solid rgba(143,214,255,.35)}
+.wbdial svg{width:38px;height:38px;transition:transform .5s cubic-bezier(.3,.7,.3,1);filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.wbread{flex:1;min-width:0;line-height:1.1}.wbread b{display:block;font:700 26px/1 var(--fc);color:var(--bone)}.wbread small{display:block;color:var(--lichen);font-size:12.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wbtime{text-align:right;flex:none}.wbtime b{display:block;font:700 17px/1.1 var(--fc)}.wbtime button{margin-top:4px;border:1px solid var(--line2);background:none;color:var(--lichen);border-radius:999px;padding:3px 10px;font:600 12px var(--f)}
+.wbx{align-self:flex-start;width:28px;height:28px;border-radius:50%;border:0;background:var(--moss);color:var(--lichen);font-size:18px;line-height:1;padding:0 0 2px;flex:none}
+.wbrow{display:flex;align-items:center;gap:10px}
+.wbplay{width:40px;height:40px;border-radius:50%;border:0;background:var(--blaze);color:#1B1F1A;display:grid;place-items:center;flex:none;padding:0}.wbplay .ic{width:20px;height:20px}
+.wbtrack{flex:1;position:relative;padding-bottom:14px}
+.wbtrack input{width:100%;margin:0;accent-color:#8FD6FF;height:28px}
+.wbticks{position:absolute;left:0;right:0;bottom:0;height:12px;font-size:10.5px;color:var(--lichen)}.wbticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}.wbticks span::before{content:'';position:absolute;left:50%;top:-9px;width:1px;height:6px;background:var(--line2)}
+.wbleg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--lichen)}.wbleg i{flex:1;height:5px;border-radius:3px;background:linear-gradient(90deg,#CFEAFF,#8FD6FF 25%,#FFE37A 50%,#FFA44A 75%,#FF5A3C)}
 /* ---------- tools hub ---------- */
 .tool{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--bone)}
 .tool:last-child{border-bottom:0}
@@ -381,6 +410,8 @@ body.guiding .loc{bottom:calc(var(--tab) + var(--sb) + 112px)}body.guiding .disc
   <symbol id="wx-sleet" viewBox="0 0 24 24"><path d="M6.5 14.5h11a3.6 3.6 0 0 0 0-7.2 5.2 5.2 0 0 0-9.8 1.2A3 3 0 0 0 6.5 14.5z" fill="#A9B0A3" stroke="none"/><path d="M8 17.2l-1 2.6M16 17.2l-1 2.6" stroke="#6FB7F2" stroke-width="2"/><circle cx="12" cy="19" r="1.2" fill="#ECEADF" stroke="none"/></symbol>
   <symbol id="wx-storm" viewBox="0 0 24 24"><path d="M6.5 13.5h11a3.6 3.6 0 0 0 0-7.2 5.2 5.2 0 0 0-9.8 1.2A3 3 0 0 0 6.5 13.5z" fill="#8E978A" stroke="none"/><path d="M12.5 13.5l-2.5 4h3l-2 4" stroke="#F2C46B" stroke-width="2"/></symbol>
   <symbol id="i-photo" viewBox="0 0 24 24"><path d="M4 8h3l1.6-2.5h6.8L17 8h3a1.5 1.5 0 011.5 1.5v9A1.5 1.5 0 0120 20H4a1.5 1.5 0 01-1.5-1.5v-9A1.5 1.5 0 014 8z"/><circle cx="12" cy="13.5" r="3.6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5.5" width="4" height="13" rx="1" fill="currentColor" stroke="none"/><rect x="13.5" y="5.5" width="4" height="13" rx="1" fill="currentColor" stroke="none"/></symbol>
   <symbol id="logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#1B1F1A"/><g fill="none" stroke="#ECEADF" stroke-linecap="round"><path d="M32 4.8c11.5 0 22.4 8.8 22.4 23.6 0 15.8-10 30.8-22.4 30.8S9.6 44.2 9.6 28.4C9.6 13.6 20.5 4.8 32 4.8z" stroke-opacity=".22" stroke-width="1.4"/><path d="M32 9.8c9 0 17.6 7.2 17.6 19 0 12.7-7.9 24.6-17.6 24.6S14.4 41.5 14.4 28.8C14.4 17 23 9.8 32 9.8z" stroke-opacity=".38" stroke-width="1.4"/></g><g fill="#FF6B1A"><path d="M30.2 48.6c-6.6.4-10.7-4.1-10.7-11.1 0-8.6 4.6-17.2 9.6-21.6.9-.8 1.9-.3 1.9.9l.6 30.2c0 .9-.6 1.5-1.4 1.6z"/><path d="M33.8 48.6c6.6.4 10.7-4.1 10.7-11.1 0-8.6-4.6-17.2-9.6-21.6-.9-.8-1.9-.3-1.9.9l-.6 30.2c0 .9.6 1.5 1.4 1.6z"/></g></symbol>
  </defs>
 </svg>
@@ -393,8 +424,19 @@ body.guiding .loc{bottom:calc(var(--tab) + var(--sb) + 112px)}body.guiding .disc
 <div class="stack glass">
   <button id="fBase" aria-label="Switch map style"><svg class="ic"><use href="#i-basemap"/></svg><span>Sat</span></button>
   <button id="f3d" aria-label="3D terrain"><svg class="ic"><use href="#i-3d"/></svg><span>3D</span></button>
+  <button id="fWind" aria-label="Wind on the map"><svg class="ic"><use href="#i-wind"/></svg><span>Wind</span></button>
   <button id="fCmp" aria-label="Compass"><svg class="ic"><use href="#i-compass"/></svg><span>Compass</span></button>
   <button id="fOrient" aria-label="Map orientation"><svg class="ic"><use href="#i-north"/></svg><span id="orientTxt">N up</span></button>
+</div>
+<div class="windbar glass" id="windbar" aria-label="Wind timelapse">
+  <div class="wbtop">
+    <div class="wbdial"><svg viewBox="0 0 64 64" id="wbArrow"><defs><linearGradient id="wbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#8FD6FF"/></linearGradient></defs><path d="M32 6 L44 30 L35.5 27.5 L35.5 56 L28.5 56 L28.5 27.5 L20 30 Z" fill="url(#wbg)" stroke="rgba(10,14,12,.6)" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+    <div class="wbread"><b id="wbDir">--</b><small id="wbGust">mph</small><small id="wbStands"></small></div>
+    <div class="wbtime"><b id="wbTime">Now</b><button id="wbNow">Now</button></div>
+    <button class="wbx" id="wbClose" aria-label="Hide wind">&times;</button>
+  </div>
+  <div class="wbrow"><button class="wbplay" id="wbPlay" aria-label="Play timelapse"></button><div class="wbtrack"><input type="range" id="wbSlider" min="0" max="47" step="0.05" value="0" aria-label="Forecast hour"><div class="wbticks" id="wbTicks"></div></div></div>
+  <div class="wbleg"><span>0</span><i></i><span>20+ mph</span></div>
 </div>
 <div class="modebar" id="modebar"><span id="modeTxt"></span><button data-act="mode-undo" id="modeUndo">Undo</button><button data-act="mode-clear" id="modeClear">Clear</button><button data-act="mode-done">Done</button></div>
 <button class="loc glass" id="fLoc" aria-label="Go to my location"><svg viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.6l7 2.4 2.4 7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
@@ -1390,7 +1432,7 @@ function scPublicAt(ll) { const pl = ['wma-fill', 'padus-fill'].filter(l => map.
 async function scoutRun() {
   if (SC.busy || !AK.key) return; const out = $('#scOut'); try { auCheck(); } catch (e) { out.innerHTML = `<div class="aa err">${esc(e.message)}</div>`; return; } SC.busy = true; scClear(); out.innerHTML = '<div class="aa wait">Taking a picture of this map view…</div>'; out.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   try {
-    if (map.getZoom() < MINZ) throw new Error('Zoom in closer first (about 2 miles across or less).');
+    if (map.getZoom() < MINZ) throw new Error('Zoom in closer first (about a mile across or less).');
     const pic = await mapPicture(null, { grid: true }); if (!pic) throw new Error('Could not take the map picture.');
     out.innerHTML = '<div class="aa wait">Claude is studying the map. This usually takes 20 to 40 seconds…</div>';
     const T = scTarget(), w = windAt(T.k), CW = map.getContainer().clientWidth, CH = map.getContainer().clientHeight;
@@ -1436,9 +1478,9 @@ function vwDraw() { VW.mk.forEach(m => m.remove()); VW.mk = []; VW.pts.forEach(p
 const vwRefs = html => VW.pts.length ? html.replace(/\[(\d{1,2})\]/g, (m, n) => VW.pts.some(p => p.n == n) ? `<button class="vref" data-act="vw-go" data-n="${n}">${n}</button>` : m) : html;
 
 /* ---------------- zoom gate for Claude map reading ---------------- */
-const MINZ = 14;
+const MINZ = 13.5;
 const viewMiles = () => HM.hav(map.unproject([0, map.getContainer().clientHeight / 2]).toArray(), map.unproject([map.getContainer().clientWidth, map.getContainer().clientHeight / 2]).toArray()) / 1609.34;
-const zoomGate = () => map.getZoom() >= MINZ ? '' : `<div class="note">Zoom in closer first. Claude reads the photos well when the screen covers about 2 miles or less; right now it shows about ${viewMiles().toFixed(1)} miles across.</div><div class="btns"><button class="btn p" data-act="zoom-in-gate" style="flex:1">Zoom in here</button></div>`;
+const zoomGate = () => map.getZoom() >= MINZ ? '' : `<div class="note">Zoom in closer first. Claude reads the photos well when the screen covers about a mile across or less; right now it shows about ${viewMiles().toFixed(1)} miles across.</div><div class="btns"><button class="btn p" data-act="zoom-in-gate" style="flex:1">Zoom in here</button></div>`;
 function seasonPhase(d = new Date()) {
   const m = d.getMonth() + 1, day = d.getDate(), md = m * 100 + day;
   if (md < 301) return 'late season: cold weather, deer focused on high-energy food close to thermal cover, bucks recovering from the rut';
@@ -1450,6 +1492,144 @@ function seasonPhase(d = new Date()) {
   if (md < 1210) return 'post-rut: bucks tired and pressured after firearm season, recovering near thick security cover and food, some second-rut activity';
   return 'late season: cold weather, deer focused on high-energy food close to thermal cover';
 }
+
+/* ---------------- wind flow: animated wind across the whole map with a 48-hour timelapse ---------------- */
+const WF = { on: false, field: null, t: 0, play: false, key: '', parts: [], cv: null, cx: null, dim: null, raf: 0, last: 0, grid: null, dirty: true, hr: -1, busy: false };
+const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const WCOL = s => s < 5 ? '#CFEAFF' : s < 10 ? '#8FD6FF' : s < 15 ? '#FFE37A' : s < 20 ? '#FFA44A' : '#FF5A3C';
+const WBUCKETS = [0, 5, 10, 15, 20];
+function wfUV(dir, spd) { const r = (dir + 180) * Math.PI / 180; return [Math.sin(r) * spd, Math.cos(r) * spd]; }
+function wfFromPoints(list, lats, lngs, nx, ny, gust) {
+  const now = localKey(Date.now()), T = list[0].hourly.time; let i0 = T.findIndex(x => x.slice(0, 13) >= now); if (i0 < 0) i0 = 0;
+  const n = Math.min(48, T.length - i0), u = [], v = [], g = [];
+  for (let k = 0; k < n; k++) { const uu = [], vv = [], gg = []; list.forEach(p => { const [a, b] = wfUV(p.hourly.wind_direction_10m[i0 + k], p.hourly.wind_speed_10m[i0 + k]); uu.push(a); vv.push(b); gg.push(p.hourly.wind_gusts_10m ? p.hourly.wind_gusts_10m[i0 + k] : null); }); u.push(uu); v.push(vv); g.push(gg); }
+  return { lats, lngs, nx, ny, times: T.slice(i0, i0 + n), u, v, g, n };
+}
+async function wfLoad(force) {
+  if (WF.busy) return; const b = map.getBounds(), z = map.getZoom(), key = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map(x => x.toFixed(z > 11 ? 2 : 1)).join(',') + '|' + Math.round(z);
+  if (!force && WF.field && WF.fieldB && b.getWest() >= WF.fieldB[0] && b.getEast() <= WF.fieldB[2] && b.getSouth() >= WF.fieldB[1] && b.getNorth() <= WF.fieldB[3] && Math.abs(z - WF.fieldZ) < 2) return;
+  WF.busy = true;
+  const pw = (b.getEast() - b.getWest()) * .35, ph = (b.getNorth() - b.getSouth()) * .35, W0 = b.getWest() - pw, E0 = b.getEast() + pw, S0 = b.getSouth() - ph, N0 = b.getNorth() + ph;
+  const tiny = (E0 - W0) < .12, nx = tiny ? 2 : 4, ny = tiny ? 2 : 5, lats = [], lngs = [];
+  for (let j = 0; j < ny; j++) lats.push(S0 + (N0 - S0) * j / (ny - 1)); for (let i = 0; i < nx; i++) lngs.push(W0 + (E0 - W0) * i / (nx - 1));
+  const qa = [], qo = []; lats.forEach(la => lngs.forEach(lo => { qa.push(la.toFixed(3)); qo.push(lo.toFixed(3)); }));
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${qa.join(',')}&longitude=${qo.join(',')}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=mph&timezone=auto&forecast_days=3`);
+    if (!r.ok) throw new Error('wind ' + r.status); let j = await r.json(); if (!Array.isArray(j)) j = [j];
+    WF.field = wfFromPoints(j, lats, lngs, nx, ny); WF.fieldB = [W0, S0, E0, N0]; WF.fieldZ = z; WF.src = 'grid';
+  } catch (e) {
+    console.warn('wind field', e); const W = S.wind;
+    if (W && W.h) { const fake = [{ hourly: { time: W.h.time, wind_speed_10m: W.h.wind_speed_10m, wind_direction_10m: W.h.wind_direction_10m, wind_gusts_10m: W.h.wind_gusts_10m } }]; WF.field = wfFromPoints(fake, [S0], [W0], 1, 1); WF.fieldB = [-180, -90, 180, 90]; WF.fieldZ = z; WF.src = 'point'; }
+  }
+  WF.busy = false; WF.dirty = true; WF.t = Math.min(WF.t, (WF.field ? WF.field.n : 1) - 1); wfHud(true);
+}
+function wfSample(lng, lat, t) {
+  const F = WF.field; if (!F) return [0, 0, 0]; const k0 = Math.max(0, Math.min(F.n - 1, Math.floor(t))), k1 = Math.min(F.n - 1, k0 + 1), ft = t - k0;
+  let fi = 0, fj = 0, i0 = 0, j0 = 0, i1 = 0, j1 = 0;
+  if (F.nx > 1) { fi = Math.max(0, Math.min(F.nx - 1.0001, (lng - F.lngs[0]) / (F.lngs[F.nx - 1] - F.lngs[0]) * (F.nx - 1))); i0 = Math.floor(fi); i1 = i0 + 1; fi -= i0; }
+  if (F.ny > 1) { fj = Math.max(0, Math.min(F.ny - 1.0001, (lat - F.lats[0]) / (F.lats[F.ny - 1] - F.lats[0]) * (F.ny - 1))); j0 = Math.floor(fj); j1 = j0 + 1; fj -= j0; }
+  const at = (A, k) => { const q = (j, i) => A[k][j * F.nx + i]; return (q(j0, i0) * (1 - fi) + q(j0, i1) * fi) * (1 - fj) + (q(j1, i0) * (1 - fi) + q(j1, i1) * fi) * fj; };
+  const u = at(F.u, k0) * (1 - ft) + at(F.u, k1) * ft, v = at(F.v, k0) * (1 - ft) + at(F.v, k1) * ft;
+  return [u, v, Math.hypot(u, v)];
+}
+function wfGrid() {
+  const c = map.getContainer(), W = c.clientWidth, H = c.clientHeight, GX = 14, GY = 26, br = map.getBearing() * Math.PI / 180, g = new Float32Array((GX + 1) * (GY + 1) * 3);
+  for (let j = 0; j <= GY; j++) for (let i = 0; i <= GX; i++) { const ll = map.unproject([W * i / GX, H * j / GY]), [u, v, s] = wfSample(ll.lng, ll.lat, WF.t), o = (j * (GX + 1) + i) * 3;
+    g[o] = u * Math.cos(br) - v * Math.sin(br); g[o + 1] = -(u * Math.sin(br) + v * Math.cos(br)); g[o + 2] = s; }
+  WF.grid = { g, GX, GY, W, H }; WF.dirty = false;
+}
+function wfVec(x, y) { const G = WF.grid, fx = Math.max(0, Math.min(G.GX - .0001, x / G.W * G.GX)), fy = Math.max(0, Math.min(G.GY - .0001, y / G.H * G.GY)), i = Math.floor(fx), j = Math.floor(fy), ax = fx - i, ay = fy - j, g = G.g, o = (r, c) => (r * (G.GX + 1) + c) * 3;
+  const m = q => (g[o(j, i) + q] * (1 - ax) + g[o(j, i + 1) + q] * ax) * (1 - ay) + (g[o(j + 1, i) + q] * (1 - ax) + g[o(j + 1, i + 1) + q] * ax) * ay; return [m(0), m(1), m(2)]; }
+function wfSize() { const c = map.getContainer(), d = Math.min(2, window.devicePixelRatio || 1); WF.d = d; WF.cv.width = c.clientWidth * d; WF.cv.height = c.clientHeight * d; WF.cv.style.width = c.clientWidth + 'px'; WF.cv.style.height = c.clientHeight + 'px'; WF.cx.setTransform(d, 0, 0, d, 0, 0); const n = Math.round(c.clientWidth * c.clientHeight / 230); WF.parts = Array.from({ length: n }, () => wfSpawn({})); WF.dirty = true; }
+function wfSpawn(p) { const c = map.getContainer(); p.x = Math.random() * c.clientWidth; p.y = Math.random() * c.clientHeight; p.age = 0; p.max = 50 + Math.random() * 70; return p; }
+function wfFrame(ts) {
+  if (!WF.on) return; WF.raf = requestAnimationFrame(wfFrame); const dt = WF.last ? Math.min(.1, (ts - WF.last) / 1000) : .016; WF.last = ts;
+  if (WF.play && WF.field) { WF.t += dt / .75; if (WF.t >= WF.field.n - 1) { WF.t = WF.field.n - 1; WF.play = false; } WF.dirty = true; wfHud(); }
+  if (!WF.field) return; if (WF.dirty || !WF.grid) wfGrid();
+  const cx = WF.cx, c = map.getContainer(), W = c.clientWidth, H = c.clientHeight;
+  cx.globalCompositeOperation = 'destination-in'; cx.fillStyle = `rgba(0,0,0,${RM ? 0 : .9})`; cx.fillRect(0, 0, W, H); cx.globalCompositeOperation = 'source-over';
+  if (RM) { if (WF.drawn === WF.t + '|' + WF.grid.W) return; WF.drawn = WF.t + '|' + WF.grid.W; cx.clearRect(0, 0, W, H); for (let y = 40; y < H; y += 70) for (let x = 35; x < W; x += 70) { const [vx, vy, s] = wfVec(x, y), m = Math.hypot(vx, vy) || 1, ux = vx / m, uy = vy / m; cx.strokeStyle = WCOL(s); cx.lineWidth = 2.2; cx.beginPath(); cx.moveTo(x - ux * 14, y - uy * 14); cx.lineTo(x + ux * 14, y + uy * 14); cx.lineTo(x + ux * 6 - uy * 6, y + uy * 6 + ux * 6); cx.moveTo(x + ux * 14, y + uy * 14); cx.lineTo(x + ux * 6 + uy * 6, y + uy * 6 - ux * 6); cx.stroke(); } return; }
+  const paths = WBUCKETS.map(() => new Path2D()), k = 60 * dt * .55;
+  for (const p of WF.parts) {
+    const [vx, vy, s] = wfVec(p.x, p.y), nx = p.x + vx * k * .55 + (vx ? 0 : 0), ny = p.y + vy * k * .55;
+    if (++p.age > p.max || nx < -5 || ny < -5 || nx > W + 5 || ny > H + 5) { wfSpawn(p); continue; }
+    const bi = s < 5 ? 0 : s < 10 ? 1 : s < 15 ? 2 : s < 20 ? 3 : 4; paths[bi].moveTo(p.x, p.y); paths[bi].lineTo(nx, ny); p.x = nx; p.y = ny;
+  }
+  cx.lineWidth = 1.7; cx.lineCap = 'round'; paths.forEach((pa, i) => { cx.strokeStyle = WCOL(WBUCKETS[i] + 1); cx.stroke(pa); });
+}
+function wfHud(force) {
+  const bar = $('#windbar'); if (!bar || !WF.field) return; const F = WF.field, k = Math.round(WF.t), c = map.getCenter(), [u, v, s] = wfSample(c.lng, c.lat, WF.t), dir = (Math.atan2(u, v) * 180 / Math.PI + 180 + 360) % 360;
+  const gi = Math.max(0, Math.min(F.n - 1, k)), gs = F.g[gi].filter(x => x != null), gust = gs.length ? Math.max(...gs) : null;
+  $('#wbArrow').style.transform = `rotate(${dir + 180 - map.getBearing()}deg)`; $('#wbDir').textContent = `${HM.compass(dir)} ${Math.round(s)}`; $('#wbGust').textContent = gust != null ? `gusts ${Math.round(gust)} mph` : 'mph';
+  const t = new Date(F.times[gi]); $('#wbTime').textContent = k === 0 ? 'Now' : t.toLocaleDateString([], { weekday: 'short' }) + ' ' + hm(t);
+  const sl = $('#wbSlider'); if (document.activeElement !== sl) sl.value = WF.t; sl.max = F.n - 1;
+  $('#wbPlay').innerHTML = `<svg class="ic"><use href="#${WF.play ? 'i-pause' : 'i-play'}"/></svg>`;
+  if (k !== WF.hr || force) { WF.hr = k; S.windHour = Math.min(k, 47); windChip(); renderWps(); drawCone();
+    const st = S.wps.filter(w => (w.type === 'stand' || w.type === 'blind') && w.winds && w.winds.length); const wd = windAt(S.windHour);
+    const good = wd ? st.filter(w => HM.windFits(w.winds, wd.dir)).length : 0; $('#wbStands').textContent = st.length ? `${good} of ${st.length} stands good for this wind` : 'Set good winds on your stands to rate them here'; }
+}
+function wfTicks() { const F = WF.field; if (!F) return ''; let h = ''; F.times.forEach((t, i) => { const d = new Date(t); if (d.getHours() === 0 && i > 0) h += `<span style="left:${i / (F.n - 1) * 100}%">${d.toLocaleDateString([], { weekday: 'short' })}</span>`; }); return h; }
+function windFlow(on) {
+  WF.on = on; $('#fWind').classList.toggle('on', on); document.body.classList.toggle('wflow', on);
+  if (on) {
+    if (!WF.cv) { WF.cv = document.createElement('canvas'); WF.cv.className = 'wfcv'; WF.cx = WF.cv.getContext('2d'); WF.dim = document.createElement('div'); WF.dim.className = 'wfdim'; const cc = map.getCanvasContainer(), mc = map.getCanvas(); cc.insertBefore(WF.dim, mc.nextSibling); cc.insertBefore(WF.cv, WF.dim.nextSibling);
+      map.on('move', () => { if (WF.on) { WF.dirty = true; if (WF.cx) { const c = map.getContainer(); WF.cx.clearRect(0, 0, c.clientWidth, c.clientHeight); } } });
+      map.on('moveend', () => { if (WF.on) { wfLoad(); wfHud(); } }); window.addEventListener('resize', () => WF.on && wfSize()); }
+    WF.cv.style.display = WF.dim.style.display = 'block'; wfSize(); WF.t = Math.min(S.windHour || 0, 47); WF.last = 0; $('#windbar').classList.add('open');
+    wfLoad(true).then(() => { $('#wbTicks').innerHTML = wfTicks(); wfHud(true); }); cancelAnimationFrame(WF.raf); WF.raf = requestAnimationFrame(wfFrame);
+    store.set('wflow', true);
+  } else { cancelAnimationFrame(WF.raf); WF.play = false; if (WF.cv) WF.cv.style.display = WF.dim.style.display = 'none'; $('#windbar').classList.remove('open'); store.set('wflow', false); }
+}
+
+/* ---------------- hunt plan: which day and sit Claude plans for ---------------- */
+const dayKey = t => localKey(t).slice(0, 10), CTXP = { n: 0 };
+const HP = (() => { const s = store.get('hp', null); return s && s.day >= dayKey(Date.now()) ? s : { day: '', sit: '' }; })();
+function hpDays() { const W = S.wind, today = dayKey(Date.now()); if (W && W.daily) return W.daily.time.filter(d => d >= today).slice(0, 7); const out = []; for (let k = 0; k < 7; k++) out.push(dayKey(Date.now() + k * 864e5)); return out; }
+function hpSun(day) { const W = S.wind, i = W && W.daily ? W.daily.time.indexOf(day) : -1; if (i >= 0) return { sr: new Date(W.daily.sunrise[i]).getTime(), ss: new Date(W.daily.sunset[i]).getTime(), i }; const d = new Date(day + 'T12:00'); return { sr: d.getTime() - 5 * 36e5, ss: d.getTime() + 4.7 * 36e5, i: -1 }; }
+function hpDefault() { const now = Date.now(), t = dayKey(now), s = hpSun(t); if (now < s.sr - 36e5) return { day: t, sit: 'morn' }; if (now < s.ss - 2.5 * 36e5) return { day: t, sit: 'eve' }; return { day: dayKey(now + 864e5), sit: 'morn' }; }
+function hp() { const d = HP.day && hpDays().includes(HP.day) ? HP : Object.assign(HP, hpDefault()); if (!d.sit) d.sit = 'eve'; return d; }
+function hpTime() { const p = hp(), s = hpSun(p.day); return p.sit === 'morn' ? s.sr + 45 * 6e4 : p.sit === 'eve' ? s.ss - 90 * 6e4 : new Date(p.day + 'T12:00').getTime(); }
+function wxAtT(t) { const W = S.wind; if (!W || !W.h) return null; let best = 0, bd = Infinity; W.h.time.forEach((x, i) => { const d = Math.abs(new Date(x).getTime() - t); if (d < bd) { bd = d; best = i; } }); return bd > 3 * 36e5 ? null : windAt(best - W.i0); }
+const SITN = { morn: 'morning', mid: 'midday', eve: 'evening' };
+function hpLabel() { const p = hp(), today = dayKey(Date.now()), tom = dayKey(Date.now() + 864e5); return (p.day === today ? 'today' : p.day === tom ? 'tomorrow' : new Date(p.day + 'T12:00').toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })) + ' ' + SITN[p.sit]; }
+function hpPicker() {
+  const p = hp(), W = S.wind, today = dayKey(Date.now());
+  const days = hpDays().map(d => { const i = W && W.daily ? W.daily.time.indexOf(d) : -1; return `<button class="hpd${d === p.day ? ' on' : ''}" data-act="hp-day" data-d="${d}"><small>${d === today ? 'Today' : new Date(d + 'T12:00').toLocaleDateString([], { weekday: 'short' })}</small><b>${+d.slice(8)}</b>${i >= 0 && W.daily.weather_code ? wxIcon(W.daily.weather_code[i], 1) + `<small>${Math.round(W.daily.temperature_2m_max[i])}&deg;</small>` : ''}</button>`; }).join('');
+  const t = hpTime(), w = wxAtT(t), s = hpSun(p.day);
+  return `<div class="fld"><span>Plan for</span><div class="hpdays">${days}</div><div class="seg" style="margin-top:8px">${[['morn', 'Morning'], ['mid', 'Midday'], ['eve', 'Evening']].map(([k, l]) => `<button data-act="hp-sit" data-k="${k}" class="${p.sit === k ? 'on' : ''}">${l}</button>`).join('')}</div>` +
+    `<div class="hpsum">${w ? wxIcon(w.code, w.day) : ''}<span>${w ? `Around ${hm(new Date(t))}: wind ${HM.compass(w.dir)} ${Math.round(w.spd)} mph, ${Math.round(w.temp)}&deg;, ${WX(w.code)[0].toLowerCase()}` : 'No hourly forecast for that time yet; Claude will use the daily outlook'}. ${p.sit === 'morn' ? 'Sunrise ' + hm(new Date(s.sr)) : p.sit === 'eve' ? 'Sunset ' + hm(new Date(s.ss)) : ''}</span></div></div>`;
+}
+function hpLines() {
+  const p = hp(), t = hpTime(), w = wxAtT(t), s = hpSun(p.day), L = [], W = S.wind;
+  L.push(`Plan for ${hpLabel()} (${new Date(p.day + 'T12:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}), around ${hm(new Date(t))}. Season phase in Minnesota on that date: ${seasonPhase(new Date(p.day + 'T12:00'))}.`);
+  if (w) { const pt = presTrend(w.i); L.push(`Forecast for that sit: wind from ${HM.compass(w.dir)} ${Math.round(w.spd)} mph gusting ${Math.round(w.gust)}, ${Math.round(w.temp)}°F, ${WX(w.code)[0].toLowerCase()}${w.pop >= 20 ? ', ' + w.pop + '% chance of precipitation' : ''}${pt ? ', pressure ' + pt.inHg.toFixed(2) + ' inHg ' + pt.word : ''}.`);
+    const hrs = []; for (let k = -6; k <= 4; k += 2) { const x = windAt(w.i - W.i0 + k); if (x && x.i !== w.i) hrs.push(`${hlabel(x.time)} ${HM.compass(x.dir)} ${Math.round(x.spd)}mph ${Math.round(x.temp)}°F`); } if (hrs.length) L.push('Hours around the sit: ' + hrs.join('; ') + '.'); }
+  if (s.i >= 0) { const i = s.i, D = W.daily; L.push(`That day: ${Math.round(D.temperature_2m_min[i])}-${Math.round(D.temperature_2m_max[i])}°F, ${WX(D.weather_code[i])[0].toLowerCase()}, wind ${HM.compass(D.wind_direction_10m_dominant[i])} up to ${Math.round(D.wind_speed_10m_max[i])} mph, sunrise ${hm(new Date(s.sr))}, sunset ${hm(new Date(s.ss))}.`);
+    if (i > 0 && D.temperature_2m_max[i - 1] != null) { const dT = D.temperature_2m_max[i] - D.temperature_2m_max[i - 1]; if (Math.abs(dT) >= 8) L.push(`That is ${Math.abs(Math.round(dT))}°F ${dT < 0 ? 'colder' : 'warmer'} than the day before${dT < 0 ? ' (a cold front often gets deer moving)' : ''}.`); } }
+  try { const mo = moonInfo(p.day), tt = x => x ? hm(new Date(x)) : 'n/a'; L.push(`Moon that day: ${mo.name}, ${mo.illum}% lit, overhead ${tt(mo.over)}, underfoot ${tt(mo.under)}.`); } catch (e) { }
+  return L;
+}
+
+/* the hunter's own data near an area: marks, sit log, photos */
+const wpDate = w => { const t = typeof w.id === 'number' && w.id > 1e12 ? w.id : w.u; return t ? new Date(t).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : ''; };
+function myData(center, radiusM, inView) {
+  const L = [], near = S.wps.filter(w => HM.hav(center, w.p) <= radiusM);
+  const outside = near.filter(w => !inView || !inView(w)).slice(0, 25);
+  if (outside.length) L.push('My other marks nearby (outside the picture):\n' + outside.map(w => `- ${(WPT[w.type] || WPT.other)[0]}${w.name ? ' "' + w.name + '"' : ''}, ${fmtDist(HM.hav(center, w.p))} ${HM.compass(HM.bearing(center, w.p))} of center${wpDate(w) ? ', marked ' + wpDate(w) : ''}${w.notes ? ': ' + w.notes.replace(/\s+/g, ' ').slice(0, 140) : ''}`).join('\n'));
+  const ids = new Set(near.map(w => String(w.id)));
+  const sits = S.log.filter(s => ids.has(String(s.stand))).sort((x, y) => y.start - x.start).slice(0, 15);
+  if (sits.length) L.push('My past sits in this area (from my hunt log):\n' + sits.map(s => { const w = S.wps.find(x => String(x.id) === String(s.stand)), d = new Date(s.start); return `- ${d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} ${hm(d)}-${hm(new Date(s.end))} at ${w ? (w.name || 'stand') : 'stand'}: saw does ${s.seen.does || 0}, bucks ${s.seen.bucks || 0}, fawns ${s.seen.fawns || 0}, unknown ${s.seen.unk || 0}${s.shot ? ', harvested' : ''}${s.wx ? '; weather ' + wxLine(s.wx) : ''}${s.notes ? '; notes: ' + s.notes.replace(/\s+/g, ' ').slice(0, 160) : ''}`; }).join('\n'));
+  const sightN = near.filter(w => w.type === 'sight').length, signN = near.filter(w => w.type === 'sign').length;
+  if (sightN || signN) L.push(`Within ${fmtDist(radiusM)} I have marked ${sightN} deer sighting${sightN === 1 ? '' : 's'} and ${signN} rub or scrape${signN === 1 ? '' : 's'}. Weigh my own sightings, sign and sit results heavily: they are first-hand evidence from this ground.`);
+  return L;
+}
+async function myPhotos(marks, max = 4) {
+  const pri = { sight: 0, sign: 1, cam: 2, bed: 3, food: 4 }, out = [];
+  const list = marks.filter(w => phIds(w).length).sort((x, y) => (pri[x.type] ?? 9) - (pri[y.type] ?? 9) || (y.u || 0) - (x.u || 0));
+  for (const w of list) { for (const id of phIds(w).slice(-1)) { if (out.length >= max) break; const d = await phGet(id); if (d) out.push({ w, d }); } if (out.length >= max) break; }
+  return out;
+}
+const photoBlocks = ps => ps.flatMap((p, k) => [{ type: 'text', text: `Photo ${k + 1}: from my mark ${(WPT[p.w.type] || WPT.other)[0]}${p.w.name ? ' "' + p.w.name + '"' : ''}${wpDate(p.w) ? ', marked ' + wpDate(p.w) : ''}${p.w.notes ? ' (' + p.w.notes.replace(/\s+/g, ' ').slice(0, 100) + ')' : ''}.` }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: p.d.split(',')[1] } }]);
 
 /* ---------------- deer movement with Claude ---------------- */
 let MV = { time: 'eve', trails: true, note: '', busy: false, res: null, mk: [] };
@@ -1497,17 +1677,16 @@ async function moveRun() {
   try {
     const pic = await mapPicture(null, { grid: true }); if (!pic) throw new Error('Could not take the map picture.');
     out.innerHTML = '<div class="aa wait">Claude is reading the cover, terrain and wind. This usually takes 30 to 60 seconds…</div>';
-    const T = mvTarget(), w = windAt(T.k);
+    const T = { label: hpLabel(), t: hpTime() }, w = wxAtT(T.t), CW0 = map.getContainer().clientWidth, CH0 = map.getContainer().clientHeight, inV0 = m => { const p = map.project(m.p); return p.x >= 0 && p.y >= 0 && p.x <= CW0 && p.y <= CH0; }, ps = await myPhotos(S.wps.filter(inV0)).catch(() => []); CTXP.n = ps.length;
     const L = [viewContext().replace(/^I am a whitetail deer hunter[^\n]*\n/, ''),
-      `Today is ${new Date().toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}. Season phase in Minnesota: ${seasonPhase()}.`,
-      `I want to know how deer are likely moving ${T.label} (${new Date(T.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}).` + (w ? ` Forecast then: wind from ${HM.compass(w.dir)} ${Math.round(w.spd)} mph gusting ${Math.round(w.gust)}, ${Math.round(w.temp)}°F, ${WX(w.code)[0].toLowerCase()}${w.pop >= 30 ? ', ' + w.pop + '% chance of precipitation' : ''}.` : ''),
+      `I want to know how deer are likely moving ${T.label} (around ${hm(new Date(T.t))}).`,
       MV.note ? 'My notes: ' + MV.note : '',
       'Using the picture, the season, time of day and weather: (1) draw the 2 to 5 most likely deer travel routes for that time, from where deer are coming from to where they are going (for example bedding cover to food in the evening, food back to bedding in the morning, or doe bedding to doe bedding for cruising bucks). Routes should follow realistic deer travel: edges, inside corners, ditches, creek crossings, saddles and pinch points, and they should account for the wind (deer often travel with the wind in their face or quartering) and for hunting pressure from roads and parking.',
       MV.trails ? '(2) Trace any game trails you can actually see in the photo as thin lines. Only include trails you can see; leave the list empty if none are visible.' : '(2) Leave the trails list empty.',
       '(3) Give 1 to 4 ambush spots along the routes that work for the forecast wind, at least 30 yards off the route and not upwind of where the deer are coming from.' + (SC.pub ? ' Only put ambush spots on shaded public land.' : ''),
       'Give every position as x and y on a 0 to 1000 scale from the top-left corner of the picture (use the grid; column 4 spans x 400 to 500). Routes need 4 to 12 points each, in the direction deer travel.',
       'Answer with only JSON, no other text: {"summary":"2 or 3 sentences","routes":[{"n":1,"from":"bedding cover","to":"cut corn","when":"last hour of light","confidence":"high|medium|low","why":"1 or 2 sentences","pts":[[x,y],[x,y]]}],"trails":[{"pts":[[x,y],[x,y]]}],"ambush":[{"x":0,"y":0,"label":"3 to 5 words","winds":["NW"],"why":"1 sentence"}]}'].filter(Boolean);
-    const txt = await claudeCall({ max_tokens: 4000, system: 'You are an experienced Minnesota whitetail hunter who reads aerial photos and topo for deer movement. Be realistic and specific, and say how confident you are. Never suggest trespassing.', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: pic.url.split(',')[1] } }, { type: 'text', text: L.join('\n') }] }] }), m = txt.match(/\{[\s\S]*\}/);
+    const txt = await claudeCall({ max_tokens: 4000, system: 'You are an experienced Minnesota whitetail hunter who reads aerial photos and topo for deer movement. Be realistic and specific, and say how confident you are. Never suggest trespassing.', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: pic.url.split(',')[1] } }, ...photoBlocks(ps), { type: 'text', text: L.join('\n') }] }] }), m = txt.match(/\{[\s\S]*\}/);
     let d; try { d = JSON.parse(m[0]); } catch (e) { throw new Error('Claude answered in an unexpected format. Try again.'); }
     const line = pts => (pts || []).filter(p => p && isFinite(p[0]) && isFinite(p[1])).map(p => scLL(pic.lat, +p[0], +p[1]));
     const routes = (d.routes || []).slice(0, 6).map((r, i) => Object.assign(r, { n: i + 1, ll: line(r.pts) })).filter(r => r.ll.length > 1);
@@ -1547,8 +1726,13 @@ function viewContext() {
   const pl = ['wma-fill', 'padus-fill'].filter(l => map.getLayer(l)), pubs = pl.length ? [...new Set(map.queryRenderedFeatures({ layers: pl }).map(f => f.properties._name + (f.properties._closed ? ' (closed to public)' : '')).filter(Boolean))].slice(0, 12) : [];
   L.push(pubs.length ? `Public land in view: ${pubs.join('; ')}. Everything else is private.` : 'No public land is shaded in this view; it appears to be private land.');
   if (S.me) { const p = map.project(S.me); L.push(p.x >= 0 && p.y >= 0 && p.x <= CW && p.y <= CH ? `I am in view at x ${Math.round(p.x / CW * 1000)}, y ${Math.round(p.y / CH * 1000)}.` : `I am ${fmtDist(HM.hav(S.me, ctr.toArray ? ctr.toArray() : [ctr.lng, ctr.lat]))} from the center of the view.`); }
-  const marks = S.wps.map(m => ({ m, p: map.project(m.p) })).filter(o => o.p.x >= 0 && o.p.y >= 0 && o.p.x <= CW && o.p.y <= CH).slice(0, 25).map(o => `- ${(WPT[o.m.type] || WPT.other)[0]}${o.m.name ? ' "' + o.m.name + '"' : ''} at x ${Math.round(o.p.x / CW * 1000)}, y ${Math.round(o.p.y / CH * 1000)}${o.m.winds && o.m.winds.length ? ', good winds ' + o.m.winds.join('/') : ''}${o.m.notes ? '. Notes: ' + o.m.notes.replace(/\s+/g, ' ').slice(0, 120) : ''}`);
+  const marks = S.wps.map(m => ({ m, p: map.project(m.p) })).filter(o => o.p.x >= 0 && o.p.y >= 0 && o.p.x <= CW && o.p.y <= CH).slice(0, 25).map(o => `- ${(WPT[o.m.type] || WPT.other)[0]}${o.m.name ? ' "' + o.m.name + '"' : ''} at x ${Math.round(o.p.x / CW * 1000)}, y ${Math.round(o.p.y / CH * 1000)}${wpDate(o.m) ? ', marked ' + wpDate(o.m) : ''}${o.m.winds && o.m.winds.length ? ', good winds ' + o.m.winds.join('/') : ''}${phIds(o.m).length ? ', has photos' : ''}${o.m.notes ? '. Notes: ' + o.m.notes.replace(/\s+/g, ' ').slice(0, 160) : ''}`);
   if (marks.length) L.push('My marks in view (x, y on a 0 to 1000 scale from the top-left corner):\n' + marks.join('\n'));
+  L.push(...hpLines());
+  const cc = [ctr.lng, ctr.lat], inV = w => { const p = map.project(w.p); return p.x >= 0 && p.y >= 0 && p.x <= CW && p.y <= CH; };
+  L.push(...myData(cc, Math.max(1600, viewMiles() * 1609 * .9), inV));
+  if (CTXP.n) L.push(`I attached ${CTXP.n} photo${CTXP.n > 1 ? 's' : ''} I took at my marks in this area; use what they show.`);
+  if (SC.pub) L.push('I only hunt public land here: only suggest stand, blind and ambush spots on the shaded public land, and only use private land for reading deer movement.');
   return L.concat(wxLines()).join('\n');
 }
 function wxLines() {
@@ -1564,6 +1748,7 @@ function wxLines() {
   try { const mo = moonInfo(localKey(Date.now()).slice(0, 10)); L.push(`Moon: ${mo.name}, ${mo.illum}% lit.`); } catch (e) { }
   return L;
 }
+const c0wps = c => (c.wp ? [c.wp] : []).concat(S.wps.filter(w => w !== c.wp && HM.hav(c.ll, w.p) < 400));
 function askContext(c) {
   if (c.view) return viewContext();
   const L = [], ll = c.ll, now = new Date();
@@ -1586,6 +1771,9 @@ function askContext(c) {
   }
   try { const mo = moonInfo(localKey(Date.now()).slice(0, 10)); L.push(`Moon: ${mo.name}, ${mo.illum}% lit.`); } catch (e) { }
   const nm = nearMarks(ll); if (nm.length) L.push('My marks nearby:\n' + nm.join('\n'));
+  L.push(...hpLines());
+  L.push(...myData(ll, 1600, () => true).filter(x => !x.startsWith('My other marks')));
+  if (CTXP.n) L.push(`I attached ${CTXP.n} photo${CTXP.n > 1 ? 's' : ''} I took at or near this spot.`);
   if (ASK && ASK.picNote) L.push(ASK.picNote);
   return L.join('\n');
 }
@@ -1612,14 +1800,14 @@ async function mapPicture(ll, opt = {}) {
 }
 const ASK_CHIPS = ['Where would deer bed and travel here?', 'Where should I hang a stand for this week\'s wind?', 'How should I walk in and out without spooking deer?', 'What does the terrain and cover tell you about this spot?', 'Best plan for a morning and an evening sit here?'];
 async function askStart(c) {
-  vwClear(); ASK = { c, q: '', pic: null, conv: [], busy: false, log: [] };
+  vwClear(); CTXP.n = 0; ASK = { c, q: '', pic: null, conv: [], busy: false, log: [] };
   openSheet('ask');
   const p = await mapPicture(c.view ? null : c.ll, c.view ? { grid: true } : {}).catch(e => { console.warn('pic', e); return null; });
   if (!ASK || ASK.c !== c) return; ASK.pic = p; ASK.picNote = p && !c.view ? p.note : '';
   const im = document.getElementById('askImg'); if (im) { if (p) { im.innerHTML = `<img src="${p.url}" alt="Map picture of the spot">`; } else im.innerHTML = '<span>The map picture could not be made. The details will still be sent.</span>'; }
   const ctx = document.getElementById('askCtx'); if (ctx) ctx.textContent = askContext(c);
 }
-const VIEW_CHIPS = ['How should I approach this area?', 'Where are deer most likely with this weather?', 'What are the points of interest here?', 'Plan a morning and an evening sit here', 'Where would pressure from other hunters push deer?'];
+const VIEW_CHIPS = ['Just give me the best stand spots', 'How should I approach this area?', 'Where are deer most likely with this weather?', 'Where are the bedding areas?', 'Where would pressure push deer?', 'Good trail camera spots?'];
 const VIEW_ASK = 'Read the whole map view like a scout. Cover: how to approach and access the area with the wind (parking, entry and exit routes), the points of interest (bedding cover, food, funnels, edges, terrain features, water), where deer are most likely given the weather, wind, pressure and moon, and a simple plan for my next sit. Be specific about where things are in the picture.';
 const VIEW_FMT = 'Label each place you talk about with a number in square brackets like [1], [2]. Keep the write-up readable on a phone: short headings and brief bullets. At the very end, add a JSON block (```json ... ```) listing every numbered place: {"points":[{"n":1,"x":0,"y":0,"label":"3 to 5 words","type":"stand|bed|food|travel|access|scrape|other"}]} with x and y on a 0 to 1000 scale from the top-left corner of the picture (use the grid; column 4 spans x 400 to 500). Place each point exactly on the feature you mean.';
 function askText() { if (ASK.c.view) { const q = ((document.getElementById('askQ') || {}).value || '').trim(); return (q ? q + '\n\n' + VIEW_ASK : VIEW_ASK) + '\n\n' + viewContext() + (AK.key ? '\n\n' + VIEW_FMT : '\n\nRefer to places by where they are in the picture (for example: top-left, along the creek at column 6 row 3).'); }
@@ -1642,7 +1830,9 @@ const mdLite = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#{1,
 async function askHere(follow) {
   if (!AK.key || ASK.busy) return; const out = document.getElementById('askOut'); ASK.busy = true;
   let content;
-  if (!ASK.conv.length) { content = []; if (ASK.pic) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: ASK.pic.url.split(',')[1] } }); content.push({ type: 'text', text: askText() }); }
+  if (!ASK.conv.length) { content = []; if (ASK.pic) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: ASK.pic.url.split(',')[1] } });
+    let ps = []; try { if (ASK.c.view) { const CW = map.getContainer().clientWidth, CH = map.getContainer().clientHeight; ps = await myPhotos(S.wps.filter(w => { const p = map.project(w.p); return p.x >= 0 && p.y >= 0 && p.x <= CW && p.y <= CH; })); } else ps = await myPhotos(c0wps(ASK.c), 3); } catch (e) { }
+    CTXP.n = ps.length; content.push(...photoBlocks(ps)); content.push({ type: 'text', text: askText() }); }
   else { const f = (document.getElementById('askF') || {}).value || follow || ''; if (!f.trim()) { ASK.busy = false; return; } content = f.trim(); out.insertAdjacentHTML('beforeend', `<div class="aq">${esc(f.trim())}</div>`); ASK.log.push(`<div class="aq">${esc(f.trim())}</div>`); document.getElementById('askF').value = ''; }
   ASK.conv.push({ role: 'user', content });
   out.insertAdjacentHTML('beforeend', `<div class="aa wait">${ASK.c.view ? 'Claude is studying the whole map. This takes about 20 to 40 seconds…' : 'Claude is looking at the spot…'}</div>`); const box = out.lastElementChild; box.scrollIntoView({ block: 'nearest' });
@@ -1650,8 +1840,8 @@ async function askHere(follow) {
     const txt = await claudeCall({ max_tokens: ASK.c.view ? 2500 : 1500, system: 'You are an experienced Minnesota whitetail hunter and scout helping a hunter read a spot on their map. Be practical and specific to the picture and details given. Use short paragraphs or brief bullet lists that read well on a phone. Mention wind and scent, access routes, and likely bedding, feeding and travel. Say when something needs checking on the ground, and remind them to follow Minnesota DNR regulations and get landowner permission on private land when relevant.', messages: ASK.conv });
     ASK.conv.push({ role: 'assistant', content: txt }); box.classList.remove('wait');
     let show = txt;
-    if (ASK.c.view && ASK.pic) { const jm = txt.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || txt.match(/(\{\s*"points"[\s\S]*\})\s*$/); if (jm) { show = txt.replace(jm[0], '').trim(); try { const pts = (JSON.parse(jm[1]).points || []).filter(p => isFinite(p.x) && isFinite(p.y)).slice(0, 15); if (pts.length) { VW.pts = pts.map(p => ({ n: +p.n, label: p.label || '', wt: SC_TYPE[String(p.type || '').toLowerCase()] || 'other', ll: scLL(ASK.pic.lat, +p.x, +p.y) })); vwDraw(); } } catch (e) { console.warn('points', e); } } }
-    box.innerHTML = vwRefs(mdLite(show)); ASK.log.push(box.outerHTML);
+    if (ASK.c.view && ASK.pic) { const jm = txt.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || txt.match(/(\{\s*"points"[\s\S]*\})\s*$/); if (jm) { show = txt.replace(jm[0], '').trim(); try { const pts = (JSON.parse(jm[1]).points || []).filter(p => isFinite(p.x) && isFinite(p.y)).slice(0, 15); if (pts.length) { let all = pts.map(p => { const ll = scLL(ASK.pic.lat, +p.x, +p.y); return { n: +p.n, label: p.label || '', wt: SC_TYPE[String(p.type || '').toLowerCase()] || 'other', ll, pub: scPublicAt(ll) }; }); if (SC.pub) { const huntable = ['stand', 'blind']; const off = all.filter(p => huntable.includes(p.wt) && p.pub === ''); all = all.filter(p => !off.includes(p)); if (off.length) ASK.dropped = off.length; } VW.pts = all; vwDraw(); } } catch (e) { console.warn('points', e); } } }
+    box.innerHTML = vwRefs(mdLite(show)) + (ASK.dropped ? `<div class="mut" style="margin-top:8px">${ASK.dropped} stand spot${ASK.dropped > 1 ? 's' : ''} on private land ${ASK.dropped > 1 ? 'were' : 'was'} left off the map.</div>` : ''); ASK.dropped = 0; ASK.log.push(box.outerHTML);
     if (ASK.c.view && VW.pts.length && !document.getElementById('vwBar')) out.insertAdjacentHTML('afterend', `<div class="btns" id="vwBar"><button class="btn" data-act="vw-hide">Look at the map</button><button class="btn" data-act="vw-save">Save points as marks</button></div>`);
     if (!document.getElementById('askF')) (document.getElementById('vwBar') || out).insertAdjacentHTML('afterend', `<label class="fld" style="margin-top:10px"><span>Ask a follow-up</span><textarea id="askF" rows="2" placeholder="What if the wind is south?"></textarea></label><div class="btns"><button class="btn p" data-act="ask-here">Send follow-up</button></div>`);
   } catch (e) { ASK.conv.pop(); box.classList.remove('wait'); box.classList.add('err'); box.textContent = navigator.onLine === false ? 'No signal. Try again when you have service.' : (e.message || 'Something went wrong.'); }
@@ -1761,6 +1951,9 @@ async function startSensor(quiet) {
     return true;
   } catch (er) { if (!quiet) toast('Compass unavailable: ' + er.message); return false; }
 }
+$('#fWind').onclick = () => windFlow(!WF.on);
+$('#windbar').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.id === 'wbPlay') { if (WF.field && WF.t >= WF.field.n - 1.01) WF.t = 0; WF.play = !WF.play; wfHud(); } else if (b.id === 'wbClose') windFlow(false); else if (b.id === 'wbNow') { WF.play = false; WF.t = 0; WF.dirty = true; wfHud(); } });
+$('#wbSlider').addEventListener('input', e => { WF.play = false; WF.t = +e.target.value; WF.dirty = true; wfHud(); });
 $('#fCmp').onclick = async () => {
   if (cmpOn) { cmpOn = false; $('#fCmp').classList.remove('on'); $('#cstrip').style.display = 'none'; document.body.classList.remove('cmp'); return; }
   if (!await startSensor()) return;
@@ -2182,7 +2375,7 @@ const HELP = [
   { id: 'blood', g: 'In the field', t: 'Following a blood trail', b: `<ol><li>Open ${K('i-tools', 'Tools')} and tap Blood trail. Allow the camera.</li><li>Point the phone at the ground. In Highlight view, anything blood-colored turns bright blue.</li><li>Use the slider: lower for fresh red blood only, higher to catch dark or dried blood.</li><li>Tap Hit site where the deer was standing, Mark blood at each find, and Found it at the deer.</li><li>Tap Finish to save the trail you walked.</li></ol><p>Red leaves and some bark can light up too. Use it to help your eyes, not replace them.</p>` },
   { id: 'hot', g: 'In the field', t: 'Hot spots for scouting', b: `<p>Hot spots scores the area on your screen using land cover, terrain, distance from roads and today's wind. Pick the animal and the time of season, then tap Analyze this view.</p><p>Numbered pins show the best spots and why. Treat it as a short list to go look at, not a guarantee. Tap the red Clear hot spots button to remove them.</p>` },
   { id: 'offline', g: 'In the field', t: 'Using the map with no signal', b: `<ol><li>At home, with signal, zoom the map to the property.</li><li>Open ${K('i-tools', 'Tools')} and tap Offline maps.</li><li>Pick the map styles you want, then Standard detail.</li><li>Tap Download this area and keep the app open until it finishes.</li></ol><p>In the field, the saved area works with no bars: photos, parcels, public land and the last wind forecast. Turn on airplane mode at home once to check it.</p>` },
-  { id: 'ask', g: 'In the field', t: 'Ask Claude, Scout and Deer movement', b: `<p><b>Deer movement</b> (in ${K('i-tools', 'Tools')}): pick morning, midday or evening and Claude draws likely travel routes (orange arrows), trails it can see in the photos (yellow dots) and lettered ambush spots for the forecast wind. These work when the map shows about 2 miles across or less.</p><p><b>Scout with Claude</b> (in ${K('i-tools', 'Tools')}): zoom to an area, choose when you are hunting and what you are looking for, and Claude places numbered suggested spots on the map with the reason for each. Save the ones you like as marks. This needs an Anthropic API key.</p><p>Tap any spot on the map and choose <b>Ask Claude about this spot</b>, or open a waypoint and choose Ask Claude. You can also use ${K('i-tools', 'Tools')} for the middle of the map.</p><ol><li>The app takes a picture of the map with your marks on it and gathers the land type, wind, weather, sun, moon and your nearby marks.</li><li>Pick a suggested question or type your own.</li><li>Tap <b>Open in Claude</b>. Your question is filled in and the map picture is copied, so tap the message box, Paste, then send. With an API key saved, the answer shows in the app instead.</li></ol><p>If you have an Anthropic API key, you can save it in the optional settings so answers appear right in the app. Owner names are never sent.</p>` },
+  { id: 'ask', g: 'In the field', t: 'Ask Claude and Deer movement', b: `<p><b>Deer movement</b> (in ${K('i-tools', 'Tools')}): pick the day and sit (morning, midday or evening) and Claude draws likely travel routes (orange arrows), trails it can see in the photos (yellow dots) and lettered ambush spots for the forecast wind. These work when the map shows about a mile across or less.</p><p><b>Ask Claude about this area</b> (in ${K('i-tools', 'Tools')}): zoom to the area, pick the day and sit you are planning, and Claude reads the whole screen: best stand spots, how to get in, points of interest and where deer are likely. Places it mentions are numbered on the map; save the ones you like as marks. Answers in the app need an Anthropic API key.</p><p>Tap any spot on the map and choose <b>Ask Claude about this spot</b>, or open a waypoint and choose Ask Claude. </p><ol><li>The app takes a picture of the map with your marks on it and gathers the land type, wind, weather, sun, moon and your nearby marks.</li><li>Pick a suggested question or type your own.</li><li>Tap <b>Open in Claude</b>. Your question is filled in and the map picture is copied, so tap the message box, Paste, then send. With an API key saved, the answer shows in the app instead.</li></ol><p>If you have an Anthropic API key, you can save it in the optional settings so answers appear right in the app. Owner names are never sent.</p>` },
   { id: 'party', g: 'Your group', t: 'Hunting as a party', b: `<p>${K('i-party', 'Party')} lets a group see each other on the map and send quick alerts.</p><ol><li>One person taps Start a party and shares the 6-letter code.</li><li>Everyone else taps Join with a code.</li><li>Members appear on the map with their initials. Grey means they have not updated in a while.</li><li>Tap Deer down, Coming your way, Need help and the rest to alert everyone with your location.</li><li>Turn on Share with the party on any mark or sit to share it.</li></ol><p>You can pause location sharing at any time. Right now the party runs in demo mode with sample hunters, until a group server is set up.</p>` },
   { id: 'log', g: 'Saving and syncing', t: 'Your hunt log', b: `<p>Log each sit so you learn which stands produce and on which winds.</p><ol><li>Open ${K('i-saved', 'Saved')} and tap Log a sit, or open a stand and tap Log a sit.</li><li>Pick the stand and times, and tap + for each deer you saw.</li><li>Tap Save sit. Wind, temperature, pressure and the moon are filled in for you.</li></ol><p>Saved shows deer per sit for each stand and which wind has been best.</p>` },
   { id: 'sync', g: 'Saving and syncing', t: 'Keeping phone and computer in sync', b: `<p>Your marks, tracks and log can stay the same on every device through a private file on your GitHub account.</p><ol><li>Open ${K('i-saved', 'Saved')} and scroll to Sync between devices.</li><li>Tap Make a token on GitHub, keep only the gist box ticked, and generate the token.</li><li>Paste it and tap Connect. Do the same on each device.</li></ol><p>Treat the token like a password.</p>` },
@@ -2224,11 +2417,15 @@ function renderIntro() {
 
 /* ---------------- panels ---------------- */
 const SHEETS = { layers: ['i-layers', 'layers'], tools: ['i-tools', 'start'], mark: ['i-mark', 'mark'], party: ['i-party', 'party'], saved: ['i-saved', 'log'], wind: ['i-wind', 'wind'], wp: ['i-mark', 'mark'], track: ['i-track', 'track'], hot: ['i-hot', 'hot'], offline: ['i-offline', 'offline'], log: ['i-log', 'log'], access: ['i-guide', 'layers'], search: ['i-search', null], sharetxt: ['i-share', null], help: ['i-help', null], topic: ['i-help', null], pjoin: ['i-party', 'party'], alertmsg: ['i-chat', 'party'], ask: ['i-chat', 'ask'], scout: ['i-hot', 'ask'], aulim: ['i-chat', 'ask'], move: ['i-track', 'ask'] };
-function closeSheet() { drawOffAreas(false); if ($('#sheet').dataset.p === 'place') clearPlace(); const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
+const NAV = []; let navBack = false;
+function closeSheet() { NAV.length = 0; drawOffAreas(false); if ($('#sheet').dataset.p === 'place') clearPlace(); const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
+const SHEETN = { layers: 'Map layers', tools: 'Tools', mark: 'Mark', saved: 'Saved', party: 'Party', place: 'property', wp: 'waypoint', help: 'Help', wind: 'Weather', ask: 'Ask Claude', scout: 'Scout', move: 'Deer movement' };
 function openSheet(p, arg) {
   if ($('#sheet').dataset.p === 'place' && p !== 'place') clearPlace();
-  const s = $('#sheet'); s.dataset.p = p; s.classList.add('open'); document.querySelectorAll('#bar button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
-  const meta = SHEETS[p] || ['i-info', null], head = t => `<h2><span class="hi"><svg class="ic"><use href="#${meta[0]}"/></svg></span><span class="ht">${t}</span>${meta[1] ? `<button class="hq" data-act="help" data-t="${meta[1]}" aria-label="How this works"><svg class="ic"><use href="#i-help"/></svg></button>` : ''}<button class="x" data-act="close" aria-label="Close">&times;</button></h2>`; let h = '';
+  const s = $('#sheet'), cur = s.dataset.p;
+  if (!navBack && cur && cur !== p) { if (NAV.length && NAV[NAV.length - 1].p === p) NAV.pop(); else { NAV.push({ p: cur, arg: s._arg }); if (NAV.length > 15) NAV.shift(); } }
+  s._arg = arg; s.dataset.p = p; s.classList.add('open'); document.querySelectorAll('#bar button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  const meta = SHEETS[p] || ['i-info', null], head = t => `<h2>${NAV.length ? `<button class="bk" data-act="back" aria-label="Back to ${esc((SHEETN[NAV[NAV.length - 1].p] || 'previous'))}"><svg class="ic"><use href="#i-chev"/></svg></button>` : ''}<span class="hi"><svg class="ic"><use href="#${meta[0]}"/></svg></span><span class="ht">${t}</span>${meta[1] ? `<button class="hq" data-act="help" data-t="${meta[1]}" aria-label="How this works"><svg class="ic"><use href="#i-help"/></svg></button>` : ''}<button class="x" data-act="close" aria-label="Close">&times;</button></h2>`; let h = '';
   if (p === 'layers') {
     h = head('Map layers') + `<div class="seg">${BASES.map(b => `<button data-act="base" data-b="${b}" class="${S.base === b ? 'on' : ''}">${{ sat: 'Satellite', hyb: 'Hybrid', spring: 'Leaf-off', topo: 'Topo' }[b]}</button>`).join('')}</div><div class="mut" style="margin-bottom:6px">${{ sat: 'Current satellite photos.', hyb: 'Satellite photos with contour lines in feet, so you see the cover and the lay of the land together.', spring: 'Spring photos with no leaves on the trees, so trails, edges and beds show through the timber. In most of Minnesota these are also the sharpest photos, flown at 6 inches to 1 foot.', topo: 'USGS topographic map with contour lines, creeks and roads.' }[S.base]}</div>` +
       `<label class="row"><span class="sw" style="background:linear-gradient(135deg,#6b7f5a,#c9b98a)"></span><span class="g">Extra-sharp photos<br><small>Loads the next level of detail, which can look crisper on iPhone screens where the source has it. Uses about 4 times the data, so leave it off on a weak signal.</small></span><input type="checkbox" data-act="hd" ${HD ? 'checked' : ''}></label>` +
@@ -2239,7 +2436,7 @@ function openSheet(p, arg) {
   } else if (p === 'tools') {
     h = head('Tools') + toolRow('open', 'i-measure', 'Measure', 'Distance between points and the acres inside', ' data-p="measure"') + toolRow('open', 'i-track', 'Record a track', S.rec && !S.rec.blood ? 'Recording now. Tap to stop.' : 'Save your path in and out', ' data-p="track"') +
       toolRow('blood-open', 'i-blood', 'Blood trail', B.on ? 'In progress. Tap to go back to the camera.' : 'Camera view that makes blood stand out') + toolRow('open', 'i-hot', 'Hot spots', 'Likely spots for deer, turkey, pheasant and ducks', ' data-p="hot"') +
-      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('open', 'i-track', 'Deer movement', 'Likely travel routes, visible trails and ambush spots for this view', ' data-p="move"') + toolRow('open', 'i-hot', 'Scout with Claude', 'Suggested stand, bedding and travel spots for this map view', ' data-p="scout"') + toolRow('ask-view', 'i-chat', 'Ask Claude about this area', 'How to approach it, points of interest and where deer are likely today') + toolRow('open', 'i-wind', 'Weather and wind', 'Conditions, 7-day forecast, wind, shooting light and moon', ' data-p="wind"') +
+      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('open', 'i-track', 'Deer movement', 'Likely travel routes, visible trails and ambush spots for this view', ' data-p="move"') + toolRow('ask-view', 'i-chat', 'Ask Claude about this area', 'Best stand spots, how to get in, and where deer are likely today') + toolRow('open', 'i-wind', 'Weather and wind', 'Conditions, 7-day forecast, wind, shooting light and moon', ' data-p="wind"') +
       `<h3>Help</h3>` + toolRow('open', 'i-help', 'How to use ' + APP, 'Short guides for every part of the app', ' data-p="help"') + toolRow('intro', 'i-phone', 'Replay the welcome tour', 'The quick tour from the first time you opened the app');
   } else if (p === 'mark') h = head('Mark a spot') + toolRow('mark-me', 'i-loc', 'Where I am', 'Drops a mark at your GPS position') + toolRow('mark-tap', 'i-mark', 'Tap the map', 'Then tap the spot you want to mark') + toolRow('mark-center', 'i-north', 'Center of the screen', 'Marks the middle of what you are looking at') + `<div class="mut" style="margin-top:8px">You can also tap anything on the map and choose Mark this spot.</div>`;
   else if (p === 'measure') { setMode('measure'); return; }
@@ -2270,7 +2467,7 @@ function openSheet(p, arg) {
             `<div class="moon"><span class="mg">${moonGlyph(mo.p)}</span><div><b>${mo.name}, ${mo.illum}% lit</b><small>Rise ${t(mo.rise)}, set ${t(mo.set)}, overhead ${t(mo.over)}, underfoot ${t(mo.under)}</small></div></div>` +
             (S.wind.stale ? `<div class="mut" style="color:var(--gold)">No signal: showing the forecast saved ${hm(new Date(S.wind.t))}.</div>` : ''); })() +
         week + standsForHour(w.dir) +
-        `<div class="btns"><button class="btn p" data-act="cone-place">${S.cone ? 'Move scent cone' : 'Place scent cone'}</button>${S.cone ? '<button class="btn" data-act="cone-clear">Remove cone</button>' : ''}</div><div class="mut">The blue cone shows where your scent drifts from a sit for the selected hour.</div>`;
+        `<div class="btns"><button class="btn p" data-act="wflow-on">${ico('i-wind')}Show wind on the map</button></div><div class="btns"><button class="btn" data-act="cone-place">${S.cone ? 'Move scent cone' : 'Place scent cone'}</button>${S.cone ? '<button class="btn" data-act="cone-clear">Remove cone</button>' : ''}</div><div class="mut">The blue cone shows where your scent drifts from a sit for the selected hour.</div>`;
     }
   } else if (p === 'hot') {
     const hs = S.hot;
@@ -2326,15 +2523,16 @@ function openSheet(p, arg) {
     h = head(tp.t) + `<div class="topic">${tp.b}</div><div class="btns"><button class="btn" data-act="open" data-p="help">All help topics</button></div>`;
   } else if (p === 'ask') {
     const c = ASK.c, ctxt = askContext(c);
-    h = head(c.view ? 'Ask Claude about this area' : 'Ask Claude') + `<div class="mut" style="margin:-4px 0 10px">${c.view ? 'Claude reads everything on your screen with the weather and wind, then tells you how to approach the area, the points of interest and where deer are most likely. Places it mentions are numbered on the map.' : `Get a second opinion on ${c.wp ? 'this mark' : 'this spot'}. Claude sees a picture of the map and the details below.`}</div>` +
+    h = head(c.view ? 'Ask about this area' : 'Ask Claude') + `<div class="mut" style="margin:-4px 0 10px">${c.view ? 'Claude reads everything on your screen with the weather and wind, then tells you how to approach the area, the points of interest and where deer are most likely. Places it mentions are numbered on the map.' : `Get a second opinion on ${c.wp ? 'this mark' : 'this spot'}. Claude sees a picture of the map and the details below.`}</div>` +
       `<div class="askimg" id="askImg">${ASK.pic ? `<img src="${ASK.pic.url}" alt="Map picture of the spot">` : '<span>Taking a picture of the map…</span>'}</div>` +
+      (!ASK.conv.length ? hpPicker() : '') + (c.view && !ASK.conv.length ? `<label class="row"><span class="g">Public land only<br><small>Stand spots only on public land</small></span><input type="checkbox" id="avPub" ${SC.pub ? 'checked' : ''}></label>` : '') +
       `<div class="qchips">${(c.view ? VIEW_CHIPS : ASK_CHIPS).map(q => `<button class="qchip" data-act="ask-chip">${esc(q)}</button>`).join('')}</div>` +
       `<label class="fld"><span>Your question</span><textarea id="askQ" rows="3" placeholder="${c.view ? 'Optional. Leave blank for a full area briefing.' : 'Where would you set up here for an evening sit?'}">${esc(ASK.q)}</textarea></label>` +
       (AK.key && ASK.conv.length ? '' : AK.key ? `<div class="btns"><button class="btn p" data-act="ask-here" style="flex:1">${ico('i-chat')}${c.view ? 'Read this area' : 'Ask'}</button></div><div class="mut">The answer shows up right here, about 1 cent a question. <a href="#" data-act="ask-direct">Open in the Claude app instead</a></div>` + auLine() :
         `<div class="btns"><button class="btn p" data-act="ask-direct" style="flex:1">${ico('i-chat')}Open in Claude</button></div><div class="mut">Opens Claude with your question filled in. The map picture is copied: tap the message box, <b>Paste</b>, then send. <a href="#" data-act="ask-share">Use the share menu instead</a>. Want the answer right here with no switching apps? See the setting at the bottom.</div>`) +
       `<div id="askOut">${ASK.log.join('')}</div>` + (ASK.conv.length ? (c.view && VW.pts.length ? `<div class="btns" id="vwBar"><button class="btn" data-act="vw-hide">Look at the map</button><button class="btn" data-act="vw-save">Save points as marks</button></div>` : '') + `<label class="fld" style="margin-top:10px"><span>Ask a follow-up</span><textarea id="askF" rows="2" placeholder="What if the wind is south?"></textarea></label><div class="btns"><button class="btn p" data-act="ask-here">Send follow-up</button></div>` : '') +
       `<details class="more"><summary>What gets sent</summary><pre class="ctx" id="askCtx">${esc(ctxt)}</pre><div class="mut">Owner names are not sent. Nothing is sent until you tap a button.</div></details>` +
-      `<details class="more"${AK.key ? '' : ''}><summary>Answers right here in the app (optional)</summary><div class="mut">With an Anthropic API key, answers show up here without leaving the map, and you can use Scout with Claude to get suggested spots placed on the map.</div>` + `<div class="mut">How to get one: sign in at <b>console.anthropic.com</b>, add a few dollars of credit under Billing, then create a key under API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>` + `<div></div>` +
+      `<details class="more"${AK.key ? '' : ''}><summary>Answers right here in the app (optional)</summary><div class="mut">With an Anthropic API key, answers show up here without leaving the map, and Ask Claude about this area and Deer movement can place their suggestions right on the map.</div>` + `<div class="mut">How to get one: sign in at <b>console.anthropic.com</b>, add a few dollars of credit under Billing, then create a key under API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>` + `<div></div>` +
       (AK.key ? auLine() + `<div class="note">Key saved on this phone (ends ${esc(AK.key.slice(-4))}).</div><div class="btns"><button class="btn" data-act="ask-key-del">Remove key</button></div>` : `<label class="fld"><span>API key</span><input id="askKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="btns"><button class="btn" data-act="ask-key">Save key</button></div>`) + `</details>`;
   } else if (p === 'aulim') {
     auRoll();
@@ -2344,13 +2542,12 @@ function openSheet(p, arg) {
       `<div class="wx2"><div><small>Today</small><b>${AU.n} request${AU.n === 1 ? '' : 's'}</b></div><div><small>This month</small><b>$${AU.usd.toFixed(2)}</b></div></div><div class="mut">All time on this phone: $${AU.all.toFixed(2)}.</div>` +
       `<div class="mut">A question is about 1 cent and a scout about 2 cents. Follow-up questions resend the map picture, so a long back-and-forth costs a bit more.</div><div class="btns"><button class="btn p" data-act="au-save">Save limits</button></div>`;
   } else if (p === 'move') {
-    const T = mvTarget();
     h = head('Deer movement') + `<div class="mut" style="margin:-4px 0 10px">Claude reads the cover, terrain, season and forecast in this map view and draws where deer are likely traveling, the trails it can see in the photos, and spots to ambush them.</div>` +
       (!AK.key ? `<div class="note">This needs an Anthropic API key so the routes can be drawn on the map.</div><label class="fld"><span>API key</span><input id="askKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="btns"><button class="btn p" data-act="ask-key" data-back="move">Save key</button></div>` + KEYHELP :
-      `<div class="fld"><span>When?</span><div class="seg">${[['morn', 'Morning'], ['mid', 'Midday'], ['eve', 'Evening']].map(([k, l]) => `<button data-act="mv-time" data-k="${k}" class="${MV.time === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>` +
-      `<label class="row"><span class="g">Trace trails in the photos<br><small>Works best on Leaf-off with the Trail enhancer on</small></span><input type="checkbox" id="mvTr" ${MV.trails ? 'checked' : ''}></label>` +
+      hpPicker() +
+      `<label class="row"><span class="g">Trace trails in the photos<br><small>Works best on Leaf-off with the Trail enhancer on, zoomed in to a quarter mile or so</small></span><input type="checkbox" id="mvTr" ${MV.trails ? 'checked' : ''}></label>` +
       `<label class="fld"><span>Anything else? (optional)</span><textarea id="mvNote" rows="2" placeholder="Corn was just picked on the east side">${esc(MV.note)}</textarea></label>` +
-      (zoomGate() || `<div class="btns"><button class="btn p" data-act="mv-run" style="flex:1">${ico('i-track')}Show deer movement</button></div><div class="mut">For ${T.label}, during the ${esc(seasonPhase().split(':')[0])}. About 3 cents a run.</div>`) + auLine()) +
+      (zoomGate() || `<div class="btns"><button class="btn p" data-act="mv-run" style="flex:1">${ico('i-track')}Show deer movement</button></div><div class="mut">For ${hpLabel()}, during the ${esc(seasonPhase(new Date(hp().day + 'T12:00')).split(':')[0])}. Uses your marks, sit log and photos in this area. About 3 to 4 cents a run.</div>`) + auLine()) +
       `<div id="mvOut"></div>`;
   } else if (p === 'scout') {
     const T = scTarget();
@@ -2397,7 +2594,7 @@ function openSheet(p, arg) {
   };
   sh.addEventListener('touchend', end); sh.addEventListener('touchcancel', end);
 })();
-$('#bar').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (!b) return; if ($('#sheet').dataset.p === b.dataset.p) closeSheet(); else { setMode(null); openSheet(b.dataset.p); } });
+$('#bar').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (!b) return; NAV.length = 0; if ($('#sheet').dataset.p === b.dataset.p) closeSheet(); else { setMode(null); navBack = true; try { openSheet(b.dataset.p); } finally { navBack = false; } } });
 $('#q').addEventListener('keydown', async e => {
   if (e.key !== 'Enter') return; const v = e.target.value.trim(); if (!v) return; e.target.blur();
   const m = v.match(/^\s*(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)\s*$/); if (m) { map.flyTo({ center: [+m[2], +m[1]], zoom: 15 }); return; }
@@ -2436,6 +2633,8 @@ document.addEventListener('click', e => {
   else if (a === 'mv-mark') { const s = MV.res.spots.find(x => x.id === b.dataset.k); if (s && !s.saved) { S.wps.push({ id: Date.now(), p: s.ll.map(v => +v.toFixed(6)), type: 'stand', name: s.label || 'Ambush spot', notes: s.why || '', winds: (s.winds || []).filter(x => HM.DIR8.includes(x)), u: Date.now() }); drawWps(); s.saved = 1; b.textContent = 'Saved'; b.disabled = true; toast('Saved to your marks'); } }
   else if (a === 'mv-hide') { closeSheet(); toast('Tap a numbered pin to come back to the details', 3500); }
   else if (a === 'mv-clear') { mvClear(); closeSheet(); }
+  else if (a === 'hp-day' || a === 'hp-sit') { if (a === 'hp-day') HP.day = b.dataset.d; else HP.sit = b.dataset.k; if (!HP.day) Object.assign(HP, hp()); store.set('hp', HP); const p = sh.dataset.p; if (p === 'ask') { ASK.q = ($('#askQ') || {}).value || ASK.q; const pb = $('#avPub'); if (pb) SC.pub = pb.checked; const ctx = $('#askCtx'); } if (p === 'move') { MV.note = ($('#mvNote') || {}).value || MV.note; MV.trails = ($('#mvTr') || {}).checked !== false; } const sc = sh.scrollTop; openSheet(p); sh.scrollTop = sc; }
+  else if (a === 'av-time') { SC.time = b.dataset.k; ASK.q = $('#askQ').value; const pb = $('#avPub'); if (pb) SC.pub = pb.checked; openSheet('ask'); }
   else if (a === 'sc-time') { SC.time = b.dataset.k; SC.note = ($('#scNote') || {}).value || SC.note; openSheet('scout'); }
   else if (a === 'sc-focus') { SC.focus = b.textContent; sh.querySelectorAll('[data-act=sc-focus]').forEach(x => x.classList.toggle('on', x === b)); }
   else if (a === 'sc-run') { SC.note = $('#scNote').value.trim(); SC.pub = $('#scPub').checked; scoutRun(); }
@@ -2452,9 +2651,9 @@ document.addEventListener('click', e => {
   else if (a === 'ask-wp') { const w = sh._wp; askStart({ ll: w.p.slice(), wp: w }); }
   else if (a === 'ask-chip') { const q = $('#askQ'); q.value = b.textContent; ASK.q = q.value; }
   else if (a === 'ask-share') { e.preventDefault(); ASK.q = $('#askQ').value; askShare(); }
-  else if (a === 'ask-direct') { e.preventDefault(); ASK.q = $('#askQ').value; askDirect(); }
+  else if (a === 'ask-direct') { const pb = $('#avPub'); if (pb) SC.pub = pb.checked; e.preventDefault(); ASK.q = $('#askQ').value; askDirect(); }
   else if (a === 'ask-web') { e.preventDefault(); ASK.q = $('#askQ').value; askOpenWeb(); }
-  else if (a === 'ask-here') { if ($('#askQ')) ASK.q = $('#askQ').value; askHere(); }
+  else if (a === 'ask-here') { const pb = $('#avPub'); if (pb) SC.pub = pb.checked; if ($('#askQ')) ASK.q = $('#askQ').value; askHere(); }
   else if (a === 'ask-key') { const k = $('#askKey').value.trim(); if (!/^sk-ant-/.test(k)) { toast('That does not look like an Anthropic API key (it starts with sk-ant-).', 3500); return; } AK.key = k; store.set('akey', k); toast('Key saved on this phone'); if (b.dataset.back) { openSheet(b.dataset.back); return; } ASK.q = $('#askQ').value; openSheet('ask'); }
   else if (a === 'ask-key-del') { AK.key = ''; store.set('akey', ''); toast('Key removed'); openSheet('ask'); }
   else if (a === 'ph-view') { phView(sh._wp, b.dataset.id); }
@@ -2464,6 +2663,7 @@ document.addEventListener('click', e => {
   else if (a === 'cone-here') { S.cone = parseLL(b.dataset.ll); drawCone(); if (popup) popup.remove(); openSheet('wind'); }
   else if (a === 'cone-place') setMode('cone');
   else if (a === 'cone-clear') { S.cone = null; drawCone(); openSheet('wind'); }
+  else if (a === 'wflow-on') { closeSheet(); windFlow(true); }
   else if (a === 'wind-hr') { S.windHour = +b.dataset.k; windChip(); drawCone(); renderWps(); const sc = sh.querySelector('.hr').scrollLeft; openSheet('wind'); sh.querySelector('.hr').scrollLeft = sc; }
   else if (a === 'wind-reload') loadWind(true);
   else if (a === 'blood-open') bloodOpen();
@@ -2503,6 +2703,7 @@ document.addEventListener('click', e => {
   else if (a === 'off-del') offDelete(b.dataset.id);
   else if (a === 'go-box') { const v = b.dataset.b.split(',').map(Number); map.fitBounds([[v[0], v[1]], [v[2], v[3]]], { padding: 30 }); }
   else if (a === 'open') openSheet(b.dataset.p);
+  else if (a === 'back') { const prev = NAV.pop(); if (!prev) { closeSheet(); return; } navBack = true; try { openSheet(prev.p, prev.arg); } finally { navBack = false; } }
   else if (a === 'help') openSheet('topic', b.dataset.t);
   else if (a === 'intro') { closeSheet(); showIntro(0); }
   else if (a === 'p-new') openSheet('pjoin', 'create');
