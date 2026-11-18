@@ -1706,14 +1706,17 @@ async function moveRun(force) {
     closeSheet(); mvDraw(); const mins = Math.round((Date.now() - L0.at) / 6e4);
     confirmBox('Already done for this area', `Most of this view was read ${mins < 60 ? mins + ' min' : Math.round(mins / 60) + ' h'} ago for the same sit. Its routes are on the map. Run again for about 3 cents?`, 'Run again', () => moveRun(true)); return;
   }
-  const prevRes = MV.res; MV.busy = true; mvClear(true); MV.raw = ''; MV.err = ''; closeSheet(); jobShow('run', 'Reading deer movement', 'Switching to leaf-off photos…');
+  const prevRes = MV.res; MV.busy = true; mvClear(true); MV.raw = ''; MV.err = ''; closeSheet(); jobShow('run', 'Reading deer movement', 'Getting the map ready…');
   const prevBase = S.base, prevTr = S.on.enh;
   try {
     if (S.base !== 'spring') { S.base = 'spring'; applyBase(); }
-    await waitIdle(7000);
+    if (!S.on.enh) { S.on.enh = true; applyVis('enh'); }
+    jobShow('run', 'Reading deer movement', 'Switching to leaf-off photos with the trail enhancer…');
+    await waitIdle(9000);
     jobShow('run', 'Reading deer movement', 'Taking a picture of the map…');
     const pic = await mapPicture(null, { grid: true });
     if (prevBase !== S.base) { S.base = prevBase; applyBase(); }
+    if (!prevTr && S.on.enh) { S.on.enh = false; applyVis('enh'); }
     if (!pic) throw new Error('Could not take the map picture.');
     jobShow('run', 'Reading deer movement', 'Claude is reading the cover, terrain and wind…', true);
     const T = { label: hpLabel(), t: hpTime() }, w = wxAtT(T.t), CW0 = map.getContainer().clientWidth, CH0 = map.getContainer().clientHeight, inV0 = m => { const p = map.project(m.p); return p.x >= 0 && p.y >= 0 && p.x <= CW0 && p.y <= CH0; }, ps = await myPhotos(S.wps.filter(inV0)).catch(() => []); CTXP.n = ps.length;
@@ -1737,7 +1740,7 @@ async function moveRun(force) {
     if (!routes.length && !trails.length && !spots.length) throw new Error('Claude answered, but no routes could be placed on the map. Try again, or zoom in a little.');
     MV.res = { summary: d.summary || '', routes, trails, spots, label: hpLabel() }; MV.last = { b: bb, plan, at: Date.now() }; mvSave(); mvDraw();
     jobShow('done', 'Deer movement is on the map', `${routes.length} route${routes.length === 1 ? '' : 's'}, ${trails.length} trail${trails.length === 1 ? '' : 's'}, ${spots.length} ambush spot${spots.length === 1 ? '' : 's'} for ${MV.res.label}`); setTimeout(() => out.scrollIntoView({ block: 'start', behavior: 'smooth' }), 80);
-  } catch (e) { if (S.base !== prevBase) { S.base = prevBase; applyBase(); } MV.err = navigator.onLine === false ? 'No signal. This needs service.' : e.message || 'Something went wrong.'; if (prevRes) { MV.res = prevRes; mvDraw(); } jobShow('err', 'Deer movement did not finish', MV.err + (prevRes ? ' Your earlier routes are still on the map.' : '')); }
+  } catch (e) { if (S.base !== prevBase) { S.base = prevBase; applyBase(); } if (!prevTr && S.on.enh) { S.on.enh = false; applyVis('enh'); } MV.err = navigator.onLine === false ? 'No signal. This needs service.' : e.message || 'Something went wrong.'; if (prevRes) { MV.res = prevRes; mvDraw(); } jobShow('err', 'Deer movement did not finish', MV.err + (prevRes ? ' Your earlier routes are still on the map.' : '')); }
   MV.busy = false;
 }
 
@@ -1837,10 +1840,10 @@ async function mapPicture(ll, opt = {}) {
   const lat = []; for (let j = 0; j <= 10; j++) { const row = []; for (let i = 0; i <= 10; i++) row.push(map.unproject([CW * i / 10, CH * j / 10]).toArray()); lat.push(row); }
   if (ll) { const c0 = map.project(ll); g.strokeStyle = '#FF6B1A'; g.lineWidth = 3.5 * r; g.beginPath(); g.arc(c0.x * r, c0.y * r, 16 * r, 0, 7); g.moveTo(c0.x * r - 26 * r, c0.y * r); g.lineTo(c0.x * r - 8 * r, c0.y * r); g.moveTo(c0.x * r + 8 * r, c0.y * r); g.lineTo(c0.x * r + 26 * r, c0.y * r); g.moveTo(c0.x * r, c0.y * r - 26 * r); g.lineTo(c0.x * r, c0.y * r - 8 * r); g.moveTo(c0.x * r, c0.y * r + 8 * r); g.lineTo(c0.x * r, c0.y * r + 26 * r); g.stroke(); }
   const wM = HM.hav(map.unproject([0, map.getContainer().clientHeight / 2]).toArray(), map.unproject([map.getContainer().clientWidth, map.getContainer().clientHeight / 2]).toArray());
-  const brg = Math.round(map.getBearing()), styleN = { sat: 'satellite photo', hyb: 'satellite photo with contour lines in feet', spring: 'leaf-off spring aerial photo', topo: 'USGS topographic map' }[S.base] || 'map';
+  const brg = Math.round(map.getBearing()), styleN = { sat: 'satellite photo', hyb: 'satellite photo with contour lines in feet', spring: 'leaf-off spring aerial photo', topo: 'USGS topographic map' }[S.base] || 'map'; const styleN2 = S.on.enh && S.base !== 'topo' ? styleN + ' (contrast-enhanced so faint game trails and paths stand out)' : styleN;
   const blob = await new Promise(res => out.toBlob(res, 'image/jpeg', .82)), png = await new Promise(res => out.toBlob(res, 'image/png'));
   const hY = HM.hav(map.unproject([CW / 2, 0]).toArray(), map.unproject([CW / 2, CH]).toArray());
-  return { blob, png, lat, wYd: Math.round(wM * 1.0936), hYd: Math.round(hY * 1.0936), styleN, url: out.toDataURL('image/jpeg', .82), note: `The attached picture is a ${styleN}${S.on.contour && S.base !== 'hyb' ? ' with contour lines in feet' : ''}${ll ? ' centered on the spot (orange crosshair)' : ''}. ${brg ? 'Map is rotated; top of the picture faces ' + HM.compass(brg) + '.' : 'North is up.'} It is about ${Math.round(wM * 1.0936).toLocaleString()} yards across. Colored dots are my marks${S.me ? ', blue dot is me' : ''}. Gold lines are parcel boundaries${S.on.wma || S.on.padus ? ', shaded areas are public land' : ''}.` };
+  return { blob, png, lat, wYd: Math.round(wM * 1.0936), hYd: Math.round(hY * 1.0936), styleN: styleN2, url: out.toDataURL('image/jpeg', .82), note: `The attached picture is a ${styleN}${S.on.contour && S.base !== 'hyb' ? ' with contour lines in feet' : ''}${ll ? ' centered on the spot (orange crosshair)' : ''}. ${brg ? 'Map is rotated; top of the picture faces ' + HM.compass(brg) + '.' : 'North is up.'} It is about ${Math.round(wM * 1.0936).toLocaleString()} yards across. Colored dots are my marks${S.me ? ', blue dot is me' : ''}. Gold lines are parcel boundaries${S.on.wma || S.on.padus ? ', shaded areas are public land' : ''}.` };
 }
 const ASK_CHIPS = ['Where would deer bed and travel here?', 'Where should I hang a stand for this week\'s wind?', 'How should I walk in and out without spooking deer?', 'What does the terrain and cover tell you about this spot?', 'Best plan for a morning and an evening sit here?'];
 async function askStart(c) {
@@ -2591,7 +2594,7 @@ function openSheet(p, arg) {
       hpPicker() +
       `<label class="row"><span class="g">Trace trails in the photos<br><small>Works best on Leaf-off with the Trail enhancer on, zoomed in to a quarter mile or so</small></span><input type="checkbox" id="mvTr" ${MV.trails ? 'checked' : ''}></label>` +
       `<label class="fld"><span>Anything else? (optional)</span><textarea id="mvNote" rows="2" placeholder="Corn was just picked on the east side">${esc(MV.note)}</textarea></label>` +
-      (MV.busy ? '<div class="note">Working on it. You will get a note on the map when it is done.</div>' : zoomGate() || `<div class="mut" style="margin-bottom:6px">Claude reads the leaf-off photos for this, even if you are on another map, because trails and cover show through the trees.${MV.trails && map.getZoom() < MVTZ ? ' <b>Zoom in a bit more to trace trails</b> (about a third of a mile across), or turn off Trace trails.' : ''}</div><div class="btns"><button class="btn p" data-act="mv-run" style="flex:1">${ico('i-track')}${MV.res ? 'Run again for this view' : 'Show deer movement'}</button></div><div class="mut">For ${hpLabel()}, during the ${esc(seasonPhase(new Date(hp().day + 'T12:00')).split(':')[0])}. Uses your marks, sit log and photos in this area. About 3 to 4 cents a run.</div>`) + auLine()) +
+      (MV.busy ? '<div class="note">Working on it. You will get a note on the map when it is done.</div>' : zoomGate() || `<div class="mut" style="margin-bottom:6px">Claude reads the leaf-off photos with the trail enhancer on for this, even if your map is set differently, because trails and cover show through the trees.${MV.trails && map.getZoom() < MVTZ ? ' <b>Zoom in a bit more to trace trails</b> (about a third of a mile across), or turn off Trace trails.' : ''}</div><div class="btns"><button class="btn p" data-act="mv-run" style="flex:1">${ico('i-track')}${MV.res ? 'Run again for this view' : 'Show deer movement'}</button></div><div class="mut">For ${hpLabel()}, during the ${esc(seasonPhase(new Date(hp().day + 'T12:00')).split(':')[0])}. Uses your marks, sit log and photos in this area. About 3 to 4 cents a run.</div>`) + auLine()) +
       (MV.res || MV.err ? '' : `<div id="mvOut"></div>`);
   } else if (p === 'scout') {
     const T = scTarget();
