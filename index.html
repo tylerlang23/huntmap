@@ -279,7 +279,11 @@ body.wflow .maplibregl-ctrl-bottom-left{display:none}
 .wbrow{display:flex;align-items:center;gap:10px}
 .wbplay{width:40px;height:40px;border-radius:50%;border:0;background:var(--blaze);color:#1B1F1A;display:grid;place-items:center;flex:none;padding:0}.wbplay .ic{width:20px;height:20px}
 .wbtrack{flex:1;position:relative;padding-bottom:14px}
-.wbtrack input{width:100%;margin:0;accent-color:#8FD6FF;height:28px}
+.wbtrack input{width:100%;margin:0;height:28px;-webkit-appearance:none;appearance:none;background:transparent;--p:0%}
+.wbtrack input::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(90deg,#8FD6FF var(--p),rgba(236,234,223,.16) var(--p))}
+.wbtrack input::-moz-range-track{height:6px;border-radius:3px;background:linear-gradient(90deg,#8FD6FF var(--p),rgba(236,234,223,.16) var(--p))}
+.wbtrack input::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-8px;border-radius:50%;background:#EAF7FF;border:3px solid #1B1F1A;box-shadow:0 0 0 4px rgba(143,214,255,.3)}
+.wbtrack input::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#EAF7FF;border:3px solid #1B1F1A}
 .wbticks{position:absolute;left:0;right:0;bottom:0;height:12px;font-size:10.5px;color:var(--lichen)}.wbticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}.wbticks span::before{content:'';position:absolute;left:50%;top:-9px;width:1px;height:6px;background:var(--line2)}
 .wbleg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--lichen)}.wbleg i{flex:1;height:5px;border-radius:3px;background:linear-gradient(90deg,#CFEAFF,#8FD6FF 25%,#FFE37A 50%,#FFA44A 75%,#FF5A3C)}
 /* ---------- tools hub ---------- */
@@ -1540,14 +1544,14 @@ function wfGrid() {
 }
 function wfVec(x, y) { const G = WF.grid, fx = Math.max(0, Math.min(G.GX - .0001, x / G.W * G.GX)), fy = Math.max(0, Math.min(G.GY - .0001, y / G.H * G.GY)), i = Math.floor(fx), j = Math.floor(fy), ax = fx - i, ay = fy - j, g = G.g, o = (r, c) => (r * (G.GX + 1) + c) * 3;
   const m = q => (g[o(j, i) + q] * (1 - ax) + g[o(j, i + 1) + q] * ax) * (1 - ay) + (g[o(j + 1, i) + q] * (1 - ax) + g[o(j + 1, i + 1) + q] * ax) * ay; return [m(0), m(1), m(2)]; }
-function wfSize() { const c = map.getContainer(), d = Math.min(2, window.devicePixelRatio || 1); WF.d = d; WF.cv.width = c.clientWidth * d; WF.cv.height = c.clientHeight * d; WF.cv.style.width = c.clientWidth + 'px'; WF.cv.style.height = c.clientHeight + 'px'; WF.cx.setTransform(d, 0, 0, d, 0, 0); const n = Math.round(c.clientWidth * c.clientHeight / 230); WF.parts = Array.from({ length: n }, () => wfSpawn({})); WF.dirty = true; }
+function wfSize() { const c = map.getContainer(), d = Math.min(2, window.devicePixelRatio || 1); WF.d = d; WF.cv.width = c.clientWidth * d; WF.cv.height = c.clientHeight * d; WF.cv.style.width = c.clientWidth + 'px'; WF.cv.style.height = c.clientHeight + 'px'; WF.cx.setTransform(d, 0, 0, d, 0, 0); const n = Math.round(c.clientWidth * c.clientHeight / 520); WF.parts = Array.from({ length: n }, () => wfSpawn({})); WF.dirty = true; }
 function wfSpawn(p) { const c = map.getContainer(); p.x = Math.random() * c.clientWidth; p.y = Math.random() * c.clientHeight; p.age = 0; p.max = 50 + Math.random() * 70; return p; }
 function wfFrame(ts) {
   if (!WF.on) return; WF.raf = requestAnimationFrame(wfFrame); const dt = WF.last ? Math.min(.1, (ts - WF.last) / 1000) : .016; WF.last = ts;
   if (WF.play && WF.field) { WF.t += dt / .75; if (WF.t >= WF.field.n - 1) { WF.t = WF.field.n - 1; WF.play = false; } WF.dirty = true; wfHud(); }
   if (!WF.field) return; if (WF.dirty || !WF.grid) wfGrid();
   const cx = WF.cx, c = map.getContainer(), W = c.clientWidth, H = c.clientHeight;
-  cx.globalCompositeOperation = 'destination-in'; cx.fillStyle = `rgba(0,0,0,${RM ? 0 : .9})`; cx.fillRect(0, 0, W, H); cx.globalCompositeOperation = 'source-over';
+  cx.globalCompositeOperation = 'destination-in'; cx.fillStyle = `rgba(0,0,0,${RM ? 0 : .87})`; cx.fillRect(0, 0, W, H); cx.globalCompositeOperation = 'source-over';
   if (RM) { if (WF.drawn === WF.t + '|' + WF.grid.W) return; WF.drawn = WF.t + '|' + WF.grid.W; cx.clearRect(0, 0, W, H); for (let y = 40; y < H; y += 70) for (let x = 35; x < W; x += 70) { const [vx, vy, s] = wfVec(x, y), m = Math.hypot(vx, vy) || 1, ux = vx / m, uy = vy / m; cx.strokeStyle = WCOL(s); cx.lineWidth = 2.2; cx.beginPath(); cx.moveTo(x - ux * 14, y - uy * 14); cx.lineTo(x + ux * 14, y + uy * 14); cx.lineTo(x + ux * 6 - uy * 6, y + uy * 6 + ux * 6); cx.moveTo(x + ux * 14, y + uy * 14); cx.lineTo(x + ux * 6 + uy * 6, y + uy * 6 - ux * 6); cx.stroke(); } return; }
   const paths = WBUCKETS.map(() => new Path2D()), k = 60 * dt * .55;
   for (const p of WF.parts) {
@@ -1555,14 +1559,14 @@ function wfFrame(ts) {
     if (++p.age > p.max || nx < -5 || ny < -5 || nx > W + 5 || ny > H + 5) { wfSpawn(p); continue; }
     const bi = s < 5 ? 0 : s < 10 ? 1 : s < 15 ? 2 : s < 20 ? 3 : 4; paths[bi].moveTo(p.x, p.y); paths[bi].lineTo(nx, ny); p.x = nx; p.y = ny;
   }
-  cx.lineWidth = 1.7; cx.lineCap = 'round'; paths.forEach((pa, i) => { cx.strokeStyle = WCOL(WBUCKETS[i] + 1); cx.stroke(pa); });
+  cx.lineWidth = 1.35; cx.lineCap = 'round'; cx.globalAlpha = .9; paths.forEach((pa, i) => { cx.strokeStyle = WCOL(WBUCKETS[i] + 1); cx.stroke(pa); }); cx.globalAlpha = 1;
 }
 function wfHud(force) {
   const bar = $('#windbar'); if (!bar || !WF.field) return; const F = WF.field, k = Math.round(WF.t), c = map.getCenter(), [u, v, s] = wfSample(c.lng, c.lat, WF.t), dir = (Math.atan2(u, v) * 180 / Math.PI + 180 + 360) % 360;
   const gi = Math.max(0, Math.min(F.n - 1, k)), gs = F.g[gi].filter(x => x != null), gust = gs.length ? Math.max(...gs) : null;
   $('#wbArrow').style.transform = `rotate(${dir + 180 - map.getBearing()}deg)`; $('#wbDir').textContent = `${HM.compass(dir)} ${Math.round(s)}`; $('#wbGust').textContent = gust != null ? `gusts ${Math.round(gust)} mph` : 'mph';
   const t = new Date(F.times[gi]); $('#wbTime').textContent = k === 0 ? 'Now' : t.toLocaleDateString([], { weekday: 'short' }) + ' ' + hm(t);
-  const sl = $('#wbSlider'); if (document.activeElement !== sl) sl.value = WF.t; sl.max = F.n - 1;
+  const sl = $('#wbSlider'); if (document.activeElement !== sl) sl.value = WF.t; sl.max = F.n - 1; sl.style.setProperty('--p', (WF.t / Math.max(1, F.n - 1) * 100).toFixed(1) + '%'); $('#wbNow').style.visibility = WF.t > .5 ? 'visible' : 'hidden';
   $('#wbPlay').innerHTML = `<svg class="ic"><use href="#${WF.play ? 'i-pause' : 'i-play'}"/></svg>`;
   if (k !== WF.hr || force) { WF.hr = k; S.windHour = Math.min(k, 47); windChip(); renderWps(); drawCone();
     const st = S.wps.filter(w => (w.type === 'stand' || w.type === 'blind') && w.winds && w.winds.length); const wd = windAt(S.windHour);
