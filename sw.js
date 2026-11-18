@@ -3,7 +3,7 @@
    - map tiles: served from the "hm-tiles" cache when a download put them there
    - Esri satellite: falls back to downloaded USGS imagery for the same tile when offline
    - parcels.pmtiles: byte ranges cached as they load, replayed when offline */
-const V = 'v12', SHELL = 'hm-shell-' + V, TILES = 'hm-tiles', PM = 'hm-pm';
+const V = 'v13', SHELL = 'hm-shell-' + V, TILES = 'hm-tiles', PM = 'hm-pm';
 const LIBS = ['https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js', 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css', 'https://unpkg.com/pmtiles@3/dist/pmtiles.js', 'https://unpkg.com/maplibre-contour@0.1.0/dist/index.min.js'];
 const TILE_HOSTS = ['server.arcgisonline.com', 'basemap.nationalmap.gov', 'imageserver.gisdata.mn.gov'];
 const EMPTY_PNG = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='), c => c.charCodeAt(0));

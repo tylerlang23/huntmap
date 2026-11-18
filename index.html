@@ -1587,7 +1587,7 @@ function windFlow(on) {
 
 /* ---------------- hunt plan: which day and sit Claude plans for ---------------- */
 const dayKey = t => localKey(t).slice(0, 10), CTXP = { n: 0 };
-const HP = (() => { const s = store.get('hp', null); return s && s.day >= dayKey(Date.now()) ? s : { day: '', sit: '' }; })();
+const HP = Object.assign({ day: '', sit: '' }, store.get('hp', null) || {}); /* checked lazily in hp(): localKey is not ready yet at this point */
 function hpDays() { const W = S.wind, today = dayKey(Date.now()); if (W && W.daily) return W.daily.time.filter(d => d >= today).slice(0, 7); const out = []; for (let k = 0; k < 7; k++) out.push(dayKey(Date.now() + k * 864e5)); return out; }
 function hpSun(day) { const W = S.wind, i = W && W.daily ? W.daily.time.indexOf(day) : -1; if (i >= 0) return { sr: new Date(W.daily.sunrise[i]).getTime(), ss: new Date(W.daily.sunset[i]).getTime(), i }; const d = new Date(day + 'T12:00'); return { sr: d.getTime() - 5 * 36e5, ss: d.getTime() + 4.7 * 36e5, i: -1 }; }
 function hpDefault() { const now = Date.now(), t = dayKey(now), s = hpSun(t); if (now < s.sr - 36e5) return { day: t, sit: 'morn' }; if (now < s.ss - 2.5 * 36e5) return { day: t, sit: 'eve' }; return { day: dayKey(now + 864e5), sit: 'morn' }; }
