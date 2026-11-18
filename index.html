@@ -9,7 +9,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Rutline">
-<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,7 +25,7 @@
  /* legacy names used by older markup */
  --bg:var(--bark);--panel:rgba(27,31,26,.96);--solid:var(--bark);--tx:var(--bone);--mut:var(--lichen);--acc:var(--blaze);--acc2:var(--gold);--blue:#4DA3FF;--bad:var(--rust)}
 *{box-sizing:border-box}
-html,body{margin:0;height:var(--appH,100%);background:var(--bark);color:var(--bone);font:400 16px/1.42 var(--f);overflow:hidden;position:fixed;top:0;left:0;right:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none;overscroll-behavior:none;font-feature-settings:"tnum" 1}
+html,body{margin:0;height:100%;background:var(--bark);color:var(--bone);font:400 16px/1.42 var(--f);overflow:hidden;position:fixed;inset:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none;overscroll-behavior:none;font-feature-settings:"tnum" 1}
 #map{position:absolute;inset:0}
 button,select,input,textarea{font:inherit;color:inherit;-webkit-appearance:none;appearance:none}
 input,textarea{-webkit-user-select:text;user-select:text}
@@ -807,16 +806,9 @@ const map = new maplibregl.Map({
   }
 });
 map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
-/* iPhone Home Screen apps can report a viewport shorter than the screen (status bar, or after the keyboard closes),
-   which leaves an empty band under the bottom bar. Size the app to the real screen in that case. */
-function fitScreen() {
-  const sa = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches), root = document.documentElement;
-  if (!sa) { root.style.removeProperty('--appH'); return; }
-  const portrait = innerHeight >= innerWidth, full = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width);
-  const want = Math.max(innerHeight, full); if (root.style.getPropertyValue('--appH') !== want + 'px') { root.style.setProperty('--appH', want + 'px'); try { map.resize(); } catch (e) { } }
-  if (window.scrollY) window.scrollTo(0, 0);
-}
-fitScreen(); window.addEventListener('resize', fitScreen); window.addEventListener('orientationchange', () => setTimeout(fitScreen, 300));
+/* after the keyboard closes iOS can leave the page scrolled; put it back */
+function fitScreen() { if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0); try { map.resize(); } catch (e) { } }
+window.addEventListener('orientationchange', () => setTimeout(fitScreen, 300));
 document.addEventListener('focusout', () => setTimeout(fitScreen, 120));
 const foldCredits = () => { const el = document.querySelector('.maplibregl-ctrl-attrib'); if (el) el.classList.remove('maplibregl-compact-show'); };
 map.on('load', () => setTimeout(foldCredits, 50)); map.on('sourcedata', () => { if (!foldCredits.done) { foldCredits(); } }); map.on('dragstart', () => { foldCredits.done = true; });
