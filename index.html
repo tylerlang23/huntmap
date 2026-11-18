@@ -1766,6 +1766,8 @@ async function moveRun(force) {
   const prevBase = S.base, prevTr = S.on.enh;
   try {
     jobShow('run', 'Reading deer movement', 'Taking the satellite picture…');
+    const shade = ['wma-fill', 'wma-hatch', 'padus-fill', 'padus-hatch', 'hot'].filter(l => map.getLayer(l) && map.getLayoutProperty(l, 'visibility') !== 'none'); shade.forEach(l => map.setLayoutProperty(l, 'visibility', 'none'));
+    const unshade = () => shade.forEach(l => map.getLayer(l) && map.setLayoutProperty(l, 'visibility', 'visible'));
     if (S.base !== 'sat') { S.base = 'sat'; applyBase(); } if (S.on.enh) { S.on.enh = false; applyVis('enh'); }
     await waitIdle(8000);
     const picS = await mapPicture(null, { grid: true }), cc0 = map.getCenter(), satDate = await Promise.race([imgDate([cc0.lng, cc0.lat]), new Promise(r => setTimeout(() => r(''), 4000))]);
@@ -1775,6 +1777,7 @@ async function moveRun(force) {
     const pic = await mapPicture(null, { grid: true });
     if (prevBase !== S.base) { S.base = prevBase; applyBase(); }
     if (S.on.enh !== prevTr) { S.on.enh = prevTr; applyVis('enh'); }
+    unshade(); await waitIdle(1500);
     if (!pic || !picS) throw new Error('Could not take the map pictures.');
     jobShow('run', 'Reading deer movement', 'Claude is reading the cover, terrain and wind…', true);
     const T = { label: hpLabel(), t: hpTime() }, w = wxAtT(T.t), CW0 = map.getContainer().clientWidth, CH0 = map.getContainer().clientHeight, inV0 = m => { const p = map.project(m.p); return p.x >= 0 && p.y >= 0 && p.x <= CW0 && p.y <= CH0; }, ps = await myPhotos(S.wps.filter(inV0)).catch(() => []); CTXP.n = ps.length;
@@ -1809,8 +1812,8 @@ async function moveRun(force) {
     const cond = { sat: satDate, date: new Date(day + 'T12:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }), phase: seasonPhase(new Date(day + 'T12:00')).split(':')[0], at: Date.now(), wx: {} };
     ['morn', 'mid', 'eve'].forEach(sk => { const ww = wxAtT(sitTime(day, sk)); cond.wx[sk] = ww ? `${HM.compass(ww.dir)} ${Math.round(ww.spd)} mph, ${Math.round(ww.temp)}°, ${WX(ww.code)[0].toLowerCase()}` : 'no hourly forecast'; });
     MV.res = { summary: d.summary || '', per, routes, trails, skipped, spots, label: hpDayLabel(), day, cond }; MV.view = MV.view && PERN[MV.view] ? MV.view : (hp().sit || 'eve'); MV.last = { b: bb, plan, at: Date.now() }; mvSave(); mvDraw();
-    jobShow('done', 'Deer movement is on the map', `${routes.length} route${routes.length === 1 ? '' : 's'}, ${trails.length} trail${trails.length === 1 ? '' : 's'}, ${spots.length} ambush spot${spots.length === 1 ? '' : 's'} for ${cond.date}, morning to evening. Numbers are projected paths, letters are spots to sit, aqua lines are trails seen in the photos.`); setTimeout(() => out.scrollIntoView({ block: 'start', behavior: 'smooth' }), 80);
-  } catch (e) { if (S.base !== prevBase) { S.base = prevBase; applyBase(); } if (!prevTr && S.on.enh) { S.on.enh = false; applyVis('enh'); } MV.err = navigator.onLine === false ? 'No signal. This needs service.' : e.message || 'Something went wrong.'; if (prevRes) { MV.res = prevRes; mvDraw(); } jobShow('err', 'Deer movement did not finish', MV.err + (prevRes ? ' Your earlier routes are still on the map.' : '')); }
+    jobShow('done', 'Deer movement is on the map', `${routes.length} path${routes.length === 1 ? '' : 's'}, ${trails.length} trail${trails.length === 1 ? '' : 's'}, ${spots.length} ambush spot${spots.length === 1 ? '' : 's'} for ${cond.date}, morning to evening. Numbers are projected paths, letters are spots to sit, aqua lines are trails seen in the photos.`); setTimeout(() => out.scrollIntoView({ block: 'start', behavior: 'smooth' }), 80);
+  } catch (e) { ['wma', 'padus'].forEach(applyVis); if (map.getLayer('hot')) map.setLayoutProperty('hot', 'visibility', 'visible'); if (S.base !== prevBase) { S.base = prevBase; applyBase(); } if (!prevTr && S.on.enh) { S.on.enh = false; applyVis('enh'); } MV.err = navigator.onLine === false ? 'No signal. This needs service.' : e.message || 'Something went wrong.'; if (prevRes) { MV.res = prevRes; mvDraw(); } jobShow('err', 'Deer movement did not finish', MV.err + (prevRes ? ' Your earlier routes are still on the map.' : '')); }
   MV.busy = false;
 }
 
@@ -1846,7 +1849,7 @@ function nearMarks(ll, maxM = 1600) {
 function viewContext() {
   const L = [], CW = map.getContainer().clientWidth, CH = map.getContainer().clientHeight, ctr = map.getCenter(), pic = ASK && ASK.pic;
   L.push(`I am a whitetail deer hunter in Minnesota looking over an area on my map app. Date and time: ${new Date().toLocaleString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}. Center of the view: ${ctr.lat.toFixed(5)}, ${ctr.lng.toFixed(5)}.`);
-  if (pic) L.push(`The attached picture shows my whole screen: a ${pic.styleN}${S.on.contour && S.base !== 'hyb' ? ' with contour lines in feet' : ''}, ${map.getBearing() ? 'rotated so the top faces ' + HM.compass(map.getBearing()) : 'north up'}, about ${pic.wYd.toLocaleString()} yards wide and ${pic.hYd.toLocaleString()} yards tall. A faint grid splits it into 10 columns (0 to 9 across the top) and 10 rows (0 to 9 down the left). Gold lines are parcel boundaries, shaded areas are public land, and colored dots are my marks${S.me ? ' (blue dot is me)' : ''}.`);
+  if (pic) L.push(`The attached picture shows my whole screen: a ${pic.styleN}${S.on.contour && S.base !== 'hyb' ? ' with contour lines in feet' : ''}, ${map.getBearing() ? 'rotated so the top faces ' + HM.compass(map.getBearing()) : 'north up'}, about ${pic.wYd.toLocaleString()} yards wide and ${pic.hYd.toLocaleString()} yards tall. A faint grid splits it into 10 columns (0 to 9 across the top) and 10 rows (0 to 9 down the left). Gold lines are parcel boundaries, orange or pink outlines (shaded when I view the map) are public land, and colored dots are my marks${S.me ? ' (blue dot is me)' : ''}.`);
   const pl = ['wma-fill', 'padus-fill'].filter(l => map.getLayer(l)), pubs = pl.length ? [...new Set(map.queryRenderedFeatures({ layers: pl }).map(f => f.properties._name + (f.properties._closed ? ' (closed to public)' : '')).filter(Boolean))].slice(0, 12) : [];
   L.push(pubs.length ? `Public land in view: ${pubs.join('; ')}. Everything else is private.` : 'No public land is shaded in this view; it appears to be private land.');
   if (S.me) { const p = map.project(S.me); L.push(p.x >= 0 && p.y >= 0 && p.x <= CW && p.y <= CH ? `I am in view at x ${Math.round(p.x / CW * 1000)}, y ${Math.round(p.y / CH * 1000)}.` : `I am ${fmtDist(HM.hav(S.me, ctr.toArray ? ctr.toArray() : [ctr.lng, ctr.lat]))} from the center of the view.`); }
