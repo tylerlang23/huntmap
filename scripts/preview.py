@@ -42,17 +42,17 @@ async def main():
         await pg.evaluate("localStorage.setItem('huntmap.akey', JSON.stringify('sk-ant-test'))"); await pg.reload(); await pg.wait_for_timeout(14000)
         await pg.evaluate("map.jumpTo({zoom:15.2})"); await pg.wait_for_timeout(5000)
         await pg.unroute('https://api.anthropic.com/**')
-        async def fake2(route):
+        async def fake3(route):
             body = _j.loads(route.request.post_data); cap['txt'] = body['messages'][0]['content'][1]['text']
-            t = "**Getting in**\n- Park on Wells Ave and walk the field edge west of [1] with a NW wind.\n\n**Points of interest**\n- [2] Thick cattail bedding south of the road.\n- [3] Timber edge funnel.\n\n**Best bet tonight**\n- Sit [1] facing [3].\n\n```json\n" + _j.dumps({"points":[{"n":1,"x":500,"y":500,"label":"Field edge stand","type":"stand"},{"n":2,"x":300,"y":700,"label":"Cattail bedding","type":"bed"},{"n":3,"x":700,"y":300,"label":"Timber funnel","type":"travel"}]}) + "\n```"
-            await route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin':'*'}, body=_j.dumps({"usage":{"input_tokens":3000,"output_tokens":900},"content":[{"type":"text","text":t}]}))
-        await pg.route('https://api.anthropic.com/**', fake2)
-        await pg.evaluate("openSheet('tools')"); await pg.wait_for_timeout(400); await pg.click('[data-act=ask-view]'); await pg.wait_for_timeout(8000)
-        await pg.screenshot(path='shots/1-view-ask.png')
-        await pg.click('[data-act=ask-here]'); await pg.wait_for_timeout(2500)
-        await pg.evaluate("document.getElementById('askOut').scrollIntoView()"); await pg.wait_for_timeout(300); await pg.screenshot(path='shots/2-answer.png')
-        print('pts', await pg.evaluate("JSON.stringify(VW.pts)"))
-        await pg.click('[data-act=vw-hide]'); await pg.wait_for_timeout(800); await pg.screenshot(path='shots/3-map.png')
-        print('PROMPT', cap.get('txt','')[:3000])
+            d = {"summary":"Evening: does leave the cattail bedding and work north along the timber edge to the field.","routes":[{"n":1,"from":"cattail bedding","to":"north field","when":"last hour of light","confidence":"medium","why":"Edge travel with the wind in their face.","pts":[[300,750],[350,650],[420,560],[480,480],[520,380],[560,260]]},{"n":2,"from":"timber","to":"field corner","when":"evening","confidence":"low","why":"Inside corner.","pts":[[800,700],[720,600],[650,450],[600,300]]}],"trails":[{"pts":[[100,520],[200,500],[300,470],[400,450]]}],"ambush":[{"x":560,"y":460,"label":"Edge pinch","winds":["NW","W"],"why":"Downwind of route 1."}]}
+            await route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin':'*'}, body=_j.dumps({"usage":{"input_tokens":3500,"output_tokens":1200},"content":[{"type":"text","text":_j.dumps(d)}]}))
+        await pg.route('https://api.anthropic.com/**', fake3)
+        await pg.evaluate("map.jumpTo({zoom:12.5})"); await pg.wait_for_timeout(3000)
+        await pg.evaluate("openSheet('move')"); await pg.wait_for_timeout(500); await pg.screenshot(path='shots/1-gate.png')
+        await pg.click('[data-act=zoom-in-gate]'); await pg.wait_for_timeout(4000)
+        await pg.click('[data-act=mv-run]'); await pg.wait_for_timeout(10000); await pg.screenshot(path='shots/2-res.png')
+        await pg.click('[data-act=mv-hide]'); await pg.wait_for_timeout(1500); await pg.screenshot(path='shots/3-map.png')
+        print('mv', await pg.evaluate("MV.res ? [MV.res.routes.length, MV.res.trails.length, MV.res.spots.length] : 'none'"))
+        print('PROMPT', cap.get('txt','')[:4000])
         print('\n'.join(logs)); print('FAILS', '\n'.join(sorted(set(fails))[:30])); await b.close()
 asyncio.run(main())
