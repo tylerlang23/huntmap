@@ -10,6 +10,7 @@ WPS = [
   {'id': 4, 'p': off(-320, -220), 'type': 'access', 'name': 'Truck', 'notes': '', 'u': 1},
   {'id': 5, 'p': off(330, 200), 'type': 'cam', 'name': 'Cam 2', 'notes': '', 'u': 1},
   {'id': 6, 'p': off(-40, -260), 'type': 'bed', 'name': 'Bedding thicket', 'notes': '', 'u': 1},
+  {'id': 7, 'p': off(1200, 2400), 'type': 'other', 'name': 'Far mark', 'notes': '', 'u': 1},
 ]
 async def pm(route):
     req = route.request; hdr = {k: v for k, v in req.headers.items() if k.lower() == 'range'}
@@ -36,13 +37,8 @@ async def main():
           return JSON.stringify({ z: map.getZoom(), pt: q('pt-fill'), ptl: q('pt-line'), lbl: q('pt-lbl'), wma: q('wma-fill'), status: S.status, props: f && f.properties, srcLayers: map.getStyle().layers.filter(x => x.source === 'pt').map(x => x.id + ':' + (x['source-layer'] || '') + ':' + (x.minzoom || '')), wind: !!S.wind }); })()'''))
         print('built parcels:', await pg.evaluate("S.built+' '+S.status.parcels"))
         print('diag2', await pg.evaluate('''JSON.stringify({ at: map.queryRenderedFeatures([250, 520]).map(f => f.layer.id).slice(0, 12), lblVis: map.getLayoutProperty('pt-lbl', 'visibility'), lblFont: map.getLayoutProperty('pt-lbl', 'text-font'), lblField: map.getLayoutProperty('pt-lbl', 'text-field'), glyphs: map.getStyle().glyphs, order: map.getStyle().layers.map(l => l.id).join(',') })'''))
-        await pg.evaluate("map.jumpTo({center:[-94.3985,44.8985], zoom:16.3})"); await pg.wait_for_timeout(9000); await pg.screenshot(path='shots/2-town.png')
-        await pg.mouse.click(195, 380); await pg.wait_for_timeout(2500); await pg.screenshot(path='shots/3-card.png')
-        print('card:', (await pg.inner_text('#sheet'))[:200].replace('\n',' / '))
-        await pg.evaluate("closeSheet(); map.jumpTo({center:[-94.4531,44.80198], zoom:15.4})"); await pg.wait_for_timeout(8000)
-        await pg.mouse.click(120, 300); await pg.wait_for_timeout(2500); await pg.screenshot(path='shots/4-card2.png')
-        print('card2:', (await pg.inner_text('#sheet'))[:200].replace('\n',' / '))
-        await pg.evaluate("closeSheet(); S.base='topo'; applyBase(); map.jumpTo({center:[-94.3985,44.8985], zoom:16.3})"); await pg.wait_for_timeout(9000); await pg.screenshot(path='shots/5-topo.png')
-        await pg.evaluate("S.base='spring'; applyBase()"); await pg.wait_for_timeout(14000); await pg.screenshot(path='shots/6-leaf.png')
+        await pg.evaluate("map.jumpTo({zoom:10.5})"); await pg.wait_for_timeout(7000); await pg.screenshot(path='shots/2-far.png')
+        await pg.evaluate("map.jumpTo({zoom:12.6})"); await pg.wait_for_timeout(7000); await pg.screenshot(path='shots/3-mid.png')
+        print('pins', await pg.evaluate("JSON.stringify([...document.querySelectorAll('.pin')].map(e=>{const r=e.getBoundingClientRect();return [Math.round(r.x),Math.round(r.y)]}))"), 'body', await pg.evaluate("document.body.className"))
         print('\n'.join(logs)); print('FAILS', '\n'.join(sorted(set(fails))[:30])); await b.close()
 asyncio.run(main())

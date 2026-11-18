@@ -26,7 +26,7 @@
  /* legacy names used by older markup */
  --bg:var(--bark);--panel:rgba(27,31,26,.96);--solid:var(--bark);--tx:var(--bone);--mut:var(--lichen);--acc:var(--blaze);--acc2:var(--gold);--blue:#4DA3FF;--bad:var(--rust)}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bark);color:var(--bone);font:400 16px/1.42 var(--f);overflow:hidden;position:fixed;inset:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none;overscroll-behavior:none;font-feature-settings:"tnum" 1}
+html,body{margin:0;height:var(--appH,100%);background:var(--bark);color:var(--bone);font:400 16px/1.42 var(--f);overflow:hidden;position:fixed;top:0;left:0;right:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none;overscroll-behavior:none;font-feature-settings:"tnum" 1}
 #map{position:absolute;inset:0}
 button,select,input,textarea{font:inherit;color:inherit;-webkit-appearance:none;appearance:none}
 input,textarea{-webkit-user-select:text;user-select:text}
@@ -127,14 +127,16 @@ input[type=checkbox]:checked{background:var(--blaze)}input[type=checkbox]:checke
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
 /* ---------- markers ---------- */
-.pin{position:relative;width:40px;height:50px;cursor:pointer;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5)) drop-shadow(0 0 1px rgba(0,0,0,.6))}
+.pin{width:40px;height:50px;cursor:pointer;}
+.pin .pw{position:absolute;inset:0;transform-origin:50% 100%;transition:transform .2s;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5)) drop-shadow(0 0 1px rgba(0,0,0,.6))}
 .pin .pinb{position:absolute;inset:0;width:40px;height:50px;fill:var(--c);stroke:#F4F1E6;stroke-width:2.6;stroke-linejoin:round}
 .pin .pini{position:absolute;left:10px;top:11px;width:20px;height:20px;color:#fff;stroke-width:2.1}
 .pin .bd{position:absolute;right:1px;top:1px;width:13px;height:13px;border-radius:50%;border:2.5px solid #F4F1E6;text-decoration:none}.pin .bd.ok{background:var(--tag)}.pin .bd.no{background:var(--rust)}
 .pin .sh{position:absolute;left:0;top:0;width:16px;height:16px;border-radius:50%;border:2px solid #F4F1E6;font:700 9px/12px var(--f);color:#fff;text-align:center;text-decoration:none}
 .pin .pl{position:absolute;left:37px;top:9px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;background:rgba(21,25,20,.9);color:var(--bone);font:600 12.5px/1.35 var(--f);padding:2px 8px;border-radius:8px;border:1px solid rgba(236,234,223,.2);display:none;pointer-events:none}
 body.zl .pin .pl{display:block}
-.pin:active{transform:scale(.94)}
+.pin:active .pw{transform:scale(.94)}
+body.zmid .pin .pw{transform:scale(.72)}body.zfar .pin .pw{transform:scale(.42)}body.zfar .pin .pini,body.zfar .pin .bd,body.zfar .pin .sh{opacity:0}
 .wpi{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;color:#fff;flex:none}.wpi svg{width:20px;height:20px;stroke-width:2}
 .types{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .ty{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 4px 8px;border-radius:13px;border:1px solid var(--line);background:var(--field);color:var(--lichen);font:600 12.5px/1.15 var(--f);text-align:center;min-height:72px}
@@ -146,7 +148,7 @@ body.zl .pin .pl{display:block}
 .wp .sh{position:absolute;left:-7px;bottom:-7px;width:16px;height:16px;border-radius:50%;border:2px solid #fff;transform:rotate(45deg);font:700 8px/12px var(--f);color:#fff;text-align:center;text-decoration:none}
 .hs{width:30px;height:30px;border-radius:50%;background:#B4122F;border:2.5px solid #fff;color:#fff;font:700 14px/1 var(--f);display:grid;place-items:center;box-shadow:0 0 0 5px rgba(180,18,47,.3),0 2px 6px rgba(0,0,0,.5);cursor:pointer;flex:none}
 .ml{background:rgba(21,25,20,.88);color:var(--bone);border:1px solid rgba(236,234,223,.5);border-radius:11px;padding:2px 8px;font:700 13.5px/1.3 var(--fc);white-space:nowrap;pointer-events:none}.ml.tot{background:var(--blaze);color:#1B1F1A;border-color:#1B1F1A;font-size:14.5px}
-.me{width:24px;height:24px;position:relative}
+.me{width:24px;height:24px}
 .me:before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 7px rgba(77,163,255,.25),0 1px 4px rgba(0,0,0,.5)}
 .me .hd{position:absolute;left:50%;top:-16px;margin-left:-8px;border:8px solid transparent;border-bottom:14px solid var(--blue);border-top:0;display:none}
 .mate{display:flex;flex-direction:column;align-items:center;cursor:pointer}
@@ -751,7 +753,7 @@ const S = {
   wind: null, windHour: 0, cone: null, hot: { species: 'deer', phase: HM.defaultPhase('deer', new Date().getMonth() + 1), publicOnly: true, picks: [] }
 };
 const WPT = { stand: ['Stand', '#D9472F', 'S', 'w-stand'], blind: ['Ground blind', '#7E5CC9', 'B', 'w-blind'], sign: ['Rub / scrape', '#C46A1F', 'R', 'w-rub'], bed: ['Bedding', '#2E8C72', 'Z', 'w-bed'], food: ['Food source', '#A88A1E', 'F', 'w-food'], cam: ['Trail camera', '#46586A', 'C', 'w-cam'], access: ['Parking / truck', '#2A6FCC', 'P', 'w-truck'], sight: ['Deer sighting', '#2F9E59', 'D', 'w-deer'], other: ['Other', '#5E665B', '\u2022', 'w-dot'], blood: ['Blood', '#A80F2B', 'B', 'w-blood'], hit: ['Hit site', '#E5561A', 'H', 'w-hit'], found: ['Recovered', '#1F8F4E', '\u2713', 'w-check'] };
-const pinHtml = (t, name, badges) => `<svg class="pinb" viewBox="0 0 40 50"><path d="M20 48.5S35 34 35 21.2A15 15 0 0 0 5 21.2C5 34 20 48.5 20 48.5z"/></svg><svg class="ic pini"><use href="#${t[3]}"/></svg>${badges || ''}${name ? `<span class="pl">${esc(name)}</span>` : ''}`;
+const pinHtml = (t, name, badges) => `<div class="pw"><svg class="pinb" viewBox="0 0 40 50"><path d="M20 48.5S35 34 35 21.2A15 15 0 0 0 5 21.2C5 34 20 48.5 20 48.5z"/></svg><svg class="ic pini"><use href="#${t[3]}"/></svg>${badges || ''}${name ? `<span class="pl">${esc(name)}</span>` : ''}</div>`;
 const LAYERS = [
   { id: 'wma', name: 'MN Wildlife Management Areas', sub: 'MN DNR', min: 8, sw: '#ff9f1c' },
   { id: 'padus', name: 'Other public land', sub: 'Federal (WPA, refuge), state forest, county: USGS PAD-US', min: 9, sw: '#ff4fa3' },
@@ -805,6 +807,17 @@ const map = new maplibregl.Map({
   }
 });
 map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+/* iPhone Home Screen apps can report a viewport shorter than the screen (status bar, or after the keyboard closes),
+   which leaves an empty band under the bottom bar. Size the app to the real screen in that case. */
+function fitScreen() {
+  const sa = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches), root = document.documentElement;
+  if (!sa) { root.style.removeProperty('--appH'); return; }
+  const portrait = innerHeight >= innerWidth, full = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width);
+  const want = Math.max(innerHeight, full); if (root.style.getPropertyValue('--appH') !== want + 'px') { root.style.setProperty('--appH', want + 'px'); try { map.resize(); } catch (e) { } }
+  if (window.scrollY) window.scrollTo(0, 0);
+}
+fitScreen(); window.addEventListener('resize', fitScreen); window.addEventListener('orientationchange', () => setTimeout(fitScreen, 300));
+document.addEventListener('focusout', () => setTimeout(fitScreen, 120));
 const foldCredits = () => { const el = document.querySelector('.maplibregl-ctrl-attrib'); if (el) el.classList.remove('maplibregl-compact-show'); };
 map.on('load', () => setTimeout(foldCredits, 50)); map.on('sourcedata', () => { if (!foldCredits.done) { foldCredits(); } }); map.on('dragstart', () => { foldCredits.done = true; });
 map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
@@ -968,7 +981,7 @@ function placeHtml(c) {
   let chips = '', title = '', sub = '', note = '', extra = '';
   if (q) {
     chips = `<span class="pchip" style="--pc:${q._c}">${ico('i-layers')}Public land</span>${(() => { const acc = q._acc || (q._src === 'wma' ? 'Open access' : ''); return acc ? `<span class="pchip" style="--pc:${q._closed ? '#E0563B' : /Open/.test(acc) ? '#3FB56B' : '#9BA594'}">${esc(acc.replace(/:.*/, ''))}</span>` : ''; })()}`;
-    title = esc(q._name); sub = esc(q._cat) + (q._mgr ? '<br>Managed by ' + esc(q._mgr) : '');
+    title = esc(q._name); sub = esc(q._cat) + (q._mgr ? '<br>Managed by ' + esc(/[a-z]/.test(q._mgr) ? q._mgr : tcase(q._mgr)) : '');
     facts.push(fact('Acres', q._acres ? Math.round(q._acres).toLocaleString() : ''));
     if (pr && pr.owner) extra = `<div class="prow">${ico('i-saved')}<span>Parcel owner on record: <b>${esc(tcase(pr.owner))}</b></span></div>`;
     note = q._closed ? 'This unit is marked closed to the public.' : 'Check the posted rules and the current regulations for this unit before you hunt.';
@@ -1092,7 +1105,7 @@ async function loadLayer(id) {
 }
 let rtimer; function refresh() { clearTimeout(rtimer); rtimer = setTimeout(() => LAYERS.forEach(l => l.min && loadLayer(l.id)), 350); }
 map.on('moveend', refresh);
-const zlab = () => document.body.classList.toggle('zl', map.getZoom() >= 14.6); map.on('zoomend', zlab); map.on('load', zlab);
+const zlab = () => { const z = map.getZoom(), c = document.body.classList; c.toggle('zl', z >= 14.6); c.toggle('zmid', z < 13.5 && z >= 11.5); c.toggle('zfar', z < 11.5); }; map.on('zoom', zlab); map.on('load', zlab);
 
 async function overpass(q, signal) {
   const r = await fetch(SRC.overpass, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, signal });
@@ -1163,6 +1176,7 @@ map.on('click', e => {
     card.par = { owner: rg ? (p.owner || p.ownername) : (p.owner_name || p.tax_name), more: rg ? '' : p.owner_more, addr: rg ? (p.address || p.parceladdr) : [p.anumber && p.anumber !== '0' ? p.anumber : '', p.st_name, p.st_pos_typ].filter(Boolean).join(' '),
       ac: +(rg ? (p.ll_gisacre || p.gisacre || (p.calcarea ? p.calcarea / 4046.8564 : 0)) : (p.acres_deed > 0 ? p.acres_deed : p.acres_poly)) || 0, pin: rg ? (p.parcelnumb || p.lrid) : p.county_pin, twp: p.ctu_name, co: p.co_name, sec: p.section, t: p.township, r: p.range }; }
   if (popup) popup.remove(); placeDot(ll); if (meOk) drawRuler(ll); openSheet('place', card);
+  requestAnimationFrame(() => { const sh = $('#sheet'), top = innerHeight - sh.offsetHeight - (parseFloat(getComputedStyle(sh).bottom) || 0), y = e.point.y; if (sh.offsetHeight && y > top - 40) map.panBy([0, y - Math.max(120, top / 2)], { duration: 350 }); });
 });
 map.on('contextmenu', e => editWp({ id: 0, p: [e.lngLat.lng, e.lngLat.lat], type: 'stand', name: '', notes: '' }));
 
