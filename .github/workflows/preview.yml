@@ -24,4 +24,4 @@ jobs:
           for k in range(0,len(fs),3):
             ims=[Image.open(f).resize((390,844)) for f in fs[k:k+3]]; o=Image.new('RGB',(390*len(ims),844)); [o.paste(im,(390*j,0)) for j,im in enumerate(ims)]; o.save(f'../sheet{k//3}.png')
           "
-          cd .. && mkdir -p /tmp/out && cp sheet*.png /tmp/out/ && cd /tmp/out && git init -q && git checkout -q -b preview-shots && git add -A && git -c user.name=bot -c user.email=bot@example.com commit -qm shots && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" preview-shots
+          cd .. && mkdir -p /tmp/out && cp sheet*.png /tmp/out/ && (cp shots/*.jpg /tmp/out/ 2>/dev/null || true) && cd /tmp/out && git init -q && git checkout -q -b preview-shots && git add -A && git -c user.name=bot -c user.email=bot@example.com commit -qm shots && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" preview-shots
