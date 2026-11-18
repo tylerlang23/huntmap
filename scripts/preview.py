@@ -41,13 +41,18 @@ async def main():
         await pg.route('https://api.anthropic.com/**', fake)
         await pg.evaluate("localStorage.setItem('huntmap.akey', JSON.stringify('sk-ant-test'))"); await pg.reload(); await pg.wait_for_timeout(14000)
         await pg.evaluate("map.jumpTo({zoom:15.2})"); await pg.wait_for_timeout(5000)
-        await pg.evaluate("openSheet('scout')"); await pg.wait_for_timeout(500); await pg.screenshot(path='shots/1-scout.png')
-        await pg.evaluate("document.getElementById('scPub').checked=false"); await pg.click('[data-act=sc-run]'); await pg.wait_for_timeout(9000)
-        await pg.screenshot(path='shots/2-results.png')
-        print('centers', await pg.evaluate("JSON.stringify([map.getCenter(), SC.res && SC.res.spots.map(s=>[s.n,s.ll,s.pub])])"))
-        await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(600); await pg.screenshot(path='shots/3-pins.png')
-        import base64
-        open('shots/4-scoutpic.jpg','wb').write(base64.b64decode(cap.get('img','')))
-        print('PROMPT', cap.get('txt','')[:2500])
+        await pg.unroute('https://api.anthropic.com/**')
+        async def fake2(route):
+            body = _j.loads(route.request.post_data); cap['txt'] = body['messages'][0]['content'][1]['text']
+            t = "**Getting in**\n- Park on Wells Ave and walk the field edge west of [1] with a NW wind.\n\n**Points of interest**\n- [2] Thick cattail bedding south of the road.\n- [3] Timber edge funnel.\n\n**Best bet tonight**\n- Sit [1] facing [3].\n\n```json\n" + _j.dumps({"points":[{"n":1,"x":500,"y":500,"label":"Field edge stand","type":"stand"},{"n":2,"x":300,"y":700,"label":"Cattail bedding","type":"bed"},{"n":3,"x":700,"y":300,"label":"Timber funnel","type":"travel"}]}) + "\n```"
+            await route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin':'*'}, body=_j.dumps({"usage":{"input_tokens":3000,"output_tokens":900},"content":[{"type":"text","text":t}]}))
+        await pg.route('https://api.anthropic.com/**', fake2)
+        await pg.evaluate("openSheet('tools')"); await pg.wait_for_timeout(400); await pg.click('[data-act=ask-view]'); await pg.wait_for_timeout(8000)
+        await pg.screenshot(path='shots/1-view-ask.png')
+        await pg.click('[data-act=ask-here]'); await pg.wait_for_timeout(2500)
+        await pg.evaluate("document.getElementById('askOut').scrollIntoView()"); await pg.wait_for_timeout(300); await pg.screenshot(path='shots/2-answer.png')
+        print('pts', await pg.evaluate("JSON.stringify(VW.pts)"))
+        await pg.click('[data-act=vw-hide]'); await pg.wait_for_timeout(800); await pg.screenshot(path='shots/3-map.png')
+        print('PROMPT', cap.get('txt','')[:3000])
         print('\n'.join(logs)); print('FAILS', '\n'.join(sorted(set(fails))[:30])); await b.close()
 asyncio.run(main())
