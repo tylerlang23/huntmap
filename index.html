@@ -251,6 +251,8 @@ pre.ctx{white-space:pre-wrap;font:13px/1.45 var(--f);color:var(--lichen);backgro
 .scr .g{flex:1;min-width:0}.scr small{display:block;color:var(--lichen);font-size:13px;margin-top:1px}.scr p{margin:6px 0 0;font-size:14.5px;line-height:1.4}.scr .btns{margin-top:8px}
 
 .vref{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:11px;border:0;background:var(--blaze);color:#1B1F1A;font:700 13px/1 var(--fc);vertical-align:1px;margin:0 2px;cursor:pointer}
+.mvn{width:28px;height:28px;border-style:solid}.mvn b{font-size:13px}
+.mvleg{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 4px;font-size:13px;color:var(--lichen)}.mvleg span{display:flex;align-items:center;gap:6px}.mvleg i{display:inline-block;width:26px;height:0;border-top:4px dashed #FF6B1A}.mvleg i.lt{border-top:3px dotted #F7E27A}.mvleg i.ls{width:12px;height:12px;border:0;border-radius:50%;background:#D9472F}
 /* ---------- tools hub ---------- */
 .tool{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--bone)}
 .tool:last-child{border-bottom:0}
@@ -1388,7 +1390,7 @@ function scPublicAt(ll) { const pl = ['wma-fill', 'padus-fill'].filter(l => map.
 async function scoutRun() {
   if (SC.busy || !AK.key) return; const out = $('#scOut'); try { auCheck(); } catch (e) { out.innerHTML = `<div class="aa err">${esc(e.message)}</div>`; return; } SC.busy = true; scClear(); out.innerHTML = '<div class="aa wait">Taking a picture of this map view…</div>'; out.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   try {
-    if (map.getZoom() < 13) throw new Error('Zoom in to a property or a few square miles first (the map is too far out to judge spots).');
+    if (map.getZoom() < MINZ) throw new Error('Zoom in closer first (about a mile across or less).');
     const pic = await mapPicture(null, { grid: true }); if (!pic) throw new Error('Could not take the map picture.');
     out.innerHTML = '<div class="aa wait">Claude is studying the map. This usually takes 20 to 40 seconds…</div>';
     const T = scTarget(), w = windAt(T.k), CW = map.getContainer().clientWidth, CH = map.getContainer().clientHeight;
@@ -1432,6 +1434,89 @@ const VW = { pts: [], mk: [] };
 function vwClear() { VW.mk.forEach(m => m.remove()); VW.mk = []; VW.pts = []; }
 function vwDraw() { VW.mk.forEach(m => m.remove()); VW.mk = []; VW.pts.forEach(p => { const el = document.createElement('div'); el.className = 'scp'; el.style.setProperty('--c', (WPT[p.wt] || WPT.other)[1]); el.innerHTML = `<b>${p.n}</b>`; el.title = p.label; el.addEventListener('click', ev => { ev.stopPropagation(); if (ASK) openSheet('ask'); toast(p.n + '. ' + p.label, 3000); }); VW.mk.push(new maplibregl.Marker({ element: el }).setLngLat(p.ll).addTo(map)); }); }
 const vwRefs = html => VW.pts.length ? html.replace(/\[(\d{1,2})\]/g, (m, n) => VW.pts.some(p => p.n == n) ? `<button class="vref" data-act="vw-go" data-n="${n}">${n}</button>` : m) : html;
+
+/* ---------------- zoom gate for Claude map reading ---------------- */
+const MINZ = 13.5;
+const viewMiles = () => HM.hav(map.unproject([0, map.getContainer().clientHeight / 2]).toArray(), map.unproject([map.getContainer().clientWidth, map.getContainer().clientHeight / 2]).toArray()) / 1609.34;
+const zoomGate = () => map.getZoom() >= MINZ ? '' : `<div class="note">Zoom in closer first. Claude reads the photos well when the screen covers about a mile across or less; right now it shows about ${viewMiles().toFixed(1)} miles across.</div><div class="btns"><button class="btn p" data-act="zoom-in-gate" style="flex:1">Zoom in here</button></div>`;
+function seasonPhase(d = new Date()) {
+  const m = d.getMonth() + 1, day = d.getDate(), md = m * 100 + day;
+  if (md < 301) return 'late season: cold weather, deer focused on high-energy food close to thermal cover, bucks recovering from the rut';
+  if (md < 901) return 'off season';
+  if (md < 1001) return 'early season: summer-to-fall food patterns, bachelor groups, predictable bed-to-food movement';
+  if (md < 1025) return 'October lull into pre-rut: scrapes and rubs increasing, acorns and crops changing food sources';
+  if (md < 1105) return 'pre-rut and seeking: bucks cruising downwind of doe bedding, scrape lines active, more daylight movement';
+  if (md < 1120) return 'peak rut and chasing: bucks with does, movement all day, funnels and doe bedding are key; Minnesota firearm season adds heavy hunting pressure';
+  if (md < 1210) return 'post-rut: bucks tired and pressured after firearm season, recovering near thick security cover and food, some second-rut activity';
+  return 'late season: cold weather, deer focused on high-energy food close to thermal cover';
+}
+
+/* ---------------- deer movement with Claude ---------------- */
+let MV = { time: 'eve', trails: true, note: '', busy: false, res: null, mk: [] };
+function mvTarget() {
+  const W = S.wind, now = Date.now(); let t = now, label = 'now';
+  if (W && W.daily) { const di = W.daily.time.indexOf(localKey(now).slice(0, 10)); if (di >= 0) {
+    const pick = d => MV.time === 'morn' ? new Date(W.daily.sunrise[d]).getTime() : MV.time === 'eve' ? new Date(W.daily.sunset[d]).getTime() - 36e5 : new Date(W.daily.time[d] + 'T12:00').getTime();
+    t = pick(di); label = { morn: 'this morning', mid: 'midday today', eve: 'this evening' }[MV.time]; if (t < now - 2 * 36e5 && W.daily.time[di + 1]) { t = pick(di + 1); label = { morn: 'tomorrow morning', mid: 'midday tomorrow', eve: 'tomorrow evening' }[MV.time]; } } }
+  return { k: Math.max(0, Math.round((t - now) / 36e5)), label, t };
+}
+function mvArrow() {
+  if (map.hasImage && map.hasImage('mv-arrow')) return; const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d');
+  g.fillStyle = '#FF6B1A'; g.strokeStyle = '#1B1F1A'; g.lineWidth = 3; g.beginPath(); g.moveTo(8, 6); g.lineTo(26, 16); g.lineTo(8, 26); g.lineTo(13, 16); g.closePath(); g.stroke(); g.fill();
+  try { map.addImage('mv-arrow', g.getImageData(0, 0, 32, 32)); } catch (e) { }
+}
+function mvClear() { MV.mk.forEach(m => m.remove()); MV.mk = []; MV.res = null; if (map.getSource('mv')) map.getSource('mv').setData({ type: 'FeatureCollection', features: [] }); }
+function mvDraw() {
+  const R = MV.res; if (!R) return; mvArrow();
+  const fs = R.routes.map(r => ({ type: 'Feature', properties: { k: 'route', n: r.n }, geometry: { type: 'LineString', coordinates: r.ll } })).concat(R.trails.map(t => ({ type: 'Feature', properties: { k: 'trail' }, geometry: { type: 'LineString', coordinates: t.ll } })));
+  const fc = { type: 'FeatureCollection', features: fs };
+  if (!map.getSource('mv')) {
+    map.addSource('mv', { type: 'geojson', data: fc });
+    map.addLayer({ id: 'mv-trail', type: 'line', source: 'mv', filter: ['==', ['get', 'k'], 'trail'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#F7E27A', 'line-width': 2.5, 'line-dasharray': [.6, 1.8], 'line-opacity': .95 } });
+    map.addLayer({ id: 'mv-case', type: 'line', source: 'mv', filter: ['==', ['get', 'k'], 'route'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(27,31,26,.75)', 'line-width': 8 } });
+    map.addLayer({ id: 'mv-route', type: 'line', source: 'mv', filter: ['==', ['get', 'k'], 'route'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#FF6B1A', 'line-width': 4, 'line-dasharray': [2, 1.2] } });
+    map.addLayer({ id: 'mv-arrows', type: 'symbol', source: 'mv', filter: ['==', ['get', 'k'], 'route'], layout: { 'symbol-placement': 'line', 'symbol-spacing': 70, 'icon-image': 'mv-arrow', 'icon-size': .55, 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true } });
+  } else map.getSource('mv').setData(fc);
+  MV.mk.forEach(m => m.remove()); MV.mk = [];
+  R.routes.forEach(r => { const mid = r.ll[Math.floor(r.ll.length / 2)], el = document.createElement('div'); el.className = 'scp mvn'; el.style.setProperty('--c', '#FF6B1A'); el.innerHTML = `<b>${r.n}</b>`; el.addEventListener('click', ev => { ev.stopPropagation(); openSheet('move'); mvList('r' + r.n); }); MV.mk.push(new maplibregl.Marker({ element: el }).setLngLat(mid).addTo(map)); });
+  R.spots.forEach(s => { const el = document.createElement('div'); el.className = 'scp'; el.style.setProperty('--c', '#D9472F'); el.innerHTML = `<b>${s.id}</b>`; el.addEventListener('click', ev => { ev.stopPropagation(); openSheet('move'); mvList(s.id); }); MV.mk.push(new maplibregl.Marker({ element: el }).setLngLat(s.ll).addTo(map)); });
+}
+function mvList(focus) {
+  const out = $('#mvOut'); if (!out || !MV.res) return; const R = MV.res;
+  out.innerHTML = (R.summary ? `<div class="aa">${esc(R.summary)}</div>` : '') +
+    `<div class="mvleg"><span><i class="lr"></i>Likely route</span><span><i class="lt"></i>Trail seen in photo</span><span><i class="ls"></i>Ambush spot</span></div>` +
+    R.routes.map(r => `<div class="scr${focus === 'r' + r.n ? ' on' : ''}" id="mv-r${r.n}"><div class="scn" style="--c:#FF6B1A">${r.n}</div><div class="g"><b>${esc(r.from || 'Bedding')} to ${esc(r.to || 'food')}</b><small>${esc(r.when || '')}${r.confidence ? ', ' + esc(r.confidence) + ' confidence' : ''}</small><p>${esc(r.why || '')}</p><div class="btns"><button class="btn s" data-act="mv-go" data-k="r${r.n}">Show</button><button class="btn s" data-act="mv-trk" data-n="${r.n}">Save as track</button></div></div></div>`).join('') +
+    R.spots.map(s => `<div class="scr${focus === s.id ? ' on' : ''}" id="mv-${s.id}"><div class="scn" style="--c:#D9472F">${s.id}</div><div class="g"><b>${esc(s.label || 'Ambush spot')}</b><small>${s.winds && s.winds.length ? 'Winds ' + esc(s.winds.join('/')) : ''}${s.pub ? (s.winds && s.winds.length ? ', ' : '') + esc(s.pub) : s.pub === '' ? ', private land' : ''}</small><p>${esc(s.why || '')}</p><div class="btns"><button class="btn s" data-act="mv-go" data-k="${s.id}">Show</button><button class="btn s" data-act="mv-mark" data-k="${s.id}">Save as mark</button></div></div></div>`).join('') +
+    (R.trails.length ? `<div class="mut">${R.trails.length} trail${R.trails.length > 1 ? 's' : ''} traced from the photos (yellow dotted). Check them on foot; some may be cattle paths, ditches or old two-tracks.</div>` : (MV.trails ? '<div class="mut">No clear trails could be traced in these photos. Leaf-off with the Trail enhancer on usually shows them best.</div>' : '')) +
+    `<div class="btns"><button class="btn" data-act="mv-hide">Look at the map</button><button class="btn" data-act="mv-clear">Clear from map</button></div><div class="mut">Routes are Claude's best read of the photos, terrain, season and forecast, not tracked deer. Use them to decide where to scout.</div>`;
+  if (focus) setTimeout(() => { const el = document.getElementById('mv-' + focus); if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 60);
+}
+async function moveRun() {
+  if (MV.busy || !AK.key) return; const out = $('#mvOut'); try { auCheck(); if (map.getZoom() < MINZ) throw new Error('Zoom in closer first.'); } catch (e) { out.innerHTML = `<div class="aa err">${esc(e.message)}</div>`; return; }
+  MV.busy = true; mvClear(); out.innerHTML = '<div class="aa wait">Taking a picture of this map view…</div>'; out.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  try {
+    const pic = await mapPicture(null, { grid: true }); if (!pic) throw new Error('Could not take the map picture.');
+    out.innerHTML = '<div class="aa wait">Claude is reading the cover, terrain and wind. This usually takes 30 to 60 seconds…</div>';
+    const T = mvTarget(), w = windAt(T.k);
+    const L = [viewContext().replace(/^I am a whitetail deer hunter[^\n]*\n/, ''),
+      `Today is ${new Date().toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}. Season phase in Minnesota: ${seasonPhase()}.`,
+      `I want to know how deer are likely moving ${T.label} (${new Date(T.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}).` + (w ? ` Forecast then: wind from ${HM.compass(w.dir)} ${Math.round(w.spd)} mph gusting ${Math.round(w.gust)}, ${Math.round(w.temp)}°F, ${WX(w.code)[0].toLowerCase()}${w.pop >= 30 ? ', ' + w.pop + '% chance of precipitation' : ''}.` : ''),
+      MV.note ? 'My notes: ' + MV.note : '',
+      'Using the picture, the season, time of day and weather: (1) draw the 2 to 5 most likely deer travel routes for that time, from where deer are coming from to where they are going (for example bedding cover to food in the evening, food back to bedding in the morning, or doe bedding to doe bedding for cruising bucks). Routes should follow realistic deer travel: edges, inside corners, ditches, creek crossings, saddles and pinch points, and they should account for the wind (deer often travel with the wind in their face or quartering) and for hunting pressure from roads and parking.',
+      MV.trails ? '(2) Trace any game trails you can actually see in the photo as thin lines. Only include trails you can see; leave the list empty if none are visible.' : '(2) Leave the trails list empty.',
+      '(3) Give 1 to 4 ambush spots along the routes that work for the forecast wind, at least 30 yards off the route and not upwind of where the deer are coming from.' + (SC.pub ? ' Only put ambush spots on shaded public land.' : ''),
+      'Give every position as x and y on a 0 to 1000 scale from the top-left corner of the picture (use the grid; column 4 spans x 400 to 500). Routes need 4 to 12 points each, in the direction deer travel.',
+      'Answer with only JSON, no other text: {"summary":"2 or 3 sentences","routes":[{"n":1,"from":"bedding cover","to":"cut corn","when":"last hour of light","confidence":"high|medium|low","why":"1 or 2 sentences","pts":[[x,y],[x,y]]}],"trails":[{"pts":[[x,y],[x,y]]}],"ambush":[{"x":0,"y":0,"label":"3 to 5 words","winds":["NW"],"why":"1 sentence"}]}'].filter(Boolean);
+    const txt = await claudeCall({ max_tokens: 4000, system: 'You are an experienced Minnesota whitetail hunter who reads aerial photos and topo for deer movement. Be realistic and specific, and say how confident you are. Never suggest trespassing.', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: pic.url.split(',')[1] } }, { type: 'text', text: L.join('\n') }] }] }), m = txt.match(/\{[\s\S]*\}/);
+    let d; try { d = JSON.parse(m[0]); } catch (e) { throw new Error('Claude answered in an unexpected format. Try again.'); }
+    const line = pts => (pts || []).filter(p => p && isFinite(p[0]) && isFinite(p[1])).map(p => scLL(pic.lat, +p[0], +p[1]));
+    const routes = (d.routes || []).slice(0, 6).map((r, i) => Object.assign(r, { n: i + 1, ll: line(r.pts) })).filter(r => r.ll.length > 1);
+    const trails = (d.trails || []).slice(0, 20).map(t => ({ ll: line(t.pts) })).filter(t => t.ll.length > 1);
+    const spots = (d.ambush || []).filter(s => isFinite(s.x) && isFinite(s.y)).slice(0, 6).map((s, i) => { const ll = scLL(pic.lat, +s.x, +s.y); return Object.assign(s, { id: String.fromCharCode(65 + i), ll, pub: scPublicAt(ll) }); });
+    MV.res = { summary: d.summary || '', routes, trails, spots }; mvDraw(); mvList(); setTimeout(() => out.scrollIntoView({ block: 'start', behavior: 'smooth' }), 80);
+  } catch (e) { out.innerHTML = `<div class="aa err">${esc(navigator.onLine === false ? 'No signal. This needs service.' : e.message || 'Something went wrong.')}</div>`; }
+  MV.busy = false;
+}
 
 /* ---------------- ask Claude about a spot ---------------- */
 const AK = { key: store.get('akey', ''), model: 'claude-sonnet-5-5' };
@@ -2097,7 +2182,7 @@ const HELP = [
   { id: 'blood', g: 'In the field', t: 'Following a blood trail', b: `<ol><li>Open ${K('i-tools', 'Tools')} and tap Blood trail. Allow the camera.</li><li>Point the phone at the ground. In Highlight view, anything blood-colored turns bright blue.</li><li>Use the slider: lower for fresh red blood only, higher to catch dark or dried blood.</li><li>Tap Hit site where the deer was standing, Mark blood at each find, and Found it at the deer.</li><li>Tap Finish to save the trail you walked.</li></ol><p>Red leaves and some bark can light up too. Use it to help your eyes, not replace them.</p>` },
   { id: 'hot', g: 'In the field', t: 'Hot spots for scouting', b: `<p>Hot spots scores the area on your screen using land cover, terrain, distance from roads and today's wind. Pick the animal and the time of season, then tap Analyze this view.</p><p>Numbered pins show the best spots and why. Treat it as a short list to go look at, not a guarantee. Tap the red Clear hot spots button to remove them.</p>` },
   { id: 'offline', g: 'In the field', t: 'Using the map with no signal', b: `<ol><li>At home, with signal, zoom the map to the property.</li><li>Open ${K('i-tools', 'Tools')} and tap Offline maps.</li><li>Pick the map styles you want, then Standard detail.</li><li>Tap Download this area and keep the app open until it finishes.</li></ol><p>In the field, the saved area works with no bars: photos, parcels, public land and the last wind forecast. Turn on airplane mode at home once to check it.</p>` },
-  { id: 'ask', g: 'In the field', t: 'Ask Claude and Scout with Claude', b: `<p><b>Scout with Claude</b> (in ${K('i-tools', 'Tools')}): zoom to an area, choose when you are hunting and what you are looking for, and Claude places numbered suggested spots on the map with the reason for each. Save the ones you like as marks. This needs an Anthropic API key.</p><p>Tap any spot on the map and choose <b>Ask Claude about this spot</b>, or open a waypoint and choose Ask Claude. You can also use ${K('i-tools', 'Tools')} for the middle of the map.</p><ol><li>The app takes a picture of the map with your marks on it and gathers the land type, wind, weather, sun, moon and your nearby marks.</li><li>Pick a suggested question or type your own.</li><li>Tap <b>Open in Claude</b>. Your question is filled in and the map picture is copied, so tap the message box, Paste, then send. With an API key saved, the answer shows in the app instead.</li></ol><p>If you have an Anthropic API key, you can save it in the optional settings so answers appear right in the app. Owner names are never sent.</p>` },
+  { id: 'ask', g: 'In the field', t: 'Ask Claude, Scout and Deer movement', b: `<p><b>Deer movement</b> (in ${K('i-tools', 'Tools')}): pick morning, midday or evening and Claude draws likely travel routes (orange arrows), trails it can see in the photos (yellow dots) and lettered ambush spots for the forecast wind. These work when the map shows about a mile across or less.</p><p><b>Scout with Claude</b> (in ${K('i-tools', 'Tools')}): zoom to an area, choose when you are hunting and what you are looking for, and Claude places numbered suggested spots on the map with the reason for each. Save the ones you like as marks. This needs an Anthropic API key.</p><p>Tap any spot on the map and choose <b>Ask Claude about this spot</b>, or open a waypoint and choose Ask Claude. You can also use ${K('i-tools', 'Tools')} for the middle of the map.</p><ol><li>The app takes a picture of the map with your marks on it and gathers the land type, wind, weather, sun, moon and your nearby marks.</li><li>Pick a suggested question or type your own.</li><li>Tap <b>Open in Claude</b>. Your question is filled in and the map picture is copied, so tap the message box, Paste, then send. With an API key saved, the answer shows in the app instead.</li></ol><p>If you have an Anthropic API key, you can save it in the optional settings so answers appear right in the app. Owner names are never sent.</p>` },
   { id: 'party', g: 'Your group', t: 'Hunting as a party', b: `<p>${K('i-party', 'Party')} lets a group see each other on the map and send quick alerts.</p><ol><li>One person taps Start a party and shares the 6-letter code.</li><li>Everyone else taps Join with a code.</li><li>Members appear on the map with their initials. Grey means they have not updated in a while.</li><li>Tap Deer down, Coming your way, Need help and the rest to alert everyone with your location.</li><li>Turn on Share with the party on any mark or sit to share it.</li></ol><p>You can pause location sharing at any time. Right now the party runs in demo mode with sample hunters, until a group server is set up.</p>` },
   { id: 'log', g: 'Saving and syncing', t: 'Your hunt log', b: `<p>Log each sit so you learn which stands produce and on which winds.</p><ol><li>Open ${K('i-saved', 'Saved')} and tap Log a sit, or open a stand and tap Log a sit.</li><li>Pick the stand and times, and tap + for each deer you saw.</li><li>Tap Save sit. Wind, temperature, pressure and the moon are filled in for you.</li></ol><p>Saved shows deer per sit for each stand and which wind has been best.</p>` },
   { id: 'sync', g: 'Saving and syncing', t: 'Keeping phone and computer in sync', b: `<p>Your marks, tracks and log can stay the same on every device through a private file on your GitHub account.</p><ol><li>Open ${K('i-saved', 'Saved')} and scroll to Sync between devices.</li><li>Tap Make a token on GitHub, keep only the gist box ticked, and generate the token.</li><li>Paste it and tap Connect. Do the same on each device.</li></ol><p>Treat the token like a password.</p>` },
@@ -2138,7 +2223,7 @@ function renderIntro() {
 }
 
 /* ---------------- panels ---------------- */
-const SHEETS = { layers: ['i-layers', 'layers'], tools: ['i-tools', 'start'], mark: ['i-mark', 'mark'], party: ['i-party', 'party'], saved: ['i-saved', 'log'], wind: ['i-wind', 'wind'], wp: ['i-mark', 'mark'], track: ['i-track', 'track'], hot: ['i-hot', 'hot'], offline: ['i-offline', 'offline'], log: ['i-log', 'log'], access: ['i-guide', 'layers'], search: ['i-search', null], sharetxt: ['i-share', null], help: ['i-help', null], topic: ['i-help', null], pjoin: ['i-party', 'party'], alertmsg: ['i-chat', 'party'], ask: ['i-chat', 'ask'], scout: ['i-hot', 'ask'], aulim: ['i-chat', 'ask'] };
+const SHEETS = { layers: ['i-layers', 'layers'], tools: ['i-tools', 'start'], mark: ['i-mark', 'mark'], party: ['i-party', 'party'], saved: ['i-saved', 'log'], wind: ['i-wind', 'wind'], wp: ['i-mark', 'mark'], track: ['i-track', 'track'], hot: ['i-hot', 'hot'], offline: ['i-offline', 'offline'], log: ['i-log', 'log'], access: ['i-guide', 'layers'], search: ['i-search', null], sharetxt: ['i-share', null], help: ['i-help', null], topic: ['i-help', null], pjoin: ['i-party', 'party'], alertmsg: ['i-chat', 'party'], ask: ['i-chat', 'ask'], scout: ['i-hot', 'ask'], aulim: ['i-chat', 'ask'], move: ['i-track', 'ask'] };
 function closeSheet() { drawOffAreas(false); if ($('#sheet').dataset.p === 'place') clearPlace(); const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
 function openSheet(p, arg) {
   if ($('#sheet').dataset.p === 'place' && p !== 'place') clearPlace();
@@ -2154,7 +2239,7 @@ function openSheet(p, arg) {
   } else if (p === 'tools') {
     h = head('Tools') + toolRow('open', 'i-measure', 'Measure', 'Distance between points and the acres inside', ' data-p="measure"') + toolRow('open', 'i-track', 'Record a track', S.rec && !S.rec.blood ? 'Recording now. Tap to stop.' : 'Save your path in and out', ' data-p="track"') +
       toolRow('blood-open', 'i-blood', 'Blood trail', B.on ? 'In progress. Tap to go back to the camera.' : 'Camera view that makes blood stand out') + toolRow('open', 'i-hot', 'Hot spots', 'Likely spots for deer, turkey, pheasant and ducks', ' data-p="hot"') +
-      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('open', 'i-hot', 'Scout with Claude', 'Suggested stand, bedding and travel spots for this map view', ' data-p="scout"') + toolRow('ask-view', 'i-chat', 'Ask Claude about this area', 'How to approach it, points of interest and where deer are likely today') + toolRow('open', 'i-wind', 'Weather and wind', 'Conditions, 7-day forecast, wind, shooting light and moon', ' data-p="wind"') +
+      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('open', 'i-track', 'Deer movement', 'Likely travel routes, visible trails and ambush spots for this view', ' data-p="move"') + toolRow('open', 'i-hot', 'Scout with Claude', 'Suggested stand, bedding and travel spots for this map view', ' data-p="scout"') + toolRow('ask-view', 'i-chat', 'Ask Claude about this area', 'How to approach it, points of interest and where deer are likely today') + toolRow('open', 'i-wind', 'Weather and wind', 'Conditions, 7-day forecast, wind, shooting light and moon', ' data-p="wind"') +
       `<h3>Help</h3>` + toolRow('open', 'i-help', 'How to use ' + APP, 'Short guides for every part of the app', ' data-p="help"') + toolRow('intro', 'i-phone', 'Replay the welcome tour', 'The quick tour from the first time you opened the app');
   } else if (p === 'mark') h = head('Mark a spot') + toolRow('mark-me', 'i-loc', 'Where I am', 'Drops a mark at your GPS position') + toolRow('mark-tap', 'i-mark', 'Tap the map', 'Then tap the spot you want to mark') + toolRow('mark-center', 'i-north', 'Center of the screen', 'Marks the middle of what you are looking at') + `<div class="mut" style="margin-top:8px">You can also tap anything on the map and choose Mark this spot.</div>`;
   else if (p === 'measure') { setMode('measure'); return; }
@@ -2258,6 +2343,15 @@ function openSheet(p, arg) {
       `<label class="fld"><span>Monthly budget in dollars</span><input id="auMon" type="number" inputmode="decimal" min="0.5" step="0.5" value="${AU.maxMon}"></label>` +
       `<div class="wx2"><div><small>Today</small><b>${AU.n} request${AU.n === 1 ? '' : 's'}</b></div><div><small>This month</small><b>$${AU.usd.toFixed(2)}</b></div></div><div class="mut">All time on this phone: $${AU.all.toFixed(2)}.</div>` +
       `<div class="mut">A question is about 1 cent and a scout about 2 cents. Follow-up questions resend the map picture, so a long back-and-forth costs a bit more.</div><div class="btns"><button class="btn p" data-act="au-save">Save limits</button></div>`;
+  } else if (p === 'move') {
+    const T = mvTarget();
+    h = head('Deer movement') + `<div class="mut" style="margin:-4px 0 10px">Claude reads the cover, terrain, season and forecast in this map view and draws where deer are likely traveling, the trails it can see in the photos, and spots to ambush them.</div>` +
+      (!AK.key ? `<div class="note">This needs an Anthropic API key so the routes can be drawn on the map.</div><label class="fld"><span>API key</span><input id="askKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="btns"><button class="btn p" data-act="ask-key" data-back="move">Save key</button></div>` + KEYHELP :
+      `<div class="fld"><span>When?</span><div class="seg">${[['morn', 'Morning'], ['mid', 'Midday'], ['eve', 'Evening']].map(([k, l]) => `<button data-act="mv-time" data-k="${k}" class="${MV.time === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>` +
+      `<label class="row"><span class="g">Trace trails in the photos<br><small>Works best on Leaf-off with the Trail enhancer on, zoomed in to a quarter mile or so</small></span><input type="checkbox" id="mvTr" ${MV.trails ? 'checked' : ''}></label>` +
+      `<label class="fld"><span>Anything else? (optional)</span><textarea id="mvNote" rows="2" placeholder="Corn was just picked on the east side">${esc(MV.note)}</textarea></label>` +
+      (zoomGate() || `<div class="btns"><button class="btn p" data-act="mv-run" style="flex:1">${ico('i-track')}Show deer movement</button></div><div class="mut">For ${T.label}, during the ${esc(seasonPhase().split(':')[0])}. About 3 cents a run.</div>`) + auLine()) +
+      `<div id="mvOut"></div>`;
   } else if (p === 'scout') {
     const T = scTarget();
     h = head('Scout with Claude') + `<div class="mut" style="margin:-4px 0 10px">Claude studies everything in the current map view with the forecast and suggests where to hunt. The spots appear on the map as numbered pins.</div>` +
@@ -2266,7 +2360,7 @@ function openSheet(p, arg) {
       `<div class="fld"><span>What are you looking for?</span><div class="qchips wrap">${SC_FOCUS.map(f => `<button class="qchip${SC.focus === f ? ' on' : ''}" data-act="sc-focus">${esc(f)}</button>`).join('')}</div></div>` +
       `<label class="fld"><span>Anything else? (optional)</span><textarea id="scNote" rows="2" placeholder="Bow only, I can walk in from the north lot">${esc(SC.note)}</textarea></label>` +
       `<label class="row"><span class="g">Public land only<br><small>Leaves out spots on private parcels</small></span><input type="checkbox" id="scPub" ${SC.pub ? 'checked' : ''}></label>` +
-      `<div class="btns"><button class="btn p" data-act="sc-run" style="flex:1">${ico('i-hot')}Scout this map view</button></div><div class="mut">Hunting ${T.label}. Zoom the map to the area you want first. Each scout costs about 2 cents on your API account.</div>` + auLine()) +
+      (zoomGate() || `<div class="btns"><button class="btn p" data-act="sc-run" style="flex:1">${ico('i-hot')}Scout this map view</button></div>`) + `<div class="mut">Hunting ${T.label}. Zoom the map to the area you want first. Each scout costs about 2 cents on your API account.</div>` + auLine()) +
       `<div id="scOut"></div>`;
   } else if (p === 'sharetxt') { h = head('Share waypoint') + `<div class="mut">Copy this text and send it:</div><label class="fld"><textarea rows="6" readonly onclick="this.select()">${esc(arg)}</textarea></label>`;
   } else if (p === 'search') {
@@ -2275,6 +2369,7 @@ function openSheet(p, arg) {
   s.innerHTML = h; s.scrollTop = 0;
   if (p === 'wp') phStrip(arg);
   if (p === 'scout' && SC.res) scList();
+  if (p === 'move' && MV.res) mvList();
 }
 /* swipe a bottom sheet down to close it */
 (() => {
@@ -2334,6 +2429,13 @@ document.addEventListener('click', e => {
   else if (a === 'access') { const f = S.data[b.dataset.src].find(x => x.properties._id == b.dataset.id); if (f) findAccess(f); }
   else if (a === 'au-set') { e.preventDefault(); AU.back = sh.dataset.p; openSheet('aulim'); }
   else if (a === 'au-save') { const d = Math.round(+$('#auDay').value), m = +$('#auMon').value; if (!(d >= 1) || !(m > 0)) { toast('Enter a number of requests and a dollar amount'); return; } AU.maxDay = Math.min(500, d); AU.maxMon = m; const back = AU.back; delete AU.back; store.set('ausage', AU); toast('Limits saved'); if (back === 'scout' || (back === 'ask' && ASK)) openSheet(back); else closeSheet(); }
+  else if (a === 'mv-time') { MV.time = b.dataset.k; MV.note = ($('#mvNote') || {}).value || MV.note; MV.trails = ($('#mvTr') || {}).checked !== false; openSheet('move'); }
+  else if (a === 'mv-run') { MV.note = $('#mvNote').value.trim(); MV.trails = $('#mvTr').checked; moveRun(); }
+  else if (a === 'mv-go') { const k = b.dataset.k, R = MV.res; const r = k[0] === 'r' ? R.routes.find(x => 'r' + x.n === k) : null, s = r ? null : R.spots.find(x => x.id === k); closeSheet(); if (r) { const bb = r.ll.reduce((q, p) => [Math.min(q[0], p[0]), Math.min(q[1], p[1]), Math.max(q[2], p[0]), Math.max(q[3], p[1])], [180, 90, -180, -90]); map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: 80, maxZoom: 17 }); toast(r.n + '. ' + (r.from || '') + ' to ' + (r.to || ''), 3500); } else if (s) { map.easeTo({ center: s.ll, zoom: Math.max(map.getZoom(), 16) }); toast(s.id + '. ' + (s.label || ''), 3500); } }
+  else if (a === 'mv-trk') { const r = MV.res.routes.find(x => x.n == b.dataset.n); if (r && !r.saved) { S.tracks.push({ name: 'Deer route: ' + (r.from || 'bedding') + ' to ' + (r.to || 'food'), pts: r.ll.map(p => p.map(v => +v.toFixed(6))) }); saveTracks(); drawTracks(); r.saved = 1; b.textContent = 'Saved'; b.disabled = true; toast('Saved to your tracks'); } }
+  else if (a === 'mv-mark') { const s = MV.res.spots.find(x => x.id === b.dataset.k); if (s && !s.saved) { S.wps.push({ id: Date.now(), p: s.ll.map(v => +v.toFixed(6)), type: 'stand', name: s.label || 'Ambush spot', notes: s.why || '', winds: (s.winds || []).filter(x => HM.DIR8.includes(x)), u: Date.now() }); drawWps(); s.saved = 1; b.textContent = 'Saved'; b.disabled = true; toast('Saved to your marks'); } }
+  else if (a === 'mv-hide') { closeSheet(); toast('Tap a numbered pin to come back to the details', 3500); }
+  else if (a === 'mv-clear') { mvClear(); closeSheet(); }
   else if (a === 'sc-time') { SC.time = b.dataset.k; SC.note = ($('#scNote') || {}).value || SC.note; openSheet('scout'); }
   else if (a === 'sc-focus') { SC.focus = b.textContent; sh.querySelectorAll('[data-act=sc-focus]').forEach(x => x.classList.toggle('on', x === b)); }
   else if (a === 'sc-run') { SC.note = $('#scNote').value.trim(); SC.pub = $('#scPub').checked; scoutRun(); }
@@ -2342,7 +2444,8 @@ document.addEventListener('click', e => {
   else if (a === 'sc-saveall') { let n = 0; SC.res.spots.forEach(s => { if (!s.saved) { scSave(s); n++; } }); drawWps(); scClear(); closeSheet(); toast(n + ' marks saved'); }
   else if (a === 'sc-clear') { scClear(); closeSheet(); }
   else if (a === 'ask-place') { const c = S.lastPlace; if (c) askStart(c); }
-  else if (a === 'ask-view') { closeSheet(); setTimeout(() => askStart({ view: true }), 250); }
+  else if (a === 'ask-view') { closeSheet(); if (map.getZoom() < MINZ) { toast('Zoomed in so Claude can read the photos. Move the map and tap again to pick a different area.', 4500); map.easeTo({ zoom: MINZ + .3 }); map.once('moveend', () => setTimeout(() => askStart({ view: true }), 300)); } else setTimeout(() => askStart({ view: true }), 250); }
+  else if (a === 'zoom-in-gate') { const p = sh.dataset.p; map.easeTo({ zoom: MINZ + .3 }); map.once('moveend', () => openSheet(p)); }
   else if (a === 'vw-go') { const p = VW.pts.find(x => x.n == b.dataset.n); if (p) { closeSheet(); map.easeTo({ center: p.ll, zoom: Math.max(map.getZoom(), 15.5) }); toast(p.n + '. ' + p.label, 3500); } }
   else if (a === 'vw-hide') { closeSheet(); toast('Tap a numbered pin to come back to the answer', 3500); }
   else if (a === 'vw-save') { let n = 0; VW.pts.forEach(p => { if (!p.saved) { S.wps.push({ id: Date.now() + p.n, p: p.ll.map(v => +v.toFixed(6)), type: ['stand', 'bed', 'food', 'sign', 'access', 'sight'].includes(p.wt) ? p.wt : 'other', name: p.label || 'Claude point ' + p.n, notes: 'From Ask Claude about this area, ' + new Date().toLocaleDateString(), u: Date.now() }); p.saved = 1; n++; } }); drawWps(); vwClear(); toast(n + ' marks saved'); b.closest('.btns').remove(); }
