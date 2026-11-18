@@ -286,6 +286,14 @@ body.wflow .maplibregl-ctrl-bottom-left{display:none}
 .wbtrack input::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#EAF7FF;border:3px solid #1B1F1A}
 .wbticks{position:absolute;left:0;right:0;bottom:0;height:12px;font-size:10.5px;color:var(--lichen)}.wbticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}.wbticks span::before{content:'';position:absolute;left:50%;top:-9px;width:1px;height:6px;background:var(--line2)}
 .wbleg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--lichen)}.wbleg i{flex:1;height:5px;border-radius:3px;background:linear-gradient(90deg,#CFEAFF,#8FD6FF 25%,#FFE37A 50%,#FFA44A 75%,#FF5A3C)}
+
+.mvchip{background:#2A2F27;color:var(--bone);border:1px solid rgba(255,107,26,.55)}.mvchip .ic{width:18px;height:18px;color:var(--blaze)}
+.job{position:absolute;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);bottom:calc(var(--tab) + var(--sb) + 30px);z-index:7;border-radius:18px;padding:12px 12px 12px 14px;display:none;align-items:center;gap:12px;max-width:520px;margin:0 auto}
+.job.on{display:flex}.job .jt{flex:1;min-width:0;line-height:1.25}.job .jt b{display:block;font-size:15.5px}.job .jt small{display:block;color:var(--lichen);font-size:13px}
+.job .spin{width:26px;height:26px;border-radius:50%;border:3px solid rgba(255,107,26,.25);border-top-color:var(--blaze);animation:jspin .9s linear infinite;flex:none}
+@keyframes jspin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.job .spin{animation-duration:3s}}
+.job.done>.ic{width:26px;height:26px;color:var(--tag);flex:none}.job .jx{width:26px;height:26px;border-radius:50%;background:var(--rust);color:#fff;display:grid;place-items:center;flex:none;font-size:16px}
+.job .jc{width:30px;height:30px;border:0;border-radius:50%;background:var(--moss);color:var(--lichen);font-size:18px;padding:0 0 2px;flex:none}
 /* ---------- tools hub ---------- */
 .tool{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--bone)}
 .tool:last-child{border-bottom:0}
@@ -444,8 +452,9 @@ body.guiding .loc{bottom:calc(var(--tab) + var(--sb) + 112px)}body.guiding .disc
 </div>
 <div class="modebar" id="modebar"><span id="modeTxt"></span><button data-act="mode-undo" id="modeUndo">Undo</button><button data-act="mode-clear" id="modeClear">Clear</button><button data-act="mode-done">Done</button></div>
 <button class="loc glass" id="fLoc" aria-label="Go to my location"><svg viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.6l7 2.4 2.4 7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
-<div class="lchips"><button class="hotchip" id="hotChip" data-act="hot-clear">Clear hot spots &times;</button><button class="hotchip recchip" id="recChip" data-act="rec-chip"><span class="dot"></span><span id="recChipTxt">Recording</span></button><button class="hotchip bloodchip" id="bloodChip" data-act="blood-open"><span class="dot"></span>Blood trail recording, back to camera</button></div>
+<div class="lchips"><button class="hotchip" id="hotChip" data-act="hot-clear">Clear hot spots &times;</button><button class="hotchip recchip" id="recChip" data-act="rec-chip"><span class="dot"></span><span id="recChipTxt">Recording</span></button><button class="hotchip mvchip" id="mvChip" data-act="mv-open"><svg class="ic"><use href="#i-track"/></svg>Deer movement</button><button class="hotchip bloodchip" id="bloodChip" data-act="blood-open"><span class="dot"></span>Blood trail recording, back to camera</button></div>
 <div class="banner" id="banner"></div>
+<div class="job glass" id="job" role="status" aria-live="polite"></div>
 <div id="blood" class="blood">
   <video id="bvid" playsinline muted autoplay></video>
   <canvas id="bcan"></canvas>
@@ -959,7 +968,7 @@ map.on('load', () => {
   map.addLayer({ id: 'mine-line', type: 'line', source: 'mine', minzoom: 11, paint: { 'line-color': '#ffe45c', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .4, 17, 2], 'line-opacity': .9 } }, 'roads');
   map.addLayer({ id: 'mine-lbl', type: 'symbol', source: 'mine', minzoom: 14.5, layout: { 'text-field': ['coalesce', ['get', 'owner_name'], ''], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-width': 8 }, paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1.4 } });
   ['parcels', 'mine'].forEach(styleParcels); ['wma', 'padus'].forEach(stylePublic); addSelLayers();
-  loadMine(); addRegrid(); addBuiltTiles(); applyBase(); LAYERS.forEach(l => applyVis(l.id)); drawWps(); drawTracks(); refresh(); loadWind(); openShared(); syncSoon(800); offZoomCap(); drawParty(); if (!store.get('introDone', false)) showIntro(0);
+  loadMine(); addRegrid(); addBuiltTiles(); applyBase(); LAYERS.forEach(l => applyVis(l.id)); drawWps(); drawTracks(); try { mvRestore(); } catch (e) { console.warn('mv restore', e); } refresh(); loadWind(); openShared(); syncSoon(800); offZoomCap(); drawParty(); if (!store.get('introDone', false)) showIntro(0);
 });
 
 /* ---------------- private parcels from a Regrid key (covers counties with no open data) ---------------- */
@@ -1649,7 +1658,19 @@ function mvArrow() {
   g.fillStyle = '#FF6B1A'; g.strokeStyle = '#1B1F1A'; g.lineWidth = 3; g.beginPath(); g.moveTo(8, 6); g.lineTo(26, 16); g.lineTo(8, 26); g.lineTo(13, 16); g.closePath(); g.stroke(); g.fill();
   try { map.addImage('mv-arrow', g.getImageData(0, 0, 32, 32)); } catch (e) { }
 }
-function mvClear() { MV.mk.forEach(m => m.remove()); MV.mk = []; MV.res = null; if (map.getSource('mv')) map.getSource('mv').setData({ type: 'FeatureCollection', features: [] }); }
+const MVTZ = 14.8;
+function mvClear(keepSaved) { MV.mk.forEach(m => m.remove()); MV.mk = []; MV.res = null; if (map.getSource('mv')) map.getSource('mv').setData({ type: 'FeatureCollection', features: [] }); if (!keepSaved) { MV.last = null; store.set('mvlast', null); } $('#mvChip').style.display = 'none'; }
+function mvSave() { try { store.set('mvlast', { res: MV.res, last: MV.last }); } catch (e) { } }
+function mvRestore() { const s = store.get('mvlast', null); if (s && s.res && s.last && Date.now() - s.last.at < 7 * 864e5) { MV.res = s.res; MV.last = s.last; mvDraw(); } }
+function bOverlap(a, b) { const w = Math.max(a[0], b[0]), s = Math.max(a[1], b[1]), e = Math.min(a[2], b[2]), n = Math.min(a[3], b[3]); if (e <= w || n <= s) return 0; return (e - w) * (n - s) / ((b[2] - b[0]) * (b[3] - b[1])); }
+let jobT = 0;
+function jobShow(kind, title, sub, timer) {
+  const el = $('#job'); clearInterval(jobT); el.className = 'job glass on ' + kind; const t0 = Date.now();
+  const ic = kind === 'run' ? '<span class="spin"></span>' : kind === 'done' ? '<svg class="ic"><use href="#w-check"/></svg>' : '<b class="jx">!</b>';
+  el.innerHTML = `${ic}<div class="jt"><b>${esc(title)}</b><small id="jobSub">${esc(sub)}</small></div>` + (kind === 'run' ? '' : kind === 'done' ? '<button class="btn s p" data-act="job-view">Details</button><button class="jc" data-act="job-close" aria-label="Close">&times;</button>' : '<button class="btn s" data-act="job-view">Details</button><button class="jc" data-act="job-close" aria-label="Close">&times;</button>');
+  if (timer) jobT = setInterval(() => { const s = Math.round((Date.now() - t0) / 1000), e = document.getElementById('jobSub'); if (e) e.textContent = `${sub.replace(/…$/, '')}, ${s} s. Usually 30 to 60 s.`; }, 1000);
+}
+const jobHide = () => { clearInterval(jobT); $('#job').classList.remove('on'); };
 function mvDraw() {
   const R = MV.res; if (!R) return; mvArrow();
   const fs = R.routes.map(r => ({ type: 'Feature', properties: { k: 'route', n: r.n }, geometry: { type: 'LineString', coordinates: r.ll } })).concat(R.trails.map(t => ({ type: 'Feature', properties: { k: 'trail' }, geometry: { type: 'LineString', coordinates: t.ll } })));
@@ -1662,11 +1683,13 @@ function mvDraw() {
     map.addLayer({ id: 'mv-arrows', type: 'symbol', source: 'mv', filter: ['==', ['get', 'k'], 'route'], layout: { 'symbol-placement': 'line', 'symbol-spacing': 70, 'icon-image': 'mv-arrow', 'icon-size': .55, 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true } });
   } else map.getSource('mv').setData(fc);
   MV.mk.forEach(m => m.remove()); MV.mk = [];
+  $('#mvChip').style.display = 'flex';
   R.routes.forEach(r => { const mid = r.ll[Math.floor(r.ll.length / 2)], el = document.createElement('div'); el.className = 'scp mvn'; el.style.setProperty('--c', '#FF6B1A'); el.innerHTML = `<b>${r.n}</b>`; el.addEventListener('click', ev => { ev.stopPropagation(); openSheet('move'); mvList('r' + r.n); }); MV.mk.push(new maplibregl.Marker({ element: el }).setLngLat(mid).addTo(map)); });
   R.spots.forEach(s => { const el = document.createElement('div'); el.className = 'scp'; el.style.setProperty('--c', '#D9472F'); el.innerHTML = `<b>${s.id}</b>`; el.addEventListener('click', ev => { ev.stopPropagation(); openSheet('move'); mvList(s.id); }); MV.mk.push(new maplibregl.Marker({ element: el }).setLngLat(s.ll).addTo(map)); });
 }
 function mvList(focus) {
-  const out = $('#mvOut'); if (!out || !MV.res) return; const R = MV.res;
+  const out = $('#mvOut'); if (!out) return;
+  if (!MV.res) { if (MV.err) out.innerHTML = `<div class="aa err">${esc(MV.err)}</div>` + (MV.raw ? `<details class="more"><summary>Claude's raw answer</summary><pre class="ctx">${esc(MV.raw.slice(0, 3000))}</pre></details>` : ''); return; } const R = MV.res;
   out.innerHTML = (R.summary ? `<div class="aa">${esc(R.summary)}</div>` : '') +
     `<div class="mvleg"><span><i class="lr"></i>Likely route</span><span><i class="lt"></i>Trail seen in photo</span><span><i class="ls"></i>Ambush spot</span></div>` +
     R.routes.map(r => `<div class="scr${focus === 'r' + r.n ? ' on' : ''}" id="mv-r${r.n}"><div class="scn" style="--c:#FF6B1A">${r.n}</div><div class="g"><b>${esc(r.from || 'Bedding')} to ${esc(r.to || 'food')}</b><small>${esc(r.when || '')}${r.confidence ? ', ' + esc(r.confidence) + ' confidence' : ''}</small><p>${esc(r.why || '')}</p><div class="btns"><button class="btn s" data-act="mv-go" data-k="r${r.n}">Show</button><button class="btn s" data-act="mv-trk" data-n="${r.n}">Save as track</button></div></div></div>`).join('') +
@@ -1675,12 +1698,24 @@ function mvList(focus) {
     `<div class="btns"><button class="btn" data-act="mv-hide">Look at the map</button><button class="btn" data-act="mv-clear">Clear from map</button></div><div class="mut">Routes are Claude's best read of the photos, terrain, season and forecast, not tracked deer. Use them to decide where to scout.</div>`;
   if (focus) setTimeout(() => { const el = document.getElementById('mv-' + focus); if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 60);
 }
-async function moveRun() {
-  if (MV.busy || !AK.key) return; const out = $('#mvOut'); try { auCheck(); if (map.getZoom() < MINZ) throw new Error('Zoom in closer first.'); } catch (e) { out.innerHTML = `<div class="aa err">${esc(e.message)}</div>`; return; }
-  MV.busy = true; mvClear(); MV.raw = ''; out.innerHTML = '<div class="aa wait">Taking a picture of this map view…</div>'; out.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+async function moveRun(force) {
+  if (MV.busy || !AK.key) return; const out = $('#mvOut');
+  try { auCheck(); if (map.getZoom() < MINZ) throw new Error('Zoom in closer first (about a mile across or less).'); if (MV.trails && map.getZoom() < MVTZ) throw new Error('Tracing trails needs a closer view, about a third of a mile across. Zoom in, or turn off Trace trails.'); } catch (e) { if (out) { out.innerHTML = `<div class="aa err">${esc(e.message)}</div>`; out.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } else toast(e.message, 4000); return; }
+  const b0 = map.getBounds(), bb = [b0.getWest(), b0.getSouth(), b0.getEast(), b0.getNorth()], plan = hp().day + '|' + hp().sit, L0 = MV.last;
+  if (!force && MV.res && L0 && L0.plan === plan && Date.now() - L0.at < 864e5 && bOverlap(L0.b, bb) >= .6) {
+    closeSheet(); mvDraw(); const mins = Math.round((Date.now() - L0.at) / 6e4);
+    confirmBox('Already done for this area', `Most of this view was read ${mins < 60 ? mins + ' min' : Math.round(mins / 60) + ' h'} ago for the same sit. Its routes are on the map. Run again for about 3 cents?`, 'Run again', () => moveRun(true)); return;
+  }
+  const prevRes = MV.res; MV.busy = true; mvClear(true); MV.raw = ''; MV.err = ''; closeSheet(); jobShow('run', 'Reading deer movement', 'Switching to leaf-off photos…');
+  const prevBase = S.base, prevTr = S.on.enh;
   try {
-    const pic = await mapPicture(null, { grid: true }); if (!pic) throw new Error('Could not take the map picture.');
-    out.innerHTML = '<div class="aa wait">Claude is reading the cover, terrain and wind. This usually takes 30 to 60 seconds…</div>';
+    if (S.base !== 'spring') { S.base = 'spring'; applyBase(); }
+    await waitIdle(7000);
+    jobShow('run', 'Reading deer movement', 'Taking a picture of the map…');
+    const pic = await mapPicture(null, { grid: true });
+    if (prevBase !== S.base) { S.base = prevBase; applyBase(); }
+    if (!pic) throw new Error('Could not take the map picture.');
+    jobShow('run', 'Reading deer movement', 'Claude is reading the cover, terrain and wind…', true);
     const T = { label: hpLabel(), t: hpTime() }, w = wxAtT(T.t), CW0 = map.getContainer().clientWidth, CH0 = map.getContainer().clientHeight, inV0 = m => { const p = map.project(m.p); return p.x >= 0 && p.y >= 0 && p.x <= CW0 && p.y <= CH0; }, ps = await myPhotos(S.wps.filter(inV0)).catch(() => []); CTXP.n = ps.length;
     const L = [viewContext().replace(/^I am a whitetail deer hunter[^\n]*\n/, ''),
       `I want to know how deer are likely moving ${T.label} (around ${hm(new Date(T.t))}).`,
@@ -1698,8 +1733,11 @@ async function moveRun() {
     const trails = (d.trails || []).slice(0, 20).map(t => ({ ll: line(Array.isArray(t) ? t : t.pts || t.points || t.path) })).filter(t => t.ll.length > 1);
     (d.ambush || d.spots || []).forEach(s => { if (s && !isFinite(s.x) && (s.pos || s.position)) { const q = xy(s.pos || s.position); s.x = q[0]; s.y = q[1]; } });
     const spots = (d.ambush || d.spots || []).filter(s => s && isFinite(s.x) && isFinite(s.y)).slice(0, 6).map((s, i) => { const ll = scLL(pic.lat, +s.x, +s.y); return Object.assign(s, { id: String.fromCharCode(65 + i), ll, pub: scPublicAt(ll) }); });
-    MV.raw = txt; MV.res = { summary: d.summary || '', routes, trails, spots }; mvDraw(); mvList(); if (!routes.length && !trails.length && !spots.length) out.insertAdjacentHTML('afterbegin', `<div class="aa err">Claude answered, but no routes could be placed on the map. Tap Show deer movement again, or zoom in a little.</div><details class="more"><summary>Claude's raw answer</summary><pre class="ctx">${esc(txt.slice(0, 3000))}</pre></details>`); else toast(`${routes.length} route${routes.length === 1 ? '' : 's'}, ${trails.length} trail${trails.length === 1 ? '' : 's'}, ${spots.length} ambush spot${spots.length === 1 ? '' : 's'} on the map`, 3500); setTimeout(() => out.scrollIntoView({ block: 'start', behavior: 'smooth' }), 80);
-  } catch (e) { out.innerHTML = `<div class="aa err">${esc(navigator.onLine === false ? 'No signal. This needs service.' : e.message || 'Something went wrong.')}</div>` + (MV.raw ? `<details class="more"><summary>Claude's raw answer</summary><pre class="ctx">${esc(MV.raw.slice(0, 3000))}</pre></details>` : ''); out.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+    MV.raw = txt;
+    if (!routes.length && !trails.length && !spots.length) throw new Error('Claude answered, but no routes could be placed on the map. Try again, or zoom in a little.');
+    MV.res = { summary: d.summary || '', routes, trails, spots, label: hpLabel() }; MV.last = { b: bb, plan, at: Date.now() }; mvSave(); mvDraw();
+    jobShow('done', 'Deer movement is on the map', `${routes.length} route${routes.length === 1 ? '' : 's'}, ${trails.length} trail${trails.length === 1 ? '' : 's'}, ${spots.length} ambush spot${spots.length === 1 ? '' : 's'} for ${MV.res.label}`); setTimeout(() => out.scrollIntoView({ block: 'start', behavior: 'smooth' }), 80);
+  } catch (e) { if (S.base !== prevBase) { S.base = prevBase; applyBase(); } MV.err = navigator.onLine === false ? 'No signal. This needs service.' : e.message || 'Something went wrong.'; if (prevRes) { MV.res = prevRes; mvDraw(); } jobShow('err', 'Deer movement did not finish', MV.err + (prevRes ? ' Your earlier routes are still on the map.' : '')); }
   MV.busy = false;
 }
 
@@ -2548,13 +2586,13 @@ function openSheet(p, arg) {
       `<div class="wx2"><div><small>Today</small><b>${AU.n} request${AU.n === 1 ? '' : 's'}</b></div><div><small>This month</small><b>$${AU.usd.toFixed(2)}</b></div></div><div class="mut">All time on this phone: $${AU.all.toFixed(2)}.</div>` +
       `<div class="mut">A question is about 1 cent and a scout about 2 cents. Follow-up questions resend the map picture, so a long back-and-forth costs a bit more.</div><div class="btns"><button class="btn p" data-act="au-save">Save limits</button></div>`;
   } else if (p === 'move') {
-    h = head('Deer movement') + `<div class="mut" style="margin:-4px 0 10px">Claude reads the cover, terrain, season and forecast in this map view and draws where deer are likely traveling, the trails it can see in the photos, and spots to ambush them.</div>` +
+    h = head('Deer movement') + (MV.res || MV.err ? `<div id="mvOut"></div><h3 style="margin-top:16px">${MV.res ? 'Run it again' : 'Try again'}</h3>` : '') + `<div class="mut" style="margin:-4px 0 10px">Claude reads the cover, terrain, season and forecast in this map view and draws where deer are likely traveling, the trails it can see in the photos, and spots to ambush them.</div>` +
       (!AK.key ? `<div class="note">This needs an Anthropic API key so the routes can be drawn on the map.</div><label class="fld"><span>API key</span><input id="askKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="btns"><button class="btn p" data-act="ask-key" data-back="move">Save key</button></div>` + KEYHELP :
       hpPicker() +
       `<label class="row"><span class="g">Trace trails in the photos<br><small>Works best on Leaf-off with the Trail enhancer on, zoomed in to a quarter mile or so</small></span><input type="checkbox" id="mvTr" ${MV.trails ? 'checked' : ''}></label>` +
       `<label class="fld"><span>Anything else? (optional)</span><textarea id="mvNote" rows="2" placeholder="Corn was just picked on the east side">${esc(MV.note)}</textarea></label>` +
-      (zoomGate() || `<div class="btns"><button class="btn p" data-act="mv-run" style="flex:1">${ico('i-track')}Show deer movement</button></div><div class="mut">For ${hpLabel()}, during the ${esc(seasonPhase(new Date(hp().day + 'T12:00')).split(':')[0])}. Uses your marks, sit log and photos in this area. About 3 to 4 cents a run.</div>`) + auLine()) +
-      `<div id="mvOut"></div>`;
+      (MV.busy ? '<div class="note">Working on it. You will get a note on the map when it is done.</div>' : zoomGate() || `<div class="mut" style="margin-bottom:6px">Claude reads the leaf-off photos for this, even if you are on another map, because trails and cover show through the trees.${MV.trails && map.getZoom() < MVTZ ? ' <b>Zoom in a bit more to trace trails</b> (about a third of a mile across), or turn off Trace trails.' : ''}</div><div class="btns"><button class="btn p" data-act="mv-run" style="flex:1">${ico('i-track')}${MV.res ? 'Run again for this view' : 'Show deer movement'}</button></div><div class="mut">For ${hpLabel()}, during the ${esc(seasonPhase(new Date(hp().day + 'T12:00')).split(':')[0])}. Uses your marks, sit log and photos in this area. About 3 to 4 cents a run.</div>`) + auLine()) +
+      (MV.res || MV.err ? '' : `<div id="mvOut"></div>`);
   } else if (p === 'scout') {
     const T = scTarget();
     h = head('Scout with Claude') + `<div class="mut" style="margin:-4px 0 10px">Claude studies everything in the current map view with the forecast and suggests where to hunt. The spots appear on the map as numbered pins.</div>` +
@@ -2572,7 +2610,7 @@ function openSheet(p, arg) {
   s.innerHTML = h; s.scrollTop = 0;
   if (p === 'wp') phStrip(arg);
   if (p === 'scout' && SC.res) scList();
-  if (p === 'move' && MV.res) mvList();
+  if (p === 'move' && (MV.res || MV.err)) mvList();
 }
 /* swipe a bottom sheet down to close it */
 (() => {
@@ -2634,11 +2672,14 @@ document.addEventListener('click', e => {
   else if (a === 'au-save') { const d = Math.round(+$('#auDay').value), m = +$('#auMon').value; if (!(d >= 1) || !(m > 0)) { toast('Enter a number of requests and a dollar amount'); return; } AU.maxDay = Math.min(500, d); AU.maxMon = m; const back = AU.back; delete AU.back; store.set('ausage', AU); toast('Limits saved'); if (back === 'scout' || (back === 'ask' && ASK)) openSheet(back); else closeSheet(); }
   else if (a === 'mv-time') { MV.time = b.dataset.k; MV.note = ($('#mvNote') || {}).value || MV.note; MV.trails = ($('#mvTr') || {}).checked !== false; openSheet('move'); }
   else if (a === 'mv-run') { MV.note = $('#mvNote').value.trim(); MV.trails = $('#mvTr').checked; moveRun(); }
+  else if (a === 'job-view') { jobHide(); openSheet('move'); }
+  else if (a === 'job-close') jobHide();
+  else if (a === 'mv-open') openSheet('move');
   else if (a === 'mv-go') { const k = b.dataset.k, R = MV.res; const r = k[0] === 'r' ? R.routes.find(x => 'r' + x.n === k) : null, s = r ? null : R.spots.find(x => x.id === k); closeSheet(); if (r) { const bb = r.ll.reduce((q, p) => [Math.min(q[0], p[0]), Math.min(q[1], p[1]), Math.max(q[2], p[0]), Math.max(q[3], p[1])], [180, 90, -180, -90]); map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: 80, maxZoom: 17 }); toast(r.n + '. ' + (r.from || '') + ' to ' + (r.to || ''), 3500); } else if (s) { map.easeTo({ center: s.ll, zoom: Math.max(map.getZoom(), 16) }); toast(s.id + '. ' + (s.label || ''), 3500); } }
   else if (a === 'mv-trk') { const r = MV.res.routes.find(x => x.n == b.dataset.n); if (r && !r.saved) { S.tracks.push({ name: 'Deer route: ' + (r.from || 'bedding') + ' to ' + (r.to || 'food'), pts: r.ll.map(p => p.map(v => +v.toFixed(6))) }); saveTracks(); drawTracks(); r.saved = 1; b.textContent = 'Saved'; b.disabled = true; toast('Saved to your tracks'); } }
   else if (a === 'mv-mark') { const s = MV.res.spots.find(x => x.id === b.dataset.k); if (s && !s.saved) { S.wps.push({ id: Date.now(), p: s.ll.map(v => +v.toFixed(6)), type: 'stand', name: s.label || 'Ambush spot', notes: s.why || '', winds: (s.winds || []).filter(x => HM.DIR8.includes(x)), u: Date.now() }); drawWps(); s.saved = 1; b.textContent = 'Saved'; b.disabled = true; toast('Saved to your marks'); } }
   else if (a === 'mv-hide') { closeSheet(); toast('Tap a numbered pin to come back to the details', 3500); }
-  else if (a === 'mv-clear') { mvClear(); closeSheet(); }
+  else if (a === 'mv-clear') { mvClear(); MV.err = ''; jobHide(); closeSheet(); toast('Deer movement cleared from the map'); }
   else if (a === 'hp-day' || a === 'hp-sit') { if (a === 'hp-day') HP.day = b.dataset.d; else HP.sit = b.dataset.k; if (!HP.day) Object.assign(HP, hp()); store.set('hp', HP); const p = sh.dataset.p; if (p === 'ask') { ASK.q = ($('#askQ') || {}).value || ASK.q; const pb = $('#avPub'); if (pb) SC.pub = pb.checked; const ctx = $('#askCtx'); } if (p === 'move') { MV.note = ($('#mvNote') || {}).value || MV.note; MV.trails = ($('#mvTr') || {}).checked !== false; } const sc = sh.scrollTop; openSheet(p); sh.scrollTop = sc; }
   else if (a === 'av-time') { SC.time = b.dataset.k; ASK.q = $('#askQ').value; const pb = $('#avPub'); if (pb) SC.pub = pb.checked; openSheet('ask'); }
   else if (a === 'sc-time') { SC.time = b.dataset.k; SC.note = ($('#scNote') || {}).value || SC.note; openSheet('scout'); }
