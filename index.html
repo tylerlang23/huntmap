@@ -1385,7 +1385,7 @@ function scLL(lat, x, y) { x = Math.max(0, Math.min(10, x / 100)); y = Math.max(
   return [0, 1].map(q => (A[q] * (1 - fx) + B[q] * fx) * (1 - fy) + (C[q] * (1 - fx) + D[q] * fx) * fy); }
 function scPublicAt(ll) { const pl = ['wma-fill', 'padus-fill'].filter(l => map.getLayer(l)); if (!pl.length) return null; const f = map.queryRenderedFeatures(map.project(ll), { layers: pl })[0]; return f ? f.properties._name || 'public land' : ''; }
 async function scoutRun() {
-  if (SC.busy || !AK.key) return; SC.busy = true; scClear(); const out = $('#scOut'); out.innerHTML = '<div class="aa wait">Taking a picture of this map view…</div>'; out.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  if (SC.busy || !AK.key) return; const out = $('#scOut'); try { auCheck(); } catch (e) { out.innerHTML = `<div class="aa err">${esc(e.message)}</div>`; return; } SC.busy = true; scClear(); out.innerHTML = '<div class="aa wait">Taking a picture of this map view…</div>'; out.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   try {
     if (map.getZoom() < 13) throw new Error('Zoom in to a property or a few square miles first (the map is too far out to judge spots).');
     const pic = await mapPicture(null, { grid: true }); if (!pic) throw new Error('Could not take the map picture.');
@@ -1404,11 +1404,7 @@ async function scoutRun() {
       marks.length ? 'My marks in view (x, y on a 0 to 1000 scale from the top-left corner):\n' + marks.join('\n') : '',
       'Suggest 3 to 6 specific spots. For each, give its position as x and y on a 0 to 1000 scale from the top-left corner of the picture (use the grid; column 4 spans x 400 to 500). Be precise: put each spot exactly on the feature you mean (an edge, a point of cover, a saddle), not in open water or a field center unless that is the point. Keep spots at least 100 yards apart, and pick stand sites the wind will not blow my scent toward the bedding or food.',
       'Answer with only JSON, no other text, in this shape: {"summary":"2 or 3 sentences on the overall plan","spots":[{"x":0,"y":0,"type":"stand|blind|bed|food|travel|scrape|access|cam","name":"short name, 3 to 5 words","why":"1 or 2 sentences on why here","winds":["NW","N"],"approach":"how to walk in and out","when":"morning|evening|all day"}]}'].filter(Boolean);
-    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': AK.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: AK.model, max_tokens: 3000, system: 'You are an experienced Minnesota whitetail hunter and scout reading aerial maps. You give practical, specific spot picks with exact positions on the picture. Follow Minnesota DNR rules; never suggest trespassing.', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: pic.url.split(',')[1] } }, { type: 'text', text: L.join('\n') }] }] }) });
-    let j = {}; try { j = await r.json(); } catch (e) { }
-    if (!r.ok) throw new Error(r.status === 401 ? 'The API key was not accepted. Check it in Ask Claude settings.' : r.status === 429 ? 'Too many requests. Wait a minute and try again.' : (j.error && j.error.message) || 'Claude could not answer (' + r.status + ').');
-    const txt = (j.content || []).filter(x => x.type === 'text').map(x => x.text).join('\n'), m = txt.match(/\{[\s\S]*\}/);
+    const txt = await claudeCall({ max_tokens: 3000, system: 'You are an experienced Minnesota whitetail hunter and scout reading aerial maps. You give practical, specific spot picks with exact positions on the picture. Follow Minnesota DNR rules; never suggest trespassing.', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: pic.url.split(',')[1] } }, { type: 'text', text: L.join('\n') }] }] }), m = txt.match(/\{[\s\S]*\}/);
     let d; try { d = JSON.parse(m[0]); } catch (e) { throw new Error('Claude answered in an unexpected format. Try again.'); }
     const spots = (d.spots || []).filter(s => isFinite(s.x) && isFinite(s.y)).slice(0, 8).map((s, i) => { const ll = scLL(pic.lat, +s.x, +s.y), pub = scPublicAt(ll); return Object.assign(s, { n: i + 1, ll, pub, wt: SC_TYPE[String(s.type || '').toLowerCase()] || 'other' }); });
     let dropped = 0; const keep = SC.pub ? spots.filter(s => { if (s.pub === '') { dropped++; return false; } return true; }) : spots; keep.forEach((s, i) => s.n = i + 1);
@@ -1432,6 +1428,20 @@ function scSave(s) { if (s.saved) return; S.wps.push({ id: Date.now() + s.n, p: 
 
 /* ---------------- ask Claude about a spot ---------------- */
 const AK = { key: store.get('akey', ''), model: 'claude-sonnet-5-5' };
+/* usage limits: counted on each phone; prices are Sonnet list prices ($2 in / $10 out per million tokens) */
+const AU = Object.assign({ day: '', n: 0, mon: '', usd: 0, all: 0, maxDay: 20, maxMon: 5 }, store.get('ausage', {})); ['usd', 'all'].forEach(k => { if (!isFinite(AU[k])) AU[k] = 0; });
+function auRoll() { const d = localKey(Date.now()).slice(0, 10), m = d.slice(0, 7); if (AU.day !== d) { AU.day = d; AU.n = 0; } if (AU.mon !== m) { AU.mon = m; AU.usd = 0; } }
+function auCheck() { auRoll(); if (AU.n >= AU.maxDay) throw new Error(`You have used today's limit of ${AU.maxDay} Claude requests on this phone. It resets tomorrow, or raise it in the Claude limits setting.`); if (AU.usd >= AU.maxMon) throw new Error(`This phone has reached its monthly Claude budget of $${AU.maxMon.toFixed(2)}. It resets on the 1st, or raise it in the Claude limits setting.`); }
+function auAdd(u) { auRoll(); u = u || {}; const c = (u.input_tokens || 0) * 2e-6 + (u.cache_creation_input_tokens || 0) * 2.5e-6 + (u.cache_read_input_tokens || 0) * 2e-7 + (u.output_tokens || 0) * 1e-5; AU.n++; AU.usd += c; AU.all += c; store.set('ausage', AU); }
+const auLine = () => { auRoll(); return `<div class="aul">${AU.n} of ${AU.maxDay} requests today · $${AU.usd.toFixed(2)} of $${AU.maxMon.toFixed(2)} this month <a href="#" data-act="au-set">Limits</a></div>`; };
+async function claudeCall(body) {
+  auCheck();
+  const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': AK.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify(Object.assign({ model: AK.model }, body)) });
+  let j = {}; try { j = await r.json(); } catch (e) { }
+  if (!r.ok) throw new Error(r.status === 401 ? 'The API key was not accepted. Check it in the Ask Claude settings.' : r.status === 429 ? 'Too many requests at once. Wait a minute and try again.' : r.status === 400 && /credit/i.test((j.error && j.error.message) || '') ? 'Your Anthropic account is out of credit. Add credit at console.anthropic.com.' : (j.error && j.error.message) || 'Claude could not answer (' + r.status + ').');
+  auAdd(j.usage); document.querySelectorAll('.aul').forEach(el => el.outerHTML = auLine());
+  return (j.content || []).filter(x => x.type === 'text').map(x => x.text).join('\n');
+}
 const KEYHELP = `<div class="mut">How to get one: sign in at <b>console.anthropic.com</b>, add a few dollars of credit under Billing, then create a key under API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>`;
 let ASK = null;
 function nearMarks(ll, maxM = 1600) {
@@ -1516,11 +1526,7 @@ async function askHere(follow) {
   ASK.conv.push({ role: 'user', content });
   out.insertAdjacentHTML('beforeend', '<div class="aa wait">Claude is looking at the spot…</div>'); const box = out.lastElementChild; box.scrollIntoView({ block: 'nearest' });
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': AK.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: AK.model, max_tokens: 1500, system: 'You are an experienced Minnesota whitetail hunter and scout helping a hunter read a spot on their map. Be practical and specific to the picture and details given. Use short paragraphs or brief bullet lists that read well on a phone. Mention wind and scent, access routes, and likely bedding, feeding and travel. Say when something needs checking on the ground, and remind them to follow Minnesota DNR regulations and get landowner permission on private land when relevant.', messages: ASK.conv }) });
-    let j = {}; try { j = await r.json(); } catch (e) { }
-    if (!r.ok) throw new Error(r.status === 401 ? 'The API key was not accepted. Check it in the settings below.' : r.status === 429 ? 'Too many questions at once. Wait a minute and try again.' : (j.error && j.error.message) || 'Claude could not answer (' + r.status + ').');
-    const txt = (j.content || []).filter(x => x.type === 'text').map(x => x.text).join('\n');
+    const txt = await claudeCall({ max_tokens: 1500, system: 'You are an experienced Minnesota whitetail hunter and scout helping a hunter read a spot on their map. Be practical and specific to the picture and details given. Use short paragraphs or brief bullet lists that read well on a phone. Mention wind and scent, access routes, and likely bedding, feeding and travel. Say when something needs checking on the ground, and remind them to follow Minnesota DNR regulations and get landowner permission on private land when relevant.', messages: ASK.conv });
     ASK.conv.push({ role: 'assistant', content: txt }); box.classList.remove('wait'); box.innerHTML = mdLite(txt);
     if (!document.getElementById('askF')) out.insertAdjacentHTML('afterend', `<label class="fld" style="margin-top:10px"><span>Ask a follow-up</span><textarea id="askF" rows="2" placeholder="What if the wind is south?"></textarea></label><div class="btns"><button class="btn p" data-act="ask-here">Send follow-up</button></div>`);
   } catch (e) { ASK.conv.pop(); box.classList.remove('wait'); box.classList.add('err'); box.textContent = navigator.onLine === false ? 'No signal. Try again when you have service.' : (e.message || 'Something went wrong.'); }
@@ -2092,7 +2098,7 @@ function renderIntro() {
 }
 
 /* ---------------- panels ---------------- */
-const SHEETS = { layers: ['i-layers', 'layers'], tools: ['i-tools', 'start'], mark: ['i-mark', 'mark'], party: ['i-party', 'party'], saved: ['i-saved', 'log'], wind: ['i-wind', 'wind'], wp: ['i-mark', 'mark'], track: ['i-track', 'track'], hot: ['i-hot', 'hot'], offline: ['i-offline', 'offline'], log: ['i-log', 'log'], access: ['i-guide', 'layers'], search: ['i-search', null], sharetxt: ['i-share', null], help: ['i-help', null], topic: ['i-help', null], pjoin: ['i-party', 'party'], alertmsg: ['i-chat', 'party'], ask: ['i-chat', 'ask'], scout: ['i-hot', 'ask'] };
+const SHEETS = { layers: ['i-layers', 'layers'], tools: ['i-tools', 'start'], mark: ['i-mark', 'mark'], party: ['i-party', 'party'], saved: ['i-saved', 'log'], wind: ['i-wind', 'wind'], wp: ['i-mark', 'mark'], track: ['i-track', 'track'], hot: ['i-hot', 'hot'], offline: ['i-offline', 'offline'], log: ['i-log', 'log'], access: ['i-guide', 'layers'], search: ['i-search', null], sharetxt: ['i-share', null], help: ['i-help', null], topic: ['i-help', null], pjoin: ['i-party', 'party'], alertmsg: ['i-chat', 'party'], ask: ['i-chat', 'ask'], scout: ['i-hot', 'ask'], aulim: ['i-chat', 'ask'] };
 function closeSheet() { drawOffAreas(false); if ($('#sheet').dataset.p === 'place') clearPlace(); const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
 function openSheet(p, arg) {
   if ($('#sheet').dataset.p === 'place' && p !== 'place') clearPlace();
@@ -2199,12 +2205,19 @@ function openSheet(p, arg) {
       `<div class="askimg" id="askImg">${ASK.pic ? `<img src="${ASK.pic.url}" alt="Map picture of the spot">` : '<span>Taking a picture of the map…</span>'}</div>` +
       `<div class="qchips">${ASK_CHIPS.map(q => `<button class="qchip" data-act="ask-chip">${esc(q)}</button>`).join('')}</div>` +
       `<label class="fld"><span>Your question</span><textarea id="askQ" rows="3" placeholder="Where would you set up here for an evening sit?">${esc(ASK.q)}</textarea></label>` +
-      (AK.key ? `<div class="btns"><button class="btn p" data-act="ask-here" style="flex:1">${ico('i-chat')}Ask</button></div><div class="mut">The answer shows up right here. <a href="#" data-act="ask-direct">Open in the Claude app instead</a></div>` :
+      (AK.key ? `<div class="btns"><button class="btn p" data-act="ask-here" style="flex:1">${ico('i-chat')}Ask</button></div><div class="mut">The answer shows up right here, about 1 cent a question. <a href="#" data-act="ask-direct">Open in the Claude app instead</a></div>` + auLine() :
         `<div class="btns"><button class="btn p" data-act="ask-direct" style="flex:1">${ico('i-chat')}Open in Claude</button></div><div class="mut">Opens Claude with your question filled in. The map picture is copied: tap the message box, <b>Paste</b>, then send. <a href="#" data-act="ask-share">Use the share menu instead</a>. Want the answer right here with no switching apps? See the setting at the bottom.</div>`) +
       `<div id="askOut"></div>` +
       `<details class="more"><summary>What gets sent</summary><pre class="ctx" id="askCtx">${esc(ctxt)}</pre><div class="mut">Owner names are not sent. Nothing is sent until you tap a button.</div></details>` +
       `<details class="more"${AK.key ? '' : ''}><summary>Answers right here in the app (optional)</summary><div class="mut">With an Anthropic API key, answers show up here without leaving the map, and you can use Scout with Claude to get suggested spots placed on the map.</div>` + `<div class="mut">How to get one: sign in at <b>console.anthropic.com</b>, add a few dollars of credit under Billing, then create a key under API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>` + `<div></div>` +
-      (AK.key ? `<div class="note">Key saved on this phone (ends ${esc(AK.key.slice(-4))}).</div><div class="btns"><button class="btn" data-act="ask-key-del">Remove key</button></div>` : `<label class="fld"><span>API key</span><input id="askKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="btns"><button class="btn" data-act="ask-key">Save key</button></div>`) + `</details>`;
+      (AK.key ? auLine() + `<div class="note">Key saved on this phone (ends ${esc(AK.key.slice(-4))}).</div><div class="btns"><button class="btn" data-act="ask-key-del">Remove key</button></div>` : `<label class="fld"><span>API key</span><input id="askKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="btns"><button class="btn" data-act="ask-key">Save key</button></div>`) + `</details>`;
+  } else if (p === 'aulim') {
+    auRoll();
+    h = head('Claude limits') + `<div class="mut" style="margin:-4px 0 10px">These limits are counted on this phone. Costs are estimated from what Claude reports for each request. For a hard cap across every phone that uses your key, also set a monthly spend limit at console.anthropic.com under Limits.</div>` +
+      `<label class="fld"><span>Requests per day</span><input id="auDay" type="number" inputmode="numeric" min="1" max="500" value="${AU.maxDay}"></label>` +
+      `<label class="fld"><span>Monthly budget in dollars</span><input id="auMon" type="number" inputmode="decimal" min="0.5" step="0.5" value="${AU.maxMon}"></label>` +
+      `<div class="wx2"><div><small>Today</small><b>${AU.n} request${AU.n === 1 ? '' : 's'}</b></div><div><small>This month</small><b>$${AU.usd.toFixed(2)}</b></div></div><div class="mut">All time on this phone: $${AU.all.toFixed(2)}.</div>` +
+      `<div class="mut">A question is about 1 cent and a scout about 2 cents. Follow-up questions resend the map picture, so a long back-and-forth costs a bit more.</div><div class="btns"><button class="btn p" data-act="au-save">Save limits</button></div>`;
   } else if (p === 'scout') {
     const T = scTarget();
     h = head('Scout with Claude') + `<div class="mut" style="margin:-4px 0 10px">Claude studies everything in the current map view with the forecast and suggests where to hunt. The spots appear on the map as numbered pins.</div>` +
@@ -2213,7 +2226,7 @@ function openSheet(p, arg) {
       `<div class="fld"><span>What are you looking for?</span><div class="qchips wrap">${SC_FOCUS.map(f => `<button class="qchip${SC.focus === f ? ' on' : ''}" data-act="sc-focus">${esc(f)}</button>`).join('')}</div></div>` +
       `<label class="fld"><span>Anything else? (optional)</span><textarea id="scNote" rows="2" placeholder="Bow only, I can walk in from the north lot">${esc(SC.note)}</textarea></label>` +
       `<label class="row"><span class="g">Public land only<br><small>Leaves out spots on private parcels</small></span><input type="checkbox" id="scPub" ${SC.pub ? 'checked' : ''}></label>` +
-      `<div class="btns"><button class="btn p" data-act="sc-run" style="flex:1">${ico('i-hot')}Scout this map view</button></div><div class="mut">Hunting ${T.label}. Zoom the map to the area you want first. Each scout costs a few cents on your API account.</div>`) +
+      `<div class="btns"><button class="btn p" data-act="sc-run" style="flex:1">${ico('i-hot')}Scout this map view</button></div><div class="mut">Hunting ${T.label}. Zoom the map to the area you want first. Each scout costs about 2 cents on your API account.</div>` + auLine()) +
       `<div id="scOut"></div>`;
   } else if (p === 'sharetxt') { h = head('Share waypoint') + `<div class="mut">Copy this text and send it:</div><label class="fld"><textarea rows="6" readonly onclick="this.select()">${esc(arg)}</textarea></label>`;
   } else if (p === 'search') {
@@ -2279,6 +2292,8 @@ document.addEventListener('click', e => {
   else if (a === 'mode-clear') { S.measure = []; drawMeasure(); }
   else if (a === 'mode-undo') { S.measure.pop(); drawMeasure(); }
   else if (a === 'access') { const f = S.data[b.dataset.src].find(x => x.properties._id == b.dataset.id); if (f) findAccess(f); }
+  else if (a === 'au-set') { e.preventDefault(); AU.back = sh.dataset.p; openSheet('aulim'); }
+  else if (a === 'au-save') { const d = Math.round(+$('#auDay').value), m = +$('#auMon').value; if (!(d >= 1) || !(m > 0)) { toast('Enter a number of requests and a dollar amount'); return; } AU.maxDay = Math.min(500, d); AU.maxMon = m; const back = AU.back; delete AU.back; store.set('ausage', AU); toast('Limits saved'); if (back === 'scout' || (back === 'ask' && ASK)) openSheet(back); else closeSheet(); }
   else if (a === 'sc-time') { SC.time = b.dataset.k; SC.note = ($('#scNote') || {}).value || SC.note; openSheet('scout'); }
   else if (a === 'sc-focus') { SC.focus = b.textContent; sh.querySelectorAll('[data-act=sc-focus]').forEach(x => x.classList.toggle('on', x === b)); }
   else if (a === 'sc-run') { SC.note = $('#scNote').value.trim(); SC.pub = $('#scPub').checked; scoutRun(); }
