@@ -16,8 +16,15 @@ async def main():
             await pg.tap('#bar [data-p=tools]', timeout=5000); await pg.wait_for_timeout(800); await pg.screenshot(path='shots/2.png')
             print('sheet', await pg.evaluate("document.querySelector('#sheet').dataset.p"))
         except Exception as e: print('CLICKFAIL', e)
-        try:
-            await pg.evaluate('closeSheet()'); await pg.wait_for_timeout(500); await pg.tap('#fWind', timeout=5000); await pg.wait_for_timeout(3000); await pg.screenshot(path='shots/3.png'); print('wind', await pg.evaluate("WF.on + ' ' + (WF.field&&WF.field.n)"))
-        except Exception as e: print('CLICKFAIL2', str(e)[:600])
+        import json
+        async def fake(route):
+            d = {"summary":"Test.","routes":[{"n":1,"from":"bedding","to":"field","pts":[{"x":300,"y":700},{"x":400,"y":550},{"x":500,"y":400},{"x":600,"y":250}]}],"trails":[{"pts":[[100,500],[300,480],[500,460]]}],"ambush":[{"x":520,"y":430,"label":"Pinch","winds":["NW"],"why":"x"}]}
+            await route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin':'*'}, body=json.dumps({"usage":{"input_tokens":1,"output_tokens":1},"content":[{"type":"text","text":"```json\n"+json.dumps(d)+"\n```"}]}))
+        await pg.route('https://api.anthropic.com/**', fake)
+        await pg.evaluate("closeSheet(); map.jumpTo({zoom:15})"); await pg.wait_for_timeout(3000)
+        await pg.evaluate("openSheet('move')"); await pg.wait_for_timeout(500)
+        await pg.tap('[data-act=mv-run]'); await pg.wait_for_timeout(9000)
+        print('mvres', await pg.evaluate("MV.res ? JSON.stringify([MV.res.routes.length, MV.res.trails.length, MV.res.spots.length, !!map.getLayer('mv-route'), map.queryRenderedFeatures({layers:['mv-route','mv-trail']}).length]) : 'none ' + document.getElementById('mvOut').innerText.slice(0,300)"))
+        await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(1200); await pg.screenshot(path='shots/2.png')
         await b.close()
 asyncio.run(main())

@@ -1677,7 +1677,7 @@ function mvList(focus) {
 }
 async function moveRun() {
   if (MV.busy || !AK.key) return; const out = $('#mvOut'); try { auCheck(); if (map.getZoom() < MINZ) throw new Error('Zoom in closer first.'); } catch (e) { out.innerHTML = `<div class="aa err">${esc(e.message)}</div>`; return; }
-  MV.busy = true; mvClear(); out.innerHTML = '<div class="aa wait">Taking a picture of this map view…</div>'; out.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  MV.busy = true; mvClear(); MV.raw = ''; out.innerHTML = '<div class="aa wait">Taking a picture of this map view…</div>'; out.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   try {
     const pic = await mapPicture(null, { grid: true }); if (!pic) throw new Error('Could not take the map picture.');
     out.innerHTML = '<div class="aa wait">Claude is reading the cover, terrain and wind. This usually takes 30 to 60 seconds…</div>';
@@ -1691,13 +1691,15 @@ async function moveRun() {
       'Give every position as x and y on a 0 to 1000 scale from the top-left corner of the picture (use the grid; column 4 spans x 400 to 500). Routes need 4 to 12 points each, in the direction deer travel.',
       'Answer with only JSON, no other text: {"summary":"2 or 3 sentences","routes":[{"n":1,"from":"bedding cover","to":"cut corn","when":"last hour of light","confidence":"high|medium|low","why":"1 or 2 sentences","pts":[[x,y],[x,y]]}],"trails":[{"pts":[[x,y],[x,y]]}],"ambush":[{"x":0,"y":0,"label":"3 to 5 words","winds":["NW"],"why":"1 sentence"}]}'].filter(Boolean);
     const txt = await claudeCall({ max_tokens: 4000, system: 'You are an experienced Minnesota whitetail hunter who reads aerial photos and topo for deer movement. Be realistic and specific, and say how confident you are. Never suggest trespassing.', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: pic.url.split(',')[1] } }, ...photoBlocks(ps), { type: 'text', text: L.join('\n') }] }] }), m = txt.match(/\{[\s\S]*\}/);
-    let d; try { d = JSON.parse(m[0]); } catch (e) { throw new Error('Claude answered in an unexpected format. Try again.'); }
-    const line = pts => (pts || []).filter(p => p && isFinite(p[0]) && isFinite(p[1])).map(p => scLL(pic.lat, +p[0], +p[1]));
-    const routes = (d.routes || []).slice(0, 6).map((r, i) => Object.assign(r, { n: i + 1, ll: line(r.pts) })).filter(r => r.ll.length > 1);
-    const trails = (d.trails || []).slice(0, 20).map(t => ({ ll: line(t.pts) })).filter(t => t.ll.length > 1);
-    const spots = (d.ambush || []).filter(s => isFinite(s.x) && isFinite(s.y)).slice(0, 6).map((s, i) => { const ll = scLL(pic.lat, +s.x, +s.y); return Object.assign(s, { id: String.fromCharCode(65 + i), ll, pub: scPublicAt(ll) }); });
-    MV.res = { summary: d.summary || '', routes, trails, spots }; mvDraw(); mvList(); setTimeout(() => out.scrollIntoView({ block: 'start', behavior: 'smooth' }), 80);
-  } catch (e) { out.innerHTML = `<div class="aa err">${esc(navigator.onLine === false ? 'No signal. This needs service.' : e.message || 'Something went wrong.')}</div>`; }
+    let d; try { d = JSON.parse(m[0].replace(/,\s*([\]}])/g, '$1')); } catch (e) { MV.raw = txt; throw new Error('Claude answered in an unexpected format. Try again.' + (/max_tokens|\.\.\.$/.test(txt) ? '' : '')); }
+    const xy = p => Array.isArray(p) ? [+p[0], +p[1]] : p && typeof p === 'object' ? [+(p.x ?? p[0]), +(p.y ?? p[1])] : typeof p === 'string' ? p.split(/[ ,]+/).map(Number) : [NaN, NaN];
+    const line = pts => (Array.isArray(pts) ? pts : []).map(xy).filter(p => isFinite(p[0]) && isFinite(p[1])).map(p => scLL(pic.lat, p[0], p[1]));
+    const routes = (d.routes || []).slice(0, 6).map((r, i) => Object.assign(r, { n: i + 1, ll: line(r.pts || r.points || r.path) })).filter(r => r.ll.length > 1);
+    const trails = (d.trails || []).slice(0, 20).map(t => ({ ll: line(Array.isArray(t) ? t : t.pts || t.points || t.path) })).filter(t => t.ll.length > 1);
+    (d.ambush || d.spots || []).forEach(s => { if (s && !isFinite(s.x) && (s.pos || s.position)) { const q = xy(s.pos || s.position); s.x = q[0]; s.y = q[1]; } });
+    const spots = (d.ambush || d.spots || []).filter(s => s && isFinite(s.x) && isFinite(s.y)).slice(0, 6).map((s, i) => { const ll = scLL(pic.lat, +s.x, +s.y); return Object.assign(s, { id: String.fromCharCode(65 + i), ll, pub: scPublicAt(ll) }); });
+    MV.raw = txt; MV.res = { summary: d.summary || '', routes, trails, spots }; mvDraw(); mvList(); if (!routes.length && !trails.length && !spots.length) out.insertAdjacentHTML('afterbegin', `<div class="aa err">Claude answered, but no routes could be placed on the map. Tap Show deer movement again, or zoom in a little.</div><details class="more"><summary>Claude's raw answer</summary><pre class="ctx">${esc(txt.slice(0, 3000))}</pre></details>`); else toast(`${routes.length} route${routes.length === 1 ? '' : 's'}, ${trails.length} trail${trails.length === 1 ? '' : 's'}, ${spots.length} ambush spot${spots.length === 1 ? '' : 's'} on the map`, 3500); setTimeout(() => out.scrollIntoView({ block: 'start', behavior: 'smooth' }), 80);
+  } catch (e) { out.innerHTML = `<div class="aa err">${esc(navigator.onLine === false ? 'No signal. This needs service.' : e.message || 'Something went wrong.')}</div>` + (MV.raw ? `<details class="more"><summary>Claude's raw answer</summary><pre class="ctx">${esc(MV.raw.slice(0, 3000))}</pre></details>` : ''); out.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
   MV.busy = false;
 }
 
@@ -1713,11 +1715,11 @@ async function claudeCall(body) {
   auCheck();
   const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': AK.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify(Object.assign({ model: AK.model }, body)) });
   let j = {}; try { j = await r.json(); } catch (e) { }
-  if (!r.ok) throw new Error(r.status === 401 ? 'The API key was not accepted. Check it in the Ask Claude settings.' : r.status === 429 ? 'Too many requests at once. Wait a minute and try again.' : r.status === 400 && /credit/i.test((j.error && j.error.message) || '') ? 'Your Anthropic account is out of credit. Add credit at console.anthropic.com.' : (j.error && j.error.message) || 'Claude could not answer (' + r.status + ').');
+  if (!r.ok) throw new Error(r.status === 401 ? 'The API key was not accepted. Check it in the Ask Claude settings.' : r.status === 429 ? 'Too many requests at once. Wait a minute and try again.' : r.status === 400 && /credit/i.test((j.error && j.error.message) || '') ? 'Your Anthropic account is out of credit. Add credit at platform.claude.com.' : (j.error && j.error.message) || 'Claude could not answer (' + r.status + ').');
   auAdd(j.usage); document.querySelectorAll('.aul').forEach(el => el.outerHTML = auLine());
   return (j.content || []).filter(x => x.type === 'text').map(x => x.text).join('\n');
 }
-const KEYHELP = `<div class="mut">How to get one: sign in at <b>console.anthropic.com</b>, add a few dollars of credit under Billing, then create a key under API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>`;
+const KEYHELP = `<div class="mut">How to get one: sign in at <b>platform.claude.com</b> (the Claude Console), buy a few dollars of credit under Settings, Billing, then create a key under Settings, API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>`;
 let ASK = null;
 function nearMarks(ll, maxM = 1600) {
   return S.wps.map(w => ({ w, d: HM.hav(ll, w.p) })).filter(x => x.d <= maxM && x.d > 3).sort((a, b) => a.d - b.d).slice(0, 15)
@@ -2536,11 +2538,11 @@ function openSheet(p, arg) {
         `<div class="btns"><button class="btn p" data-act="ask-direct" style="flex:1">${ico('i-chat')}Open in Claude</button></div><div class="mut">Opens Claude with your question filled in. The map picture is copied: tap the message box, <b>Paste</b>, then send. <a href="#" data-act="ask-share">Use the share menu instead</a>. Want the answer right here with no switching apps? See the setting at the bottom.</div>`) +
       `<div id="askOut">${ASK.log.join('')}</div>` + (ASK.conv.length ? (c.view && VW.pts.length ? `<div class="btns" id="vwBar"><button class="btn" data-act="vw-hide">Look at the map</button><button class="btn" data-act="vw-save">Save points as marks</button></div>` : '') + `<label class="fld" style="margin-top:10px"><span>Ask a follow-up</span><textarea id="askF" rows="2" placeholder="What if the wind is south?"></textarea></label><div class="btns"><button class="btn p" data-act="ask-here">Send follow-up</button></div>` : '') +
       `<details class="more"><summary>What gets sent</summary><pre class="ctx" id="askCtx">${esc(ctxt)}</pre><div class="mut">Owner names are not sent. Nothing is sent until you tap a button.</div></details>` +
-      `<details class="more"${AK.key ? '' : ''}><summary>Answers right here in the app (optional)</summary><div class="mut">With an Anthropic API key, answers show up here without leaving the map, and Ask Claude about this area and Deer movement can place their suggestions right on the map.</div>` + `<div class="mut">How to get one: sign in at <b>console.anthropic.com</b>, add a few dollars of credit under Billing, then create a key under API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>` + `<div></div>` +
+      `<details class="more"${AK.key ? '' : ''}><summary>Answers right here in the app (optional)</summary><div class="mut">With an Anthropic API key, answers show up here without leaving the map, and Ask Claude about this area and Deer movement can place their suggestions right on the map.</div>` + `<div class="mut">How to get one: sign in at <b>platform.claude.com</b> (the Claude Console), buy a few dollars of credit under Settings, Billing, then create a key under Settings, API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>` + `<div></div>` +
       (AK.key ? auLine() + `<div class="note">Key saved on this phone (ends ${esc(AK.key.slice(-4))}).</div><div class="btns"><button class="btn" data-act="ask-key-del">Remove key</button></div>` : `<label class="fld"><span>API key</span><input id="askKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="btns"><button class="btn" data-act="ask-key">Save key</button></div>`) + `</details>`;
   } else if (p === 'aulim') {
     auRoll();
-    h = head('Claude limits') + `<div class="mut" style="margin:-4px 0 10px">These limits are counted on this phone. Costs are estimated from what Claude reports for each request. For a hard cap across every phone that uses your key, also set a monthly spend limit at console.anthropic.com under Limits.</div>` +
+    h = head('Claude limits') + `<div class="mut" style="margin:-4px 0 10px">These limits are counted on this phone. Costs are estimated from what Claude reports for each request. For a hard cap across every phone that uses your key, also set a monthly spend limit at platform.claude.com under Limits.</div>` +
       `<label class="fld"><span>Requests per day</span><input id="auDay" type="number" inputmode="numeric" min="1" max="500" value="${AU.maxDay}"></label>` +
       `<label class="fld"><span>Monthly budget in dollars</span><input id="auMon" type="number" inputmode="decimal" min="0.5" step="0.5" value="${AU.maxMon}"></label>` +
       `<div class="wx2"><div><small>Today</small><b>${AU.n} request${AU.n === 1 ? '' : 's'}</b></div><div><small>This month</small><b>$${AU.usd.toFixed(2)}</b></div></div><div class="mut">All time on this phone: $${AU.all.toFixed(2)}.</div>` +
