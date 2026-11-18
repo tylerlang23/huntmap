@@ -250,6 +250,7 @@ pre.ctx{white-space:pre-wrap;font:13px/1.45 var(--f);color:var(--lichen);backgro
 .scr .scn{flex:none;width:30px;height:30px;border-radius:50%;background:var(--c);border:2px dashed #fff;display:grid;place-items:center;font:700 14px/1 var(--fc);color:#fff}
 .scr .g{flex:1;min-width:0}.scr small{display:block;color:var(--lichen);font-size:13px;margin-top:1px}.scr p{margin:6px 0 0;font-size:14.5px;line-height:1.4}.scr .btns{margin-top:8px}
 
+.vref{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:11px;border:0;background:var(--blaze);color:#1B1F1A;font:700 13px/1 var(--fc);vertical-align:1px;margin:0 2px;cursor:pointer}
 /* ---------- tools hub ---------- */
 .tool{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--bone)}
 .tool:last-child{border-bottom:0}
@@ -1426,6 +1427,12 @@ function scList(focus) {
 }
 function scSave(s) { if (s.saved) return; S.wps.push({ id: Date.now() + s.n, p: s.ll.map(v => +v.toFixed(6)), type: ['stand', 'blind', 'bed', 'food', 'sign', 'access', 'cam', 'sight'].includes(s.wt) ? s.wt : 'other', name: s.name || 'Claude pick ' + s.n, notes: [s.why, s.approach ? 'Getting in: ' + s.approach : '', s.winds && s.winds.length ? 'Good winds: ' + s.winds.join('/') : ''].filter(Boolean).join(' '), winds: ['stand', 'blind'].includes(s.wt) ? (s.winds || []).filter(x => HM.DIR8.includes(x)) : undefined, u: Date.now() }); s.saved = 1; }
 
+/* points Claude mentions when reading the whole view */
+const VW = { pts: [], mk: [] };
+function vwClear() { VW.mk.forEach(m => m.remove()); VW.mk = []; VW.pts = []; }
+function vwDraw() { VW.mk.forEach(m => m.remove()); VW.mk = []; VW.pts.forEach(p => { const el = document.createElement('div'); el.className = 'scp'; el.style.setProperty('--c', (WPT[p.wt] || WPT.other)[1]); el.innerHTML = `<b>${p.n}</b>`; el.title = p.label; el.addEventListener('click', ev => { ev.stopPropagation(); if (ASK) openSheet('ask'); toast(p.n + '. ' + p.label, 3000); }); VW.mk.push(new maplibregl.Marker({ element: el }).setLngLat(p.ll).addTo(map)); }); }
+const vwRefs = html => VW.pts.length ? html.replace(/\[(\d{1,2})\]/g, (m, n) => VW.pts.some(p => p.n == n) ? `<button class="vref" data-act="vw-go" data-n="${n}">${n}</button>` : m) : html;
+
 /* ---------------- ask Claude about a spot ---------------- */
 const AK = { key: store.get('akey', ''), model: 'claude-sonnet-5-5' };
 /* usage limits: counted on each phone; prices are Sonnet list prices ($2 in / $10 out per million tokens) */
@@ -1448,7 +1455,32 @@ function nearMarks(ll, maxM = 1600) {
   return S.wps.map(w => ({ w, d: HM.hav(ll, w.p) })).filter(x => x.d <= maxM && x.d > 3).sort((a, b) => a.d - b.d).slice(0, 15)
     .map(({ w, d }) => `- ${(WPT[w.type] || WPT.other)[0]}${w.name ? ' "' + w.name + '"' : ''}: ${Math.round(d * 1.0936)} yd ${HM.compass(HM.bearing(ll, w.p))} of the spot${w.winds && w.winds.length ? ', good winds ' + w.winds.join('/') : ''}${w.notes ? '. Notes: ' + w.notes.replace(/\s+/g, ' ').slice(0, 160) : ''}`);
 }
+function viewContext() {
+  const L = [], CW = map.getContainer().clientWidth, CH = map.getContainer().clientHeight, ctr = map.getCenter(), pic = ASK && ASK.pic;
+  L.push(`I am a whitetail deer hunter in Minnesota looking over an area on my map app. Date and time: ${new Date().toLocaleString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}. Center of the view: ${ctr.lat.toFixed(5)}, ${ctr.lng.toFixed(5)}.`);
+  if (pic) L.push(`The attached picture shows my whole screen: a ${pic.styleN}${S.on.contour && S.base !== 'hyb' ? ' with contour lines in feet' : ''}, ${map.getBearing() ? 'rotated so the top faces ' + HM.compass(map.getBearing()) : 'north up'}, about ${pic.wYd.toLocaleString()} yards wide and ${pic.hYd.toLocaleString()} yards tall. A faint grid splits it into 10 columns (0 to 9 across the top) and 10 rows (0 to 9 down the left). Gold lines are parcel boundaries, shaded areas are public land, and colored dots are my marks${S.me ? ' (blue dot is me)' : ''}.`);
+  const pl = ['wma-fill', 'padus-fill'].filter(l => map.getLayer(l)), pubs = pl.length ? [...new Set(map.queryRenderedFeatures({ layers: pl }).map(f => f.properties._name + (f.properties._closed ? ' (closed to public)' : '')).filter(Boolean))].slice(0, 12) : [];
+  L.push(pubs.length ? `Public land in view: ${pubs.join('; ')}. Everything else is private.` : 'No public land is shaded in this view; it appears to be private land.');
+  if (S.me) { const p = map.project(S.me); L.push(p.x >= 0 && p.y >= 0 && p.x <= CW && p.y <= CH ? `I am in view at x ${Math.round(p.x / CW * 1000)}, y ${Math.round(p.y / CH * 1000)}.` : `I am ${fmtDist(HM.hav(S.me, ctr.toArray ? ctr.toArray() : [ctr.lng, ctr.lat]))} from the center of the view.`); }
+  const marks = S.wps.map(m => ({ m, p: map.project(m.p) })).filter(o => o.p.x >= 0 && o.p.y >= 0 && o.p.x <= CW && o.p.y <= CH).slice(0, 25).map(o => `- ${(WPT[o.m.type] || WPT.other)[0]}${o.m.name ? ' "' + o.m.name + '"' : ''} at x ${Math.round(o.p.x / CW * 1000)}, y ${Math.round(o.p.y / CH * 1000)}${o.m.winds && o.m.winds.length ? ', good winds ' + o.m.winds.join('/') : ''}${o.m.notes ? '. Notes: ' + o.m.notes.replace(/\s+/g, ' ').slice(0, 120) : ''}`);
+  if (marks.length) L.push('My marks in view (x, y on a 0 to 1000 scale from the top-left corner):\n' + marks.join('\n'));
+  return L.concat(wxLines()).join('\n');
+}
+function wxLines() {
+  const L = [], W = S.wind; if (!W || !W.h) return L;
+  const cur = W.cur || {}, w0 = windAt(0);
+  if (cur.temperature_2m != null) L.push(`Weather now: ${Math.round(cur.temperature_2m)}°F, ${WX(cur.weather_code)[0].toLowerCase()}, wind from ${HM.compass(w0.dir)} ${Math.round(w0.spd)} mph gusting ${Math.round(w0.gust)}.`);
+  const hrs = []; for (let k = 2; k <= 24; k += 2) { const x = windAt(k); if (x) hrs.push(`${hlabel(x.time)} ${HM.compass(x.dir)} ${Math.round(x.spd)}mph ${Math.round(x.temp)}°F${x.pop >= 30 ? ' ' + x.pop + '% precip' : ''}`); }
+  if (hrs.length) L.push('Next 24 h (wind from, speed, temp): ' + hrs.join('; ') + '.');
+  const pt = presTrend(w0.i); if (pt) L.push(`Pressure ${pt.inHg.toFixed(2)} inHg, ${pt.word}.`);
+  const di = W.daily ? W.daily.time.indexOf(localKey(Date.now()).slice(0, 10)) : -1;
+  if (di >= 0) L.push(`Sunrise ${hm(new Date(W.daily.sunrise[di]))}, sunset ${hm(new Date(W.daily.sunset[di]))}.`);
+  if (W.daily && W.daily.temperature_2m_max && di >= 0) L.push('Next days: ' + W.daily.time.slice(di + 1, di + 5).map((t, k) => { const i = di + 1 + k; return `${new Date(t + 'T12:00').toLocaleDateString([], { weekday: 'short' })} ${Math.round(W.daily.temperature_2m_min[i])}-${Math.round(W.daily.temperature_2m_max[i])}°F ${WX(W.daily.weather_code[i])[0].toLowerCase()}, wind ${HM.compass(W.daily.wind_direction_10m_dominant[i])} ${Math.round(W.daily.wind_speed_10m_max[i])}`; }).join('; ') + '.');
+  try { const mo = moonInfo(localKey(Date.now()).slice(0, 10)); L.push(`Moon: ${mo.name}, ${mo.illum}% lit.`); } catch (e) { }
+  return L;
+}
 function askContext(c) {
+  if (c.view) return viewContext();
   const L = [], ll = c.ll, now = new Date();
   L.push(`I am scouting for whitetail deer hunting in Minnesota with my map app. Date and time: ${now.toLocaleString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}.`);
   L.push(`Spot: ${ll[1].toFixed(5)}, ${ll[0].toFixed(5)}${c.wp ? ` (my waypoint: ${(WPT[c.wp.type] || WPT.other)[0]}${c.wp.name ? ' "' + c.wp.name + '"' : ''}${c.wp.notes ? ', notes: ' + c.wp.notes : ''})` : ''}.`);
@@ -1495,14 +1527,18 @@ async function mapPicture(ll, opt = {}) {
 }
 const ASK_CHIPS = ['Where would deer bed and travel here?', 'Where should I hang a stand for this week\'s wind?', 'How should I walk in and out without spooking deer?', 'What does the terrain and cover tell you about this spot?', 'Best plan for a morning and an evening sit here?'];
 async function askStart(c) {
-  ASK = { c, q: '', pic: null, conv: [], busy: false };
+  vwClear(); ASK = { c, q: '', pic: null, conv: [], busy: false, log: [] };
   openSheet('ask');
-  const p = await mapPicture(c.ll).catch(e => { console.warn('pic', e); return null; });
-  if (!ASK || ASK.c !== c) return; ASK.pic = p; ASK.picNote = p ? p.note : '';
+  const p = await mapPicture(c.view ? null : c.ll, c.view ? { grid: true } : {}).catch(e => { console.warn('pic', e); return null; });
+  if (!ASK || ASK.c !== c) return; ASK.pic = p; ASK.picNote = p && !c.view ? p.note : '';
   const im = document.getElementById('askImg'); if (im) { if (p) { im.innerHTML = `<img src="${p.url}" alt="Map picture of the spot">`; } else im.innerHTML = '<span>The map picture could not be made. The details will still be sent.</span>'; }
   const ctx = document.getElementById('askCtx'); if (ctx) ctx.textContent = askContext(c);
 }
-function askText() { const q = (document.getElementById('askQ') || {}).value || ''; return (q.trim() || 'Look at this spot and tell me how you would hunt it.') + '\n\n' + askContext(ASK.c) + '\n\nPlease be specific to this spot and the picture. Point out where you would sit, how to get in and out with the wind, and what to check on the ground.'; }
+const VIEW_CHIPS = ['How should I approach this area?', 'Where are deer most likely with this weather?', 'What are the points of interest here?', 'Plan a morning and an evening sit here', 'Where would pressure from other hunters push deer?'];
+const VIEW_ASK = 'Read the whole map view like a scout. Cover: how to approach and access the area with the wind (parking, entry and exit routes), the points of interest (bedding cover, food, funnels, edges, terrain features, water), where deer are most likely given the weather, wind, pressure and moon, and a simple plan for my next sit. Be specific about where things are in the picture.';
+const VIEW_FMT = 'Label each place you talk about with a number in square brackets like [1], [2]. Keep the write-up readable on a phone: short headings and brief bullets. At the very end, add a JSON block (```json ... ```) listing every numbered place: {"points":[{"n":1,"x":0,"y":0,"label":"3 to 5 words","type":"stand|bed|food|travel|access|scrape|other"}]} with x and y on a 0 to 1000 scale from the top-left corner of the picture (use the grid; column 4 spans x 400 to 500). Place each point exactly on the feature you mean.';
+function askText() { if (ASK.c.view) { const q = ((document.getElementById('askQ') || {}).value || '').trim(); return (q ? q + '\n\n' + VIEW_ASK : VIEW_ASK) + '\n\n' + viewContext() + (AK.key ? '\n\n' + VIEW_FMT : '\n\nRefer to places by where they are in the picture (for example: top-left, along the creek at column 6 row 3).'); }
+  const q = (document.getElementById('askQ') || {}).value || ''; return (q.trim() || 'Look at this spot and tell me how you would hunt it.') + '\n\n' + askContext(ASK.c) + '\n\nPlease be specific to this spot and the picture. Point out where you would sit, how to get in and out with the wind, and what to check on the ground.'; }
 function askShare() {
   const text = askText(); try { navigator.clipboard && navigator.clipboard.writeText(text); } catch (e) { }
   const file = ASK.pic && ASK.pic.blob ? new File([ASK.pic.blob], 'spot-map.jpg', { type: 'image/jpeg' }) : null;
@@ -1522,13 +1558,17 @@ async function askHere(follow) {
   if (!AK.key || ASK.busy) return; const out = document.getElementById('askOut'); ASK.busy = true;
   let content;
   if (!ASK.conv.length) { content = []; if (ASK.pic) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: ASK.pic.url.split(',')[1] } }); content.push({ type: 'text', text: askText() }); }
-  else { const f = (document.getElementById('askF') || {}).value || follow || ''; if (!f.trim()) { ASK.busy = false; return; } content = f.trim(); out.insertAdjacentHTML('beforeend', `<div class="aq">${esc(f.trim())}</div>`); document.getElementById('askF').value = ''; }
+  else { const f = (document.getElementById('askF') || {}).value || follow || ''; if (!f.trim()) { ASK.busy = false; return; } content = f.trim(); out.insertAdjacentHTML('beforeend', `<div class="aq">${esc(f.trim())}</div>`); ASK.log.push(`<div class="aq">${esc(f.trim())}</div>`); document.getElementById('askF').value = ''; }
   ASK.conv.push({ role: 'user', content });
-  out.insertAdjacentHTML('beforeend', '<div class="aa wait">Claude is looking at the spot…</div>'); const box = out.lastElementChild; box.scrollIntoView({ block: 'nearest' });
+  out.insertAdjacentHTML('beforeend', `<div class="aa wait">${ASK.c.view ? 'Claude is studying the whole map. This takes about 20 to 40 seconds…' : 'Claude is looking at the spot…'}</div>`); const box = out.lastElementChild; box.scrollIntoView({ block: 'nearest' });
   try {
-    const txt = await claudeCall({ max_tokens: 1500, system: 'You are an experienced Minnesota whitetail hunter and scout helping a hunter read a spot on their map. Be practical and specific to the picture and details given. Use short paragraphs or brief bullet lists that read well on a phone. Mention wind and scent, access routes, and likely bedding, feeding and travel. Say when something needs checking on the ground, and remind them to follow Minnesota DNR regulations and get landowner permission on private land when relevant.', messages: ASK.conv });
-    ASK.conv.push({ role: 'assistant', content: txt }); box.classList.remove('wait'); box.innerHTML = mdLite(txt);
-    if (!document.getElementById('askF')) out.insertAdjacentHTML('afterend', `<label class="fld" style="margin-top:10px"><span>Ask a follow-up</span><textarea id="askF" rows="2" placeholder="What if the wind is south?"></textarea></label><div class="btns"><button class="btn p" data-act="ask-here">Send follow-up</button></div>`);
+    const txt = await claudeCall({ max_tokens: ASK.c.view ? 2500 : 1500, system: 'You are an experienced Minnesota whitetail hunter and scout helping a hunter read a spot on their map. Be practical and specific to the picture and details given. Use short paragraphs or brief bullet lists that read well on a phone. Mention wind and scent, access routes, and likely bedding, feeding and travel. Say when something needs checking on the ground, and remind them to follow Minnesota DNR regulations and get landowner permission on private land when relevant.', messages: ASK.conv });
+    ASK.conv.push({ role: 'assistant', content: txt }); box.classList.remove('wait');
+    let show = txt;
+    if (ASK.c.view && ASK.pic) { const jm = txt.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || txt.match(/(\{\s*"points"[\s\S]*\})\s*$/); if (jm) { show = txt.replace(jm[0], '').trim(); try { const pts = (JSON.parse(jm[1]).points || []).filter(p => isFinite(p.x) && isFinite(p.y)).slice(0, 15); if (pts.length) { VW.pts = pts.map(p => ({ n: +p.n, label: p.label || '', wt: SC_TYPE[String(p.type || '').toLowerCase()] || 'other', ll: scLL(ASK.pic.lat, +p.x, +p.y) })); vwDraw(); } } catch (e) { console.warn('points', e); } } }
+    box.innerHTML = vwRefs(mdLite(show)); ASK.log.push(box.outerHTML);
+    if (ASK.c.view && VW.pts.length && !document.getElementById('vwBar')) out.insertAdjacentHTML('afterend', `<div class="btns" id="vwBar"><button class="btn" data-act="vw-hide">Look at the map</button><button class="btn" data-act="vw-save">Save points as marks</button></div>`);
+    if (!document.getElementById('askF')) (document.getElementById('vwBar') || out).insertAdjacentHTML('afterend', `<label class="fld" style="margin-top:10px"><span>Ask a follow-up</span><textarea id="askF" rows="2" placeholder="What if the wind is south?"></textarea></label><div class="btns"><button class="btn p" data-act="ask-here">Send follow-up</button></div>`);
   } catch (e) { ASK.conv.pop(); box.classList.remove('wait'); box.classList.add('err'); box.textContent = navigator.onLine === false ? 'No signal. Try again when you have service.' : (e.message || 'Something went wrong.'); }
   ASK.busy = false;
 }
@@ -2114,7 +2154,7 @@ function openSheet(p, arg) {
   } else if (p === 'tools') {
     h = head('Tools') + toolRow('open', 'i-measure', 'Measure', 'Distance between points and the acres inside', ' data-p="measure"') + toolRow('open', 'i-track', 'Record a track', S.rec && !S.rec.blood ? 'Recording now. Tap to stop.' : 'Save your path in and out', ' data-p="track"') +
       toolRow('blood-open', 'i-blood', 'Blood trail', B.on ? 'In progress. Tap to go back to the camera.' : 'Camera view that makes blood stand out') + toolRow('open', 'i-hot', 'Hot spots', 'Likely spots for deer, turkey, pheasant and ducks', ' data-p="hot"') +
-      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('open', 'i-hot', 'Scout with Claude', 'Suggested stand, bedding and travel spots for this map view', ' data-p="scout"') + toolRow('ask-center', 'i-chat', 'Ask Claude', 'Scouting help for the spot in the middle of the map') + toolRow('open', 'i-wind', 'Weather and wind', 'Conditions, 7-day forecast, wind, shooting light and moon', ' data-p="wind"') +
+      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('open', 'i-hot', 'Scout with Claude', 'Suggested stand, bedding and travel spots for this map view', ' data-p="scout"') + toolRow('ask-view', 'i-chat', 'Ask Claude about this area', 'How to approach it, points of interest and where deer are likely today') + toolRow('open', 'i-wind', 'Weather and wind', 'Conditions, 7-day forecast, wind, shooting light and moon', ' data-p="wind"') +
       `<h3>Help</h3>` + toolRow('open', 'i-help', 'How to use ' + APP, 'Short guides for every part of the app', ' data-p="help"') + toolRow('intro', 'i-phone', 'Replay the welcome tour', 'The quick tour from the first time you opened the app');
   } else if (p === 'mark') h = head('Mark a spot') + toolRow('mark-me', 'i-loc', 'Where I am', 'Drops a mark at your GPS position') + toolRow('mark-tap', 'i-mark', 'Tap the map', 'Then tap the spot you want to mark') + toolRow('mark-center', 'i-north', 'Center of the screen', 'Marks the middle of what you are looking at') + `<div class="mut" style="margin-top:8px">You can also tap anything on the map and choose Mark this spot.</div>`;
   else if (p === 'measure') { setMode('measure'); return; }
@@ -2201,13 +2241,13 @@ function openSheet(p, arg) {
     h = head(tp.t) + `<div class="topic">${tp.b}</div><div class="btns"><button class="btn" data-act="open" data-p="help">All help topics</button></div>`;
   } else if (p === 'ask') {
     const c = ASK.c, ctxt = askContext(c);
-    h = head('Ask Claude') + `<div class="mut" style="margin:-4px 0 10px">Get a second opinion on ${c.wp ? 'this mark' : 'this spot'}. Claude sees a picture of the map and the details below.</div>` +
+    h = head(c.view ? 'Ask Claude about this area' : 'Ask Claude') + `<div class="mut" style="margin:-4px 0 10px">${c.view ? 'Claude reads everything on your screen with the weather and wind, then tells you how to approach the area, the points of interest and where deer are most likely. Places it mentions are numbered on the map.' : `Get a second opinion on ${c.wp ? 'this mark' : 'this spot'}. Claude sees a picture of the map and the details below.`}</div>` +
       `<div class="askimg" id="askImg">${ASK.pic ? `<img src="${ASK.pic.url}" alt="Map picture of the spot">` : '<span>Taking a picture of the map…</span>'}</div>` +
-      `<div class="qchips">${ASK_CHIPS.map(q => `<button class="qchip" data-act="ask-chip">${esc(q)}</button>`).join('')}</div>` +
-      `<label class="fld"><span>Your question</span><textarea id="askQ" rows="3" placeholder="Where would you set up here for an evening sit?">${esc(ASK.q)}</textarea></label>` +
-      (AK.key ? `<div class="btns"><button class="btn p" data-act="ask-here" style="flex:1">${ico('i-chat')}Ask</button></div><div class="mut">The answer shows up right here, about 1 cent a question. <a href="#" data-act="ask-direct">Open in the Claude app instead</a></div>` + auLine() :
+      `<div class="qchips">${(c.view ? VIEW_CHIPS : ASK_CHIPS).map(q => `<button class="qchip" data-act="ask-chip">${esc(q)}</button>`).join('')}</div>` +
+      `<label class="fld"><span>Your question</span><textarea id="askQ" rows="3" placeholder="${c.view ? 'Optional. Leave blank for a full area briefing.' : 'Where would you set up here for an evening sit?'}">${esc(ASK.q)}</textarea></label>` +
+      (AK.key && ASK.conv.length ? '' : AK.key ? `<div class="btns"><button class="btn p" data-act="ask-here" style="flex:1">${ico('i-chat')}${c.view ? 'Read this area' : 'Ask'}</button></div><div class="mut">The answer shows up right here, about 1 cent a question. <a href="#" data-act="ask-direct">Open in the Claude app instead</a></div>` + auLine() :
         `<div class="btns"><button class="btn p" data-act="ask-direct" style="flex:1">${ico('i-chat')}Open in Claude</button></div><div class="mut">Opens Claude with your question filled in. The map picture is copied: tap the message box, <b>Paste</b>, then send. <a href="#" data-act="ask-share">Use the share menu instead</a>. Want the answer right here with no switching apps? See the setting at the bottom.</div>`) +
-      `<div id="askOut"></div>` +
+      `<div id="askOut">${ASK.log.join('')}</div>` + (ASK.conv.length ? (c.view && VW.pts.length ? `<div class="btns" id="vwBar"><button class="btn" data-act="vw-hide">Look at the map</button><button class="btn" data-act="vw-save">Save points as marks</button></div>` : '') + `<label class="fld" style="margin-top:10px"><span>Ask a follow-up</span><textarea id="askF" rows="2" placeholder="What if the wind is south?"></textarea></label><div class="btns"><button class="btn p" data-act="ask-here">Send follow-up</button></div>` : '') +
       `<details class="more"><summary>What gets sent</summary><pre class="ctx" id="askCtx">${esc(ctxt)}</pre><div class="mut">Owner names are not sent. Nothing is sent until you tap a button.</div></details>` +
       `<details class="more"${AK.key ? '' : ''}><summary>Answers right here in the app (optional)</summary><div class="mut">With an Anthropic API key, answers show up here without leaving the map, and you can use Scout with Claude to get suggested spots placed on the map.</div>` + `<div class="mut">How to get one: sign in at <b>console.anthropic.com</b>, add a few dollars of credit under Billing, then create a key under API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>` + `<div></div>` +
       (AK.key ? auLine() + `<div class="note">Key saved on this phone (ends ${esc(AK.key.slice(-4))}).</div><div class="btns"><button class="btn" data-act="ask-key-del">Remove key</button></div>` : `<label class="fld"><span>API key</span><input id="askKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="btns"><button class="btn" data-act="ask-key">Save key</button></div>`) + `</details>`;
@@ -2302,7 +2342,10 @@ document.addEventListener('click', e => {
   else if (a === 'sc-saveall') { let n = 0; SC.res.spots.forEach(s => { if (!s.saved) { scSave(s); n++; } }); drawWps(); scClear(); closeSheet(); toast(n + ' marks saved'); }
   else if (a === 'sc-clear') { scClear(); closeSheet(); }
   else if (a === 'ask-place') { const c = S.lastPlace; if (c) askStart(c); }
-  else if (a === 'ask-center') { const ll = map.getCenter().toArray(); askStart({ ll }); }
+  else if (a === 'ask-view') { closeSheet(); setTimeout(() => askStart({ view: true }), 250); }
+  else if (a === 'vw-go') { const p = VW.pts.find(x => x.n == b.dataset.n); if (p) { closeSheet(); map.easeTo({ center: p.ll, zoom: Math.max(map.getZoom(), 15.5) }); toast(p.n + '. ' + p.label, 3500); } }
+  else if (a === 'vw-hide') { closeSheet(); toast('Tap a numbered pin to come back to the answer', 3500); }
+  else if (a === 'vw-save') { let n = 0; VW.pts.forEach(p => { if (!p.saved) { S.wps.push({ id: Date.now() + p.n, p: p.ll.map(v => +v.toFixed(6)), type: ['stand', 'bed', 'food', 'sign', 'access', 'sight'].includes(p.wt) ? p.wt : 'other', name: p.label || 'Claude point ' + p.n, notes: 'From Ask Claude about this area, ' + new Date().toLocaleDateString(), u: Date.now() }); p.saved = 1; n++; } }); drawWps(); vwClear(); toast(n + ' marks saved'); b.closest('.btns').remove(); }
   else if (a === 'ask-wp') { const w = sh._wp; askStart({ ll: w.p.slice(), wp: w }); }
   else if (a === 'ask-chip') { const q = $('#askQ'); q.value = b.textContent; ASK.q = q.value; }
   else if (a === 'ask-share') { e.preventDefault(); ASK.q = $('#askQ').value; askShare(); }
