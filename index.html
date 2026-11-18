@@ -219,6 +219,29 @@ details.logs summary{cursor:pointer;color:var(--gold);font-weight:600;padding:10
 .day .tb{position:relative;height:6px;border-radius:3px;background:var(--moss2)}.day .tb i{position:absolute;top:0;bottom:0;border-radius:3px;background:linear-gradient(90deg,#6FB7F2,#F2C46B)}
 .day .dw{display:flex;align-items:center;gap:3px;color:var(--lichen);font:600 14px/1 var(--fc);justify-content:flex-end}.day .dw svg{width:15px;height:15px}
 
+
+/* ---------- photos + ask ---------- */
+.phs{display:flex;gap:8px;overflow-x:auto;margin:2px 0 12px;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.ph{flex:none;width:84px;height:84px;border-radius:14px;border:1px solid var(--line);background:var(--field) center/cover no-repeat;padding:0;color:var(--lichen);font-size:11.5px;cursor:pointer}
+.ph.miss{display:flex;align-items:center;justify-content:center;text-align:center;padding:6px}
+.ph.add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-style:dashed;border-color:var(--lichen);font-weight:600;font-size:13px;color:var(--bone)}
+.ph.add .ic{width:24px;height:24px}
+#pv{position:fixed;inset:0;z-index:90;background:rgba(10,12,10,.96);display:none;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px)}
+#pv.open{display:flex}#pv img{flex:1;min-height:0;width:100%;object-fit:contain}
+#pv .pvb{display:flex;align-items:center;gap:10px;padding-top:12px}#pv .pvb .g{flex:1;text-align:center;font-weight:600}
+.askimg{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--field);min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--lichen);font-size:14px;margin-bottom:10px}
+.askimg img{width:100%;max-height:240px;object-fit:cover;display:block}
+.qchips{display:flex;gap:8px;overflow-x:auto;margin:0 0 10px;padding-bottom:2px}
+.qchip{flex:none;border:1px solid var(--line);background:var(--moss2);color:var(--bone);border-radius:999px;padding:9px 13px;font:500 14px var(--f);cursor:pointer;white-space:nowrap}
+.qchip:active{background:var(--blaze);color:#1B1F1A}
+#askOut .aa{background:var(--field);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:10px;font-size:15.5px;line-height:1.45}
+#askOut .aa ul{margin:6px 0;padding-left:20px}#askOut .aa li{margin:3px 0}
+#askOut .aa.wait{color:var(--lichen);font-style:italic}#askOut .aa.err{color:var(--rust)}
+#askOut .aq{margin-top:12px;margin-left:30px;background:var(--moss2);border-radius:14px;padding:10px 12px;font-size:15px}
+details.more{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}details.more summary{cursor:pointer;font-weight:600;color:var(--lichen);padding:4px 0}
+pre.ctx{white-space:pre-wrap;font:13px/1.45 var(--f);color:var(--lichen);background:var(--field);border-radius:12px;padding:10px;max-height:220px;overflow:auto}
+.tool.ask .ti{background:rgba(255,107,26,.16);color:var(--blaze)}
+
 /* ---------- tools hub ---------- */
 .tool{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--bone)}
 .tool:last-child{border-bottom:0}
@@ -346,6 +369,7 @@ body.guiding .loc{bottom:calc(var(--tab) + var(--sb) + 112px)}body.guiding .disc
   <symbol id="wx-snow" viewBox="0 0 24 24"><path d="M6.5 14.5h11a3.6 3.6 0 0 0 0-7.2 5.2 5.2 0 0 0-9.8 1.2A3 3 0 0 0 6.5 14.5z" fill="#A9B0A3" stroke="none"/><circle cx="8" cy="18.5" r="1.2" fill="#ECEADF" stroke="none"/><circle cx="12" cy="20" r="1.2" fill="#ECEADF" stroke="none"/><circle cx="16" cy="18.5" r="1.2" fill="#ECEADF" stroke="none"/></symbol>
   <symbol id="wx-sleet" viewBox="0 0 24 24"><path d="M6.5 14.5h11a3.6 3.6 0 0 0 0-7.2 5.2 5.2 0 0 0-9.8 1.2A3 3 0 0 0 6.5 14.5z" fill="#A9B0A3" stroke="none"/><path d="M8 17.2l-1 2.6M16 17.2l-1 2.6" stroke="#6FB7F2" stroke-width="2"/><circle cx="12" cy="19" r="1.2" fill="#ECEADF" stroke="none"/></symbol>
   <symbol id="wx-storm" viewBox="0 0 24 24"><path d="M6.5 13.5h11a3.6 3.6 0 0 0 0-7.2 5.2 5.2 0 0 0-9.8 1.2A3 3 0 0 0 6.5 13.5z" fill="#8E978A" stroke="none"/><path d="M12.5 13.5l-2.5 4h3l-2 4" stroke="#F2C46B" stroke-width="2"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24"><path d="M4 8h3l1.6-2.5h6.8L17 8h3a1.5 1.5 0 011.5 1.5v9A1.5 1.5 0 0120 20H4a1.5 1.5 0 01-1.5-1.5v-9A1.5 1.5 0 014 8z"/><circle cx="12" cy="13.5" r="3.6"/></symbol>
   <symbol id="logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#1B1F1A"/><g fill="none" stroke="#ECEADF" stroke-linecap="round"><path d="M32 4.8c11.5 0 22.4 8.8 22.4 23.6 0 15.8-10 30.8-22.4 30.8S9.6 44.2 9.6 28.4C9.6 13.6 20.5 4.8 32 4.8z" stroke-opacity=".22" stroke-width="1.4"/><path d="M32 9.8c9 0 17.6 7.2 17.6 19 0 12.7-7.9 24.6-17.6 24.6S14.4 41.5 14.4 28.8C14.4 17 23 9.8 32 9.8z" stroke-opacity=".38" stroke-width="1.4"/></g><g fill="#FF6B1A"><path d="M30.2 48.6c-6.6.4-10.7-4.1-10.7-11.1 0-8.6 4.6-17.2 9.6-21.6.9-.8 1.9-.3 1.9.9l.6 30.2c0 .9-.6 1.5-1.4 1.6z"/><path d="M33.8 48.6c6.6.4 10.7-4.1 10.7-11.1 0-8.6-4.6-17.2-9.6-21.6-.9-.8-1.9-.3-1.9.9l-.6 30.2c0 .9.6 1.5 1.4 1.6z"/></g></symbol>
  </defs>
 </svg>
@@ -1035,6 +1059,7 @@ function placeHtml(c) {
     `<div class="ptitle">${title}</div>${sub ? `<div class="psub">${sub}</div>` : ''}` +
     (facts.filter(Boolean).length ? `<div class="facts">${facts.join('')}</div>` : '') + legal + extra +
     `<div class="pact">${c.me ? `<button class="btn p" data-act="guide-ll" data-ll="${ll}">${ico('i-guide')}Guide me</button>` : `<a class="btn p" href="${dirLink(c.ll)}" target="_blank" rel="noopener">${ico('i-guide')}Directions</a>`}<button class="btn" data-act="mark-here" data-ll="${ll}">${ico('i-mark')}Mark</button><button class="btn" data-act="cone-here" data-ll="${ll}">${ico('i-wind')}Wind</button></div>` +
+    `<button class="tool ask" data-act="ask-place"><span class="ti">${ico('i-chat')}</span><span class="tt"><b>Ask Claude about this spot</b><small>Send the map picture, wind and weather for a scouting opinion</small></span>${ico('i-chev', 'chev')}</button>` +
     (q ? `<button class="tool" data-act="access" data-src="${q._src}" data-id="${q._id}"><span class="ti">${ico('w-truck')}</span><span class="tt"><b>How to get in</b><small>Parking and places a public road touches the boundary</small></span>${ico('i-chev', 'chev')}</button>` : '') +
     `<div class="pnote">${ico(q ? 'i-info' : 'i-sos')}<span>${note}</span></div><div class="mut" style="font-size:12px;margin-top:8px">Boundaries are approximate, not a survey.</div>`;
 }
@@ -1274,13 +1299,151 @@ async function sync() {
       const diff = S.wps.length + S.tracks.length - before; if (diff > 0) toast(`Synced: ${diff} new from your other devices`, 3000);
     }
     if (sig(m) !== sig({ wps: remote.wps || [], tracks: remote.tracks || [], log: remote.log || [], del: remote.del || {} })) await gh('/gists/' + S.gh.gist, { method: 'PATCH', body: JSON.stringify({ files: { [GFILE]: { content: JSON.stringify(Object.assign({ v: 1, t: Date.now() }, m)) } } }) });
-    S.gh.last = Date.now(); store.set('gh', S.gh); setSync('Synced ' + hm(new Date()) + ' · ' + S.wps.length + ' waypoints, ' + S.tracks.length + ' tracks');
+    let pmsg = ''; try { const pr = await syncPhotos(); const n = S.wps.reduce((s, w) => s + phIds(w).length, 0); if (n) pmsg = ', ' + n + ' photo' + (n > 1 ? 's' : ''); } catch (e) { console.warn('photos', e); pmsg = ' (photos will retry)'; }
+    S.gh.last = Date.now(); store.set('gh', S.gh); setSync('Synced ' + hm(new Date()) + ' · ' + S.wps.length + ' waypoints, ' + S.tracks.length + ' tracks' + pmsg);
   } catch (e) { console.warn('sync', e); setSync(navigator.onLine === false ? 'Offline. Will sync when you have signal.' : (e.message || 'Sync failed'), true); }
   finally { S.applying = false; syncing = false; if (syncAgain) { syncAgain = false; syncSoon(500); } }
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) syncSoon(300); });
 window.addEventListener('online', () => syncSoon(300));
 setInterval(() => { if (!document.hidden) syncSoon(0); }, 120000);
+
+/* ---------------- waypoint photos (kept on the phone, synced through a second private gist) ---------------- */
+const phIds = w => (w.photos ? w.photos.slice() : w.photo ? [w.id] : []);
+const phGet = id => idbDo('readonly', st => st.get(id), 'photos').catch(() => null);
+const phPut = (id, d) => idbDo('readwrite', st => st.put(d, id), 'photos');
+const phDel = id => idbDo('readwrite', st => st.delete(id), 'photos').catch(() => { });
+function shrink(file, max = 1280, q = .72) {
+  return new Promise((res, rej) => { const u = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { const k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); res(c.toDataURL('image/jpeg', q)); };
+    im.onerror = () => { URL.revokeObjectURL(u); rej(new Error('That file is not a photo this phone can read.')); }; im.src = u; });
+}
+async function phAdd(w, files) {
+  const ids = phIds(w); let n = 0;
+  for (const f of files) { if (ids.length >= 12) { toast('Up to 12 photos per mark'); break; } try { const d = await shrink(f), id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); await phPut(id, d); ids.push(id); n++; } catch (e) { toast(e.message || 'Could not add that photo'); } }
+  if (!n) return; w.photos = ids; delete w.photo; if (w.photo === undefined && ids.includes(w.id)) { /* legacy blood photo stays under the mark id */ }
+  if (S.wps.includes(w)) { w.u = Date.now(); drawWps(); }
+  phStrip(w); toast(n === 1 ? 'Photo added' : n + ' photos added');
+}
+async function phStrip(w) {
+  const el = document.getElementById('wpPhs'); if (!el) return; const ids = phIds(w), ds = await Promise.all(ids.map(phGet));
+  el.innerHTML = ids.map((id, i) => ds[i] ? `<button class="ph" data-act="ph-view" data-id="${id}" style="background-image:url(${ds[i]})" aria-label="Open photo"></button>` : `<button class="ph miss" data-act="ph-view" data-id="${id}">${S.gh.token ? 'Syncing' : 'On another phone'}</button>`).join('') +
+    `<label class="ph add"><svg class="ic"><use href="#i-photo"/></svg><span>${ids.length ? 'Add' : 'Add photo'}</span><input type="file" accept="image/*" multiple id="wpPhIn" hidden></label>`;
+}
+async function phView(w, id) {
+  const d = await phGet(id); if (!d) { toast(S.gh.token ? 'This photo has not downloaded yet. It will after the next sync.' : 'This photo was taken on another phone. Turn on sync to see it here.', 3500); return; }
+  let v = document.getElementById('pv'); if (!v) { v = document.createElement('div'); v.id = 'pv'; document.body.appendChild(v); }
+  v.innerHTML = `<img src="${d}" alt="Photo at ${esc(w.name || 'this mark')}"><div class="pvb"><button class="btn" data-act="pv-close">Close</button><span class="g">${esc(w.name || (WPT[w.type] || WPT.other)[0])}</span><button class="btn" data-act="pv-del" data-id="${id}" style="color:var(--rust)">Delete</button></div>`; v.classList.add('open');
+}
+function phRemove(w, id) {
+  const ids = phIds(w).filter(x => String(x) !== String(id)); w.photos = ids; delete w.photo; phDel(id);
+  if (S.wps.includes(w)) { w.u = Date.now(); drawWps(); } phStrip(w);
+}
+const PMARK = 'rutline-photos.txt';
+async function syncPhotos() {
+  let meta = null;
+  for (let page = 1; page <= 10 && !meta; page++) { const list = await gh('/gists?per_page=100&page=' + page); const g = list.find(x => x.files && x.files[PMARK]); if (g) meta = g; if (list.length < 100) break; }
+  if (!meta) meta = await gh('/gists', { method: 'POST', body: JSON.stringify({ public: false, description: APP + ' waypoint photos (synced by the app)', files: { [PMARK]: { content: 'Photos for ' + APP + ' waypoints. Managed by the app; edits here may be overwritten.' } } }) });
+  const remote = {}; Object.keys(meta.files || {}).forEach(n => { const m = /^ph-(.+)\.txt$/.exec(n); if (m) remote[m[1]] = meta.files[n]; });
+  const want = new Set(); S.wps.forEach(w => phIds(w).forEach(id => want.add(String(id))));
+  let up = 0, down = 0, gone = 0, batch = {}, size = 0;
+  const flush = async () => { if (!Object.keys(batch).length) return; await gh('/gists/' + meta.id, { method: 'PATCH', body: JSON.stringify({ files: batch }) }); batch = {}; size = 0; };
+  for (const id of want) {
+    const key = /^\d+(\.\d+)?$/.test(id) ? +id : id, have = await phGet(key);
+    if (have && !remote[id]) { batch['ph-' + id + '.txt'] = { content: have }; size += have.length; up++; if (size > 2.5e6) await flush(); }
+    else if (!have && remote[id]) { try { const t = await (await fetch(remote[id].raw_url, { cache: 'no-store' })).text(); if (t.startsWith('data:image')) { await phPut(key, t); down++; } } catch (e) { console.warn('photo download', e); } }
+  }
+  for (const id in remote) if (!want.has(id)) { batch['ph-' + id + '.txt'] = null; gone++; }
+  await flush();
+  if (down && $('#sheet').dataset.p === 'wp' && $('#sheet')._wp) phStrip($('#sheet')._wp);
+  return { up, down, gone };
+}
+
+/* ---------------- ask Claude about a spot ---------------- */
+const AK = { key: store.get('akey', ''), model: 'claude-sonnet-5-5' };
+let ASK = null;
+function nearMarks(ll, maxM = 1600) {
+  return S.wps.map(w => ({ w, d: HM.hav(ll, w.p) })).filter(x => x.d <= maxM && x.d > 3).sort((a, b) => a.d - b.d).slice(0, 15)
+    .map(({ w, d }) => `- ${(WPT[w.type] || WPT.other)[0]}${w.name ? ' "' + w.name + '"' : ''}: ${Math.round(d * 1.0936)} yd ${HM.compass(HM.bearing(ll, w.p))} of the spot${w.winds && w.winds.length ? ', good winds ' + w.winds.join('/') : ''}${w.notes ? '. Notes: ' + w.notes.replace(/\s+/g, ' ').slice(0, 160) : ''}`);
+}
+function askContext(c) {
+  const L = [], ll = c.ll, now = new Date();
+  L.push(`I am scouting for whitetail deer hunting in Minnesota with my map app. Date and time: ${now.toLocaleString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}.`);
+  L.push(`Spot: ${ll[1].toFixed(5)}, ${ll[0].toFixed(5)}${c.wp ? ` (my waypoint: ${(WPT[c.wp.type] || WPT.other)[0]}${c.wp.name ? ' "' + c.wp.name + '"' : ''}${c.wp.notes ? ', notes: ' + c.wp.notes : ''})` : ''}.`);
+  const q = c.pub, pr = c.par;
+  if (q) L.push(`Land: public, ${q._name} (${q._cat}${q._acres ? ', about ' + Math.round(q._acres) + ' acres' : ''}${q._closed ? ', marked closed to the public' : ''}).`);
+  else if (pr) L.push(`Land: private parcel${pr.ac > 0 ? ' of about ' + pr.ac.toFixed(0) + ' acres' : ''}${pr.co ? ' in ' + pr.co + ' County' : ''}${pr.twp ? ', ' + pr.twp : ''}.`);
+  if (S.me) L.push(`I am ${fmtDist(HM.hav(S.me, ll))} ${HM.compass(HM.bearing(ll, S.me))} of the spot.`);
+  const W = S.wind;
+  if (W && W.h) {
+    const cur = W.cur || {}, w0 = windAt(0);
+    if (cur.temperature_2m != null) L.push(`Weather now: ${Math.round(cur.temperature_2m)}°F, ${WX(cur.weather_code)[0].toLowerCase()}, wind from ${HM.compass(w0.dir)} ${Math.round(w0.spd)} mph gusting ${Math.round(w0.gust)}.`);
+    const hrs = []; for (let k = 2; k <= 24; k += 2) { const x = windAt(k); if (x) hrs.push(`${hlabel(x.time)} ${HM.compass(x.dir)} ${Math.round(x.spd)}mph ${Math.round(x.temp)}°F${x.pop >= 30 ? ' ' + x.pop + '% precip' : ''}`); }
+    if (hrs.length) L.push('Next 24 h (wind from, speed, temp): ' + hrs.join('; ') + '.');
+    const pt = presTrend(w0.i); if (pt) L.push(`Pressure ${pt.inHg.toFixed(2)} inHg, ${pt.word}.`);
+    const di = W.daily ? W.daily.time.indexOf(localKey(Date.now()).slice(0, 10)) : -1;
+    if (di >= 0) L.push(`Sunrise ${hm(new Date(W.daily.sunrise[di]))}, sunset ${hm(new Date(W.daily.sunset[di]))}.`);
+    if (W.daily && W.daily.temperature_2m_max && di >= 0) L.push('Next days: ' + W.daily.time.slice(di + 1, di + 5).map((t, k) => { const i = di + 1 + k; return `${new Date(t + 'T12:00').toLocaleDateString([], { weekday: 'short' })} ${Math.round(W.daily.temperature_2m_min[i])}-${Math.round(W.daily.temperature_2m_max[i])}°F ${WX(W.daily.weather_code[i])[0].toLowerCase()}, wind ${HM.compass(W.daily.wind_direction_10m_dominant[i])} ${Math.round(W.daily.wind_speed_10m_max[i])}`; }).join('; ') + '.');
+  }
+  try { const mo = moonInfo(localKey(Date.now()).slice(0, 10)); L.push(`Moon: ${mo.name}, ${mo.illum}% lit.`); } catch (e) { }
+  const nm = nearMarks(ll); if (nm.length) L.push('My marks nearby:\n' + nm.join('\n'));
+  if (ASK && ASK.picNote) L.push(ASK.picNote);
+  return L.join('\n');
+}
+function waitIdle(ms) { return new Promise(res => { let done = false; const f = () => { if (!done) { done = true; res(); } }; map.once('idle', f); setTimeout(f, ms); }); }
+async function mapPicture(ll) {
+  if (map.getZoom() < 14.5) map.jumpTo({ center: ll, zoom: 15.5 }); else map.jumpTo({ center: ll });
+  await waitIdle(5000);
+  const src = await new Promise(res => { map.once('render', () => { try { const c = map.getCanvas(), t = document.createElement('canvas'); t.width = c.width; t.height = c.height; t.getContext('2d').drawImage(c, 0, 0); res(t); } catch (e) { res(null); } }); map.triggerRepaint(); });
+  if (!src) return null;
+  const k = Math.min(1, 1400 / Math.max(src.width, src.height)), out = document.createElement('canvas'); out.width = Math.round(src.width * k); out.height = Math.round(src.height * k);
+  const g = out.getContext('2d'), r = out.width / map.getContainer().clientWidth; g.drawImage(src, 0, 0, out.width, out.height);
+  const dot = (x, y, col, lab) => { g.beginPath(); g.arc(x, y, 9 * r, 0, 7); g.fillStyle = col; g.fill(); g.lineWidth = 2.5 * r; g.strokeStyle = '#fff'; g.stroke(); if (lab) { g.font = `600 ${13 * r}px sans-serif`; g.lineWidth = 4 * r; g.strokeStyle = 'rgba(0,0,0,.8)'; g.strokeText(lab, x + 13 * r, y + 5 * r); g.fillStyle = '#fff'; g.fillText(lab, x + 13 * r, y + 5 * r); } };
+  S.wps.forEach(w => { const p = map.project(w.p); if (p.x > 0 && p.y > 0 && p.x < map.getContainer().clientWidth && p.y < map.getContainer().clientHeight) dot(p.x * r, p.y * r, (WPT[w.type] || WPT.other)[1], (w.name || (WPT[w.type] || WPT.other)[0]).slice(0, 24)); });
+  if (S.me) { const p = map.project(S.me); dot(p.x * r, p.y * r, '#2F8CFF', 'Me'); }
+  const c0 = map.project(ll); g.strokeStyle = '#FF6B1A'; g.lineWidth = 3.5 * r; g.beginPath(); g.arc(c0.x * r, c0.y * r, 16 * r, 0, 7); g.moveTo(c0.x * r - 26 * r, c0.y * r); g.lineTo(c0.x * r - 8 * r, c0.y * r); g.moveTo(c0.x * r + 8 * r, c0.y * r); g.lineTo(c0.x * r + 26 * r, c0.y * r); g.moveTo(c0.x * r, c0.y * r - 26 * r); g.lineTo(c0.x * r, c0.y * r - 8 * r); g.moveTo(c0.x * r, c0.y * r + 8 * r); g.lineTo(c0.x * r, c0.y * r + 26 * r); g.stroke();
+  const wM = HM.hav(map.unproject([0, map.getContainer().clientHeight / 2]).toArray(), map.unproject([map.getContainer().clientWidth, map.getContainer().clientHeight / 2]).toArray());
+  const brg = Math.round(map.getBearing()), styleN = { sat: 'satellite photo', hyb: 'satellite photo with contour lines in feet', spring: 'leaf-off spring aerial photo', topo: 'USGS topographic map' }[S.base] || 'map';
+  const blob = await new Promise(res => out.toBlob(res, 'image/jpeg', .82));
+  return { blob, url: out.toDataURL('image/jpeg', .82), note: `The attached picture is a ${styleN}${S.on.contour && S.base !== 'hyb' ? ' with contour lines in feet' : ''} centered on the spot (orange crosshair). ${brg ? 'Map is rotated; top of the picture faces ' + HM.compass(brg) + '.' : 'North is up.'} It is about ${Math.round(wM * 1.0936).toLocaleString()} yards across. Colored dots are my marks${S.me ? ', blue dot is me' : ''}. Gold lines are parcel boundaries${S.on.wma || S.on.padus ? ', shaded areas are public land' : ''}.` };
+}
+const ASK_CHIPS = ['Where would deer bed and travel here?', 'Where should I hang a stand for this week\'s wind?', 'How should I walk in and out without spooking deer?', 'What does the terrain and cover tell you about this spot?', 'Best plan for a morning and an evening sit here?'];
+async function askStart(c) {
+  ASK = { c, q: '', pic: null, conv: [], busy: false };
+  openSheet('ask');
+  const p = await mapPicture(c.ll).catch(e => { console.warn('pic', e); return null; });
+  if (!ASK || ASK.c !== c) return; ASK.pic = p; ASK.picNote = p ? p.note : '';
+  const im = document.getElementById('askImg'); if (im) { if (p) { im.innerHTML = `<img src="${p.url}" alt="Map picture of the spot">`; } else im.innerHTML = '<span>The map picture could not be made. The details will still be sent.</span>'; }
+  const ctx = document.getElementById('askCtx'); if (ctx) ctx.textContent = askContext(c);
+}
+function askText() { const q = (document.getElementById('askQ') || {}).value || ''; return (q.trim() || 'Look at this spot and tell me how you would hunt it.') + '\n\n' + askContext(ASK.c) + '\n\nPlease be specific to this spot and the picture. Point out where you would sit, how to get in and out with the wind, and what to check on the ground.'; }
+function askShare() {
+  const text = askText(); try { navigator.clipboard && navigator.clipboard.writeText(text); } catch (e) { }
+  const file = ASK.pic && ASK.pic.blob ? new File([ASK.pic.blob], 'spot-map.jpg', { type: 'image/jpeg' }) : null;
+  if (navigator.share && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], text }).then(() => toast('Sent. If Claude opens without your question, tap the message box and Paste.', 5000)).catch(e => { if (e.name !== 'AbortError') askOpenWeb(); });
+  } else askOpenWeb();
+}
+function askOpenWeb() { const text = askText(); try { navigator.clipboard && navigator.clipboard.writeText(text); } catch (e) { } window.open('https://claude.ai/new?q=' + encodeURIComponent(text.slice(0, 6000)), '_blank', 'noopener'); toast('Question copied. Save the map picture and add it in Claude for the best answer.', 5000); }
+const mdLite = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#{1,4} (.+)$/gm, '<b>$1</b>').replace(/^\s*[-*] (.+)$/gm, '<li>$1</li>').replace(/^\s*\d+\. (.+)$/gm, '<li>$1</li>').replace(/(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g, '<ul>$1</ul>').replace(/\n{2,}/g, '<br><br>').replace(/\n/g, ' ').replace(/<\/li> <li>/g, '</li><li>').replace(/<\/ul>\s*(<br>)+/g, '</ul>').replace(/(<br>)+\s*<ul>/g, '<ul>');
+async function askHere(follow) {
+  if (!AK.key || ASK.busy) return; const out = document.getElementById('askOut'); ASK.busy = true;
+  let content;
+  if (!ASK.conv.length) { content = []; if (ASK.pic) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: ASK.pic.url.split(',')[1] } }); content.push({ type: 'text', text: askText() }); }
+  else { const f = (document.getElementById('askF') || {}).value || follow || ''; if (!f.trim()) { ASK.busy = false; return; } content = f.trim(); out.insertAdjacentHTML('beforeend', `<div class="aq">${esc(f.trim())}</div>`); document.getElementById('askF').value = ''; }
+  ASK.conv.push({ role: 'user', content });
+  out.insertAdjacentHTML('beforeend', '<div class="aa wait">Claude is looking at the spot…</div>'); const box = out.lastElementChild; box.scrollIntoView({ block: 'nearest' });
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': AK.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: AK.model, max_tokens: 1500, system: 'You are an experienced Minnesota whitetail hunter and scout helping a hunter read a spot on their map. Be practical and specific to the picture and details given. Use short paragraphs or brief bullet lists that read well on a phone. Mention wind and scent, access routes, and likely bedding, feeding and travel. Say when something needs checking on the ground, and remind them to follow Minnesota DNR regulations and get landowner permission on private land when relevant.', messages: ASK.conv }) });
+    let j = {}; try { j = await r.json(); } catch (e) { }
+    if (!r.ok) throw new Error(r.status === 401 ? 'The API key was not accepted. Check it in the settings below.' : r.status === 429 ? 'Too many questions at once. Wait a minute and try again.' : (j.error && j.error.message) || 'Claude could not answer (' + r.status + ').');
+    const txt = (j.content || []).filter(x => x.type === 'text').map(x => x.text).join('\n');
+    ASK.conv.push({ role: 'assistant', content: txt }); box.classList.remove('wait'); box.innerHTML = mdLite(txt);
+    if (!document.getElementById('askF')) out.insertAdjacentHTML('afterend', `<label class="fld" style="margin-top:10px"><span>Ask a follow-up</span><textarea id="askF" rows="2" placeholder="What if the wind is south?"></textarea></label><div class="btns"><button class="btn p" data-act="ask-here">Send follow-up</button></div>`);
+  } catch (e) { ASK.conv.pop(); box.classList.remove('wait'); box.classList.add('err'); box.textContent = navigator.onLine === false ? 'No signal. Try again when you have service.' : (e.message || 'Something went wrong.'); }
+  ASK.busy = false;
+}
 
 /* ---------------- waypoints ---------------- */
 let wpMarkers = [];
@@ -1806,6 +1969,7 @@ const HELP = [
   { id: 'blood', g: 'In the field', t: 'Following a blood trail', b: `<ol><li>Open ${K('i-tools', 'Tools')} and tap Blood trail. Allow the camera.</li><li>Point the phone at the ground. In Highlight view, anything blood-colored turns bright blue.</li><li>Use the slider: lower for fresh red blood only, higher to catch dark or dried blood.</li><li>Tap Hit site where the deer was standing, Mark blood at each find, and Found it at the deer.</li><li>Tap Finish to save the trail you walked.</li></ol><p>Red leaves and some bark can light up too. Use it to help your eyes, not replace them.</p>` },
   { id: 'hot', g: 'In the field', t: 'Hot spots for scouting', b: `<p>Hot spots scores the area on your screen using land cover, terrain, distance from roads and today's wind. Pick the animal and the time of season, then tap Analyze this view.</p><p>Numbered pins show the best spots and why. Treat it as a short list to go look at, not a guarantee. Tap the red Clear hot spots button to remove them.</p>` },
   { id: 'offline', g: 'In the field', t: 'Using the map with no signal', b: `<ol><li>At home, with signal, zoom the map to the property.</li><li>Open ${K('i-tools', 'Tools')} and tap Offline maps.</li><li>Pick the map styles you want, then Standard detail.</li><li>Tap Download this area and keep the app open until it finishes.</li></ol><p>In the field, the saved area works with no bars: photos, parcels, public land and the last wind forecast. Turn on airplane mode at home once to check it.</p>` },
+  { id: 'ask', g: 'In the field', t: 'Ask Claude about a spot', b: `<p>Tap any spot on the map and choose <b>Ask Claude about this spot</b>, or open a waypoint and choose Ask Claude. You can also use ${K('i-tools', 'Tools')} for the middle of the map.</p><ol><li>The app takes a picture of the map with your marks on it and gathers the land type, wind, weather, sun, moon and your nearby marks.</li><li>Pick a suggested question or type your own.</li><li>Tap <b>Send to Claude</b>, pick Claude in the share menu, then tap send.</li></ol><p>If you have an Anthropic API key, you can save it in the optional settings so answers appear right in the app. Owner names are never sent.</p>` },
   { id: 'party', g: 'Your group', t: 'Hunting as a party', b: `<p>${K('i-party', 'Party')} lets a group see each other on the map and send quick alerts.</p><ol><li>One person taps Start a party and shares the 6-letter code.</li><li>Everyone else taps Join with a code.</li><li>Members appear on the map with their initials. Grey means they have not updated in a while.</li><li>Tap Deer down, Coming your way, Need help and the rest to alert everyone with your location.</li><li>Turn on Share with the party on any mark or sit to share it.</li></ol><p>You can pause location sharing at any time. Right now the party runs in demo mode with sample hunters, until a group server is set up.</p>` },
   { id: 'log', g: 'Saving and syncing', t: 'Your hunt log', b: `<p>Log each sit so you learn which stands produce and on which winds.</p><ol><li>Open ${K('i-saved', 'Saved')} and tap Log a sit, or open a stand and tap Log a sit.</li><li>Pick the stand and times, and tap + for each deer you saw.</li><li>Tap Save sit. Wind, temperature, pressure and the moon are filled in for you.</li></ol><p>Saved shows deer per sit for each stand and which wind has been best.</p>` },
   { id: 'sync', g: 'Saving and syncing', t: 'Keeping phone and computer in sync', b: `<p>Your marks, tracks and log can stay the same on every device through a private file on your GitHub account.</p><ol><li>Open ${K('i-saved', 'Saved')} and scroll to Sync between devices.</li><li>Tap Make a token on GitHub, keep only the gist box ticked, and generate the token.</li><li>Paste it and tap Connect. Do the same on each device.</li></ol><p>Treat the token like a password.</p>` },
@@ -1846,7 +2010,7 @@ function renderIntro() {
 }
 
 /* ---------------- panels ---------------- */
-const SHEETS = { layers: ['i-layers', 'layers'], tools: ['i-tools', 'start'], mark: ['i-mark', 'mark'], party: ['i-party', 'party'], saved: ['i-saved', 'log'], wind: ['i-wind', 'wind'], wp: ['i-mark', 'mark'], track: ['i-track', 'track'], hot: ['i-hot', 'hot'], offline: ['i-offline', 'offline'], log: ['i-log', 'log'], access: ['i-guide', 'layers'], search: ['i-search', null], sharetxt: ['i-share', null], help: ['i-help', null], topic: ['i-help', null], pjoin: ['i-party', 'party'], alertmsg: ['i-chat', 'party'] };
+const SHEETS = { layers: ['i-layers', 'layers'], tools: ['i-tools', 'start'], mark: ['i-mark', 'mark'], party: ['i-party', 'party'], saved: ['i-saved', 'log'], wind: ['i-wind', 'wind'], wp: ['i-mark', 'mark'], track: ['i-track', 'track'], hot: ['i-hot', 'hot'], offline: ['i-offline', 'offline'], log: ['i-log', 'log'], access: ['i-guide', 'layers'], search: ['i-search', null], sharetxt: ['i-share', null], help: ['i-help', null], topic: ['i-help', null], pjoin: ['i-party', 'party'], alertmsg: ['i-chat', 'party'], ask: ['i-chat', 'ask'] };
 function closeSheet() { drawOffAreas(false); if ($('#sheet').dataset.p === 'place') clearPlace(); const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
 function openSheet(p, arg) {
   if ($('#sheet').dataset.p === 'place' && p !== 'place') clearPlace();
@@ -1862,13 +2026,13 @@ function openSheet(p, arg) {
   } else if (p === 'tools') {
     h = head('Tools') + toolRow('open', 'i-measure', 'Measure', 'Distance between points and the acres inside', ' data-p="measure"') + toolRow('open', 'i-track', 'Record a track', S.rec && !S.rec.blood ? 'Recording now. Tap to stop.' : 'Save your path in and out', ' data-p="track"') +
       toolRow('blood-open', 'i-blood', 'Blood trail', B.on ? 'In progress. Tap to go back to the camera.' : 'Camera view that makes blood stand out') + toolRow('open', 'i-hot', 'Hot spots', 'Likely spots for deer, turkey, pheasant and ducks', ' data-p="hot"') +
-      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('open', 'i-wind', 'Weather and wind', 'Conditions, 7-day forecast, wind, shooting light and moon', ' data-p="wind"') +
+      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('ask-center', 'i-chat', 'Ask Claude', 'Scouting help for the spot in the middle of the map') + toolRow('open', 'i-wind', 'Weather and wind', 'Conditions, 7-day forecast, wind, shooting light and moon', ' data-p="wind"') +
       `<h3>Help</h3>` + toolRow('open', 'i-help', 'How to use ' + APP, 'Short guides for every part of the app', ' data-p="help"') + toolRow('intro', 'i-phone', 'Replay the welcome tour', 'The quick tour from the first time you opened the app');
   } else if (p === 'mark') h = head('Mark a spot') + toolRow('mark-me', 'i-loc', 'Where I am', 'Drops a mark at your GPS position') + toolRow('mark-tap', 'i-mark', 'Tap the map', 'Then tap the spot you want to mark') + toolRow('mark-center', 'i-north', 'Center of the screen', 'Marks the middle of what you are looking at') + `<div class="mut" style="margin-top:8px">You can also tap anything on the map and choose Mark this spot.</div>`;
   else if (p === 'measure') { setMode('measure'); return; }
   else if (p === 'wp') {
     const w = arg; s._wp = w;
-    h = head(w.id ? 'Edit waypoint' : 'New waypoint') + (w.photo ? `<img class="wpimg" id="wpImg" alt="Photo at this mark">` : '') + `<label class="fld"><span>Name</span><input id="wpName" value="${esc(w.name)}" placeholder="North ridge stand"></label><div class="fld"><span>Type</span><div class="types">${Object.entries(WPT).filter(([k]) => !['blood', 'hit', 'found'].includes(k) || k === w.type).map(([k, v]) => `<button class="ty${k === w.type ? ' on' : ''}" data-act="wp-type" data-k="${k}" style="--c:${v[1]}"><span>${ico(v[3])}</span>${v[0]}</button>`).join('')}</div><select id="wpType" hidden>${Object.entries(WPT).map(([k, v]) => `<option value="${k}" ${k === w.type ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></div><label class="fld"><span>Notes</span><textarea id="wpNotes" rows="2" placeholder="Best on a NW wind, enter from the east">${esc(w.notes)}</textarea></label>${P.st ? `<label class="row"><span class="g">Share with ${esc(P.st.name)}<br><small>Everyone in your party sees this mark</small></span><input type="checkbox" id="wpShare" ${w.shared ? 'checked' : ''}></label>` : ''}<div id="wpExtra" style="${['stand', 'blind'].includes(w.type) ? '' : 'display:none'}"><div class="fld"><span>Good winds for this stand</span><div class="wchips">${HM.DIR8.map(d => `<button class="wchip ${(w.winds || []).includes(d) ? 'on' : ''}" data-act="wp-wind" data-d="${d}">${d}</button>`).join('')}</div></div><label class="fld"><span>Range rings</span><select id="wpRings"><option value="">Off</option><option value="bow" ${w.rings === 'bow' ? 'selected' : ''}>Bow: 20, 30, 40 yd</option><option value="gun" ${w.rings === 'gun' ? 'selected' : ''}>Gun: 50 to 200 yd</option></select></label>${(() => { const ss = HM.sitStats(S.log.filter(s => s.stand == w.id)); return ss ? `<div class="note">${ss.sits} sit${ss.sits > 1 ? 's' : ''} · ${ss.perSit.toFixed(1)} deer per sit · ${ss.bucks} buck${ss.bucks === 1 ? '' : 's'}${ss.best ? ' · best on ' + ss.best.dir : ''}</div>` : ''; })()}</div><div class="mut">${w.p[1].toFixed(5)}, ${w.p[0].toFixed(5)}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) + ' ' + HM.compass(HM.bearing(S.me, w.p)) + ' of you' : ''}</div><div class="btns"><button class="btn p" data-act="wp-save">Save</button>${w.id ? '<button class="btn" data-act="guide-wp">Guide me</button>' : ''}${w.id && ['stand', 'blind'].includes(w.type) ? '<button class="btn" data-act="log-new" data-stand="' + w.id + '">Log a sit</button>' : ''}<button class="btn" data-act="wp-share">Share</button><button class="btn" data-act="cone-here" data-ll="${w.p.join(',')}">Wind check</button><a class="btn" href="${dirLink(w.p)}" target="_blank" rel="noopener">Directions</a>${w.id ? '<button class="btn" data-act="wp-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
+    h = head(w.id ? 'Edit waypoint' : 'New waypoint') + `<div class="phs" id="wpPhs"></div>` + `<label class="fld"><span>Name</span><input id="wpName" value="${esc(w.name)}" placeholder="North ridge stand"></label><div class="fld"><span>Type</span><div class="types">${Object.entries(WPT).filter(([k]) => !['blood', 'hit', 'found'].includes(k) || k === w.type).map(([k, v]) => `<button class="ty${k === w.type ? ' on' : ''}" data-act="wp-type" data-k="${k}" style="--c:${v[1]}"><span>${ico(v[3])}</span>${v[0]}</button>`).join('')}</div><select id="wpType" hidden>${Object.entries(WPT).map(([k, v]) => `<option value="${k}" ${k === w.type ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></div><label class="fld"><span>Notes</span><textarea id="wpNotes" rows="2" placeholder="Best on a NW wind, enter from the east">${esc(w.notes)}</textarea></label>${P.st ? `<label class="row"><span class="g">Share with ${esc(P.st.name)}<br><small>Everyone in your party sees this mark</small></span><input type="checkbox" id="wpShare" ${w.shared ? 'checked' : ''}></label>` : ''}<div id="wpExtra" style="${['stand', 'blind'].includes(w.type) ? '' : 'display:none'}"><div class="fld"><span>Good winds for this stand</span><div class="wchips">${HM.DIR8.map(d => `<button class="wchip ${(w.winds || []).includes(d) ? 'on' : ''}" data-act="wp-wind" data-d="${d}">${d}</button>`).join('')}</div></div><label class="fld"><span>Range rings</span><select id="wpRings"><option value="">Off</option><option value="bow" ${w.rings === 'bow' ? 'selected' : ''}>Bow: 20, 30, 40 yd</option><option value="gun" ${w.rings === 'gun' ? 'selected' : ''}>Gun: 50 to 200 yd</option></select></label>${(() => { const ss = HM.sitStats(S.log.filter(s => s.stand == w.id)); return ss ? `<div class="note">${ss.sits} sit${ss.sits > 1 ? 's' : ''} · ${ss.perSit.toFixed(1)} deer per sit · ${ss.bucks} buck${ss.bucks === 1 ? '' : 's'}${ss.best ? ' · best on ' + ss.best.dir : ''}</div>` : ''; })()}</div><div class="mut">${w.p[1].toFixed(5)}, ${w.p[0].toFixed(5)}${S.me ? ' · ' + fmtDist(HM.hav(S.me, w.p)) + ' ' + HM.compass(HM.bearing(S.me, w.p)) + ' of you' : ''}</div>${w.id ? `<button class="tool ask" data-act="ask-wp"><span class="ti">${ico('i-chat')}</span><span class="tt"><b>Ask Claude about this mark</b><small>Map picture, notes, wind and weather</small></span>${ico('i-chev', 'chev')}</button>` : ''}<div class="btns"><button class="btn p" data-act="wp-save">Save</button>${w.id ? '<button class="btn" data-act="guide-wp">Guide me</button>' : ''}${w.id && ['stand', 'blind'].includes(w.type) ? '<button class="btn" data-act="log-new" data-stand="' + w.id + '">Log a sit</button>' : ''}<button class="btn" data-act="wp-share">Share</button><button class="btn" data-act="cone-here" data-ll="${w.p.join(',')}">Wind check</button><a class="btn" href="${dirLink(w.p)}" target="_blank" rel="noopener">Directions</a>${w.id ? '<button class="btn" data-act="wp-del" style="color:var(--bad)">Delete</button>' : ''}</div>`;
   } else if (p === 'track') {
     h = head('Track') + (S.rec && S.rec.blood ? `<div class="note"><b style="color:#ff6b7d">Blood trail in progress</b> · ${recText()}</div><div class="btns"><button class="btn p" data-act="blood-open">Back to camera</button><button class="btn" data-act="blood-finish">Finish and save</button></div>` : `<button class="btn p" data-act="blood-open" style="width:100%;background:#c1001f;color:#fff">Start a blood trail</button><div class="mut" style="margin:6px 0 14px">Camera view that makes blood stand out, records your path as you follow it, and drops marks at each blood find, the hit site and the recovery.</div><h3>Walk in and out</h3>`) + (S.rec && !S.rec.blood ? `<div class="note" id="recInfo">${recText()}</div><div class="btns"><button class="btn p" data-act="rec-stop">Stop and save</button><button class="btn" data-act="rec-cancel">Discard</button></div>` : (S.rec && S.rec.blood ? '' : `<div class="note">Records your path in and out so you can retrace it in the dark. Keep this page open while recording; phones pause location when the screen locks.</div><div class="btns"><button class="btn p" data-act="rec-start">Start recording</button></div>`)) +
       `<h3>Saved tracks</h3>` + (S.tracks.length ? S.tracks.map((t, i) => `<div class="row"><div class="g" data-act="trk-go" data-i="${i}" style="cursor:pointer">${esc(t.name)}<br><small>${fmtDist(HM.lineLen(t.pts))}</small></div><input type="checkbox" data-trk="${i}" ${t.hide ? '' : 'checked'}><button class="btn s" data-act="trk-del" data-i="${i}">&times;</button></div>`).join('') : '<div class="mut">None yet.</div>');
@@ -1930,7 +2094,7 @@ function openSheet(p, arg) {
       `<div class="btns"><button class="btn p" data-act="off-go" ${offState.run ? 'disabled' : ''}>Download this area</button>${offState.run ? '<button class="btn" data-act="off-stop">Stop</button>' : ''}</div><div class="prog" id="offProg" style="display:${offState.run ? 'block' : 'none'}"><i></i><span></span></div>` +
       `<h3>Saved areas</h3>` + (S.offAreas.length ? S.offAreas.map(a => `<div class="row"><div class="g" data-act="go-box" data-b="${a.b.join(',')}" style="cursor:pointer">${esc(a.name)}<br><small>${a.mb} MB · ${({ 15: 'light', 16: 'standard', 17: 'close-up' })[a.detail] || ''} · ${new Date(a.t).toLocaleDateString([], { month: 'short', day: 'numeric' })}</small></div><button class="btn s" data-act="off-del" data-id="${a.id}">Delete</button></div>`).join('') : '<div class="mut">None yet.</div>') +
       `<div class="mut" style="margin-top:8px">Offline, satellite comes from USGS imagery (a bit less sharp than online), and the map stops zooming at the detail you saved.</div>`;
-  } else if (p === 'place') {
+  } else if (p === 'place') { S.lastPlace = arg;
     h = placeHtml(arg);
   } else if (p === 'party') {
     h = head(P.st ? esc(P.st.name) : 'Party') + partyHtml();
@@ -1947,12 +2111,24 @@ function openSheet(p, arg) {
   } else if (p === 'topic') {
     const tp = HELP.find(x => x.id === arg) || HELP[0];
     h = head(tp.t) + `<div class="topic">${tp.b}</div><div class="btns"><button class="btn" data-act="open" data-p="help">All help topics</button></div>`;
+  } else if (p === 'ask') {
+    const c = ASK.c, ctxt = askContext(c);
+    h = head('Ask Claude') + `<div class="mut" style="margin:-4px 0 10px">Get a second opinion on ${c.wp ? 'this mark' : 'this spot'}. Claude sees a picture of the map and the details below.</div>` +
+      `<div class="askimg" id="askImg">${ASK.pic ? `<img src="${ASK.pic.url}" alt="Map picture of the spot">` : '<span>Taking a picture of the map…</span>'}</div>` +
+      `<div class="qchips">${ASK_CHIPS.map(q => `<button class="qchip" data-act="ask-chip">${esc(q)}</button>`).join('')}</div>` +
+      `<label class="fld"><span>Your question</span><textarea id="askQ" rows="3" placeholder="Where would you set up here for an evening sit?">${esc(ASK.q)}</textarea></label>` +
+      (AK.key ? `<div class="btns"><button class="btn p" data-act="ask-here">${ico('i-chat')}Ask here</button><button class="btn" data-act="ask-share">${ico('i-share')}Send to Claude app</button></div>` :
+        `<div class="btns"><button class="btn p" data-act="ask-share" style="flex:1">${ico('i-share')}Send to Claude</button></div><div class="mut">Opens your phone's share menu. Pick <b>Claude</b>, then tap send. Your question is also copied, so you can paste it if needed. No Claude app? <a href="#" data-act="ask-web">Open Claude in the browser</a>.</div>`) +
+      `<div id="askOut"></div>` +
+      `<details class="more"><summary>What gets sent</summary><pre class="ctx" id="askCtx">${esc(ctxt)}</pre><div class="mut">Owner names are not sent. Nothing is sent until you tap a button.</div></details>` +
+      `<details class="more"${AK.key ? '' : ''}><summary>Answers right here in the app (optional)</summary><div class="mut">If you have an Anthropic API key, answers show up here without leaving the map. Questions are billed to your API account, usually a few cents each. The key stays on this phone and is never synced or shared.</div>` +
+      (AK.key ? `<div class="note">Key saved on this phone (ends ${esc(AK.key.slice(-4))}).</div><div class="btns"><button class="btn" data-act="ask-key-del">Remove key</button></div>` : `<label class="fld"><span>API key</span><input id="askKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="btns"><button class="btn" data-act="ask-key">Save key</button></div>`) + `</details>`;
   } else if (p === 'sharetxt') { h = head('Share waypoint') + `<div class="mut">Copy this text and send it:</div><label class="fld"><textarea rows="6" readonly onclick="this.select()">${esc(arg)}</textarea></label>`;
   } else if (p === 'search') {
     h = head('Search results') + (arg.length ? arg.map(r => `<div class="row" data-act="go" data-ll="${r.lon},${r.lat}" data-z="13" style="cursor:pointer"><div class="g">${esc(r.display_name)}</div></div>`).join('') : '<div class="mut">Nothing found.</div>');
   }
   s.innerHTML = h; s.scrollTop = 0;
-  if (p === 'wp' && arg.photo) idbDo('readonly', st => st.get(arg.id), 'photos').then(d => { const im = document.getElementById('wpImg'); if (im && d) im.src = d; else if (im) im.remove(); }).catch(() => { });
+  if (p === 'wp') phStrip(arg);
 }
 /* swipe a bottom sheet down to close it */
 (() => {
@@ -1989,6 +2165,7 @@ $('#q').addEventListener('keydown', async e => {
 document.addEventListener('input', e => { if (e.target.id === 'helpQ') { $('#helpList').innerHTML = helpList(e.target.value); return; } if (e.target.id === 'bsens') { B.sens = e.target.value / 100; bel('bsensv').textContent = B.sens < .25 ? 'fresh red only' : B.sens < .65 ? 'fresh to dried' : 'dark and dried too'; } });
 document.addEventListener('change', e => {
   const t = e.target;
+  if (t.id === 'wpPhIn') { const w = $('#sheet')._wp; if (w && t.files.length) phAdd(w, [...t.files]); t.value = ''; return; }
   if (t.dataset.act === 'hd') { store.set('hd', t.checked); toast(t.checked ? 'Loading sharper photos' : 'Back to standard photos'); setTimeout(() => location.reload(), 350); return; }
   if (t.dataset.layer) { const id = t.dataset.layer; S.on[id] = t.checked; store.set('on', S.on); applyVis(id); if (t.checked) { delete loaded[id]; loadLayer(id); } if (id === 'wma') { delete loaded.padus; loadLayer('padus'); } }
   else if (t.dataset.trk) { S.tracks[+t.dataset.trk].hide = !t.checked; saveTracks(); drawTracks(); }
@@ -2009,6 +2186,18 @@ document.addEventListener('click', e => {
   else if (a === 'mode-clear') { S.measure = []; drawMeasure(); }
   else if (a === 'mode-undo') { S.measure.pop(); drawMeasure(); }
   else if (a === 'access') { const f = S.data[b.dataset.src].find(x => x.properties._id == b.dataset.id); if (f) findAccess(f); }
+  else if (a === 'ask-place') { const c = S.lastPlace; if (c) askStart(c); }
+  else if (a === 'ask-center') { const ll = map.getCenter().toArray(); askStart({ ll }); }
+  else if (a === 'ask-wp') { const w = sh._wp; askStart({ ll: w.p.slice(), wp: w }); }
+  else if (a === 'ask-chip') { const q = $('#askQ'); q.value = b.textContent; ASK.q = q.value; }
+  else if (a === 'ask-share') { ASK.q = $('#askQ').value; askShare(); }
+  else if (a === 'ask-web') { e.preventDefault(); ASK.q = $('#askQ').value; askOpenWeb(); }
+  else if (a === 'ask-here') { if ($('#askQ')) ASK.q = $('#askQ').value; askHere(); }
+  else if (a === 'ask-key') { const k = $('#askKey').value.trim(); if (!/^sk-ant-/.test(k)) { toast('That does not look like an Anthropic API key (it starts with sk-ant-).', 3500); return; } AK.key = k; store.set('akey', k); toast('Key saved on this phone'); ASK.q = $('#askQ').value; openSheet('ask'); }
+  else if (a === 'ask-key-del') { AK.key = ''; store.set('akey', ''); toast('Key removed'); openSheet('ask'); }
+  else if (a === 'ph-view') { phView(sh._wp, b.dataset.id); }
+  else if (a === 'pv-close') { $('#pv').classList.remove('open'); }
+  else if (a === 'pv-del') { if (confirm('Delete this photo?')) { phRemove(sh._wp, b.dataset.id); $('#pv').classList.remove('open'); } }
   else if (a === 'mark-here') editWp({ id: 0, p: parseLL(b.dataset.ll), type: 'stand', name: b.dataset.name || '', notes: '' });
   else if (a === 'cone-here') { S.cone = parseLL(b.dataset.ll); drawCone(); if (popup) popup.remove(); openSheet('wind'); }
   else if (a === 'cone-place') setMode('cone');
@@ -2091,7 +2280,7 @@ document.addEventListener('click', e => {
   else if (a === 'mine-del') { const n = b.dataset.n; idbDo('readwrite', st => st.delete(n)).catch(() => { }); S.mine = S.mine.filter(m => m.name !== n); drawMine(); openSheet('layers'); }
   else if (a === 'regrid-save') { S.regrid = $('#rgKey').value.trim(); S.prov = $('#rgProv').value; store.set('prov', S.prov); store.set('regrid', S.regrid); addRegrid(); delete loaded.parcels; loadLayer('parcels'); toast(S.regrid ? 'Token saved. Zoom in to see parcel lines.' : 'Token removed'); openSheet('layers'); }
   else if (a === 'wp-save') { const w = sh._wp; w.name = $('#wpName').value.trim(); w.type = $('#wpType').value; w.notes = $('#wpNotes').value.trim(); w.u = Date.now(); if ($('#wpShare')) { const was = w.shared; w.shared = $('#wpShare').checked; if (w.shared && !was) partyNote('shared ' + (w.name || (WPT[w.type] || WPT.other)[0])); } if (['stand', 'blind'].includes(w.type)) { w.winds = [...sh.querySelectorAll('.wchip.on')].map(x => x.dataset.d); w.rings = $('#wpRings').value; } if (!w.id) { w.id = Date.now(); S.wps.push(w); } drawWps(); closeSheet(); toast('Waypoint saved'); }
-  else if (a === 'wp-del') { idbDo('readwrite', st => st.delete(sh._wp.id), 'photos').catch(() => { }); tomb(sh._wp.id); S.wps = S.wps.filter(x => x.id !== sh._wp.id); drawWps(); closeSheet(); }
+  else if (a === 'wp-del') { phIds(sh._wp).forEach(phDel); tomb(sh._wp.id); S.wps = S.wps.filter(x => x.id !== sh._wp.id); drawWps(); closeSheet(); }
   else if (a === 'wp-go') { const w = S.wps.find(x => x.id == b.dataset.id); if (w) { map.flyTo({ center: w.p, zoom: Math.max(map.getZoom(), 15.5) }); editWp(w); } }
   else if (a === 'go') { map.flyTo({ center: parseLL(b.dataset.ll), zoom: +b.dataset.z || Math.max(map.getZoom(), 16) }); if (b.dataset.z) closeSheet(); }
   else if (a === 'rec-start') { S.rec = { t0: Date.now(), pts: [] }; closeSheet(); recChip(); whereAmI(p => { follow = true; $('#fLoc').classList.add('on'); map.flyTo({ center: p, zoom: Math.max(map.getZoom(), 16) }); }); toast('Recording. Tap the green banner to stop.', 3000); }
