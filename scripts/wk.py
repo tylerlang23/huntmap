@@ -17,7 +17,7 @@ async def main():
             print('sheet', await pg.evaluate("document.querySelector('#sheet').dataset.p"))
         except Exception as e: print('CLICKFAIL', e)
         try:
-            await pg.tap('#fWind', timeout=5000); await pg.wait_for_timeout(3000); await pg.screenshot(path='shots/3.png'); print('wind', await pg.evaluate("WF.on + ' ' + (WF.field&&WF.field.n)"))
+            await pg.evaluate('closeSheet()'); await pg.wait_for_timeout(500); await pg.tap('#fWind', timeout=5000); await pg.wait_for_timeout(3000); await pg.screenshot(path='shots/3.png'); print('wind', await pg.evaluate("WF.on + ' ' + (WF.field&&WF.field.n)"))
         except Exception as e: print('CLICKFAIL2', str(e)[:600])
         await b.close()
 asyncio.run(main())
