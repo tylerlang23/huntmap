@@ -10,11 +10,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: pip install -q playwright pillow && python -m playwright install --with-deps chromium >/dev/null
+      - run: pip install -q playwright pillow && python -m playwright install --with-deps chromium webkit >/dev/null
       - run: |
           python3 -m http.server 8000 >/dev/null 2>&1 &
           sleep 1
-          python3 scripts/preview.py
+          python3 scripts/wk.py
       - if: always()
         run: |
           cd shots && python3 -c "

@@ -1551,7 +1551,7 @@ function wfFrame(ts) {
   if (WF.play && WF.field) { WF.t += dt / .75; if (WF.t >= WF.field.n - 1) { WF.t = WF.field.n - 1; WF.play = false; } WF.dirty = true; wfHud(); }
   if (!WF.field) return; if (WF.dirty || !WF.grid) wfGrid();
   const cx = WF.cx, c = map.getContainer(), W = c.clientWidth, H = c.clientHeight;
-  cx.globalCompositeOperation = 'destination-in'; cx.fillStyle = `rgba(0,0,0,${RM ? 0 : .87})`; cx.fillRect(0, 0, W, H); cx.globalCompositeOperation = 'source-over';
+  cx.globalCompositeOperation = 'destination-in'; cx.fillStyle = `rgba(0,0,0,${RM ? 0 : Math.pow(.87, dt * 60).toFixed(3)})`; cx.fillRect(0, 0, W, H); cx.globalCompositeOperation = 'source-over';
   if (RM) { if (WF.drawn === WF.t + '|' + WF.grid.W) return; WF.drawn = WF.t + '|' + WF.grid.W; cx.clearRect(0, 0, W, H); for (let y = 40; y < H; y += 70) for (let x = 35; x < W; x += 70) { const [vx, vy, s] = wfVec(x, y), m = Math.hypot(vx, vy) || 1, ux = vx / m, uy = vy / m; cx.strokeStyle = WCOL(s); cx.lineWidth = 2.2; cx.beginPath(); cx.moveTo(x - ux * 14, y - uy * 14); cx.lineTo(x + ux * 14, y + uy * 14); cx.lineTo(x + ux * 6 - uy * 6, y + uy * 6 + ux * 6); cx.moveTo(x + ux * 14, y + uy * 14); cx.lineTo(x + ux * 6 + uy * 6, y + uy * 6 - ux * 6); cx.stroke(); } return; }
   const paths = WBUCKETS.map(() => new Path2D()), k = 60 * dt * .55;
   for (const p of WF.parts) {
@@ -1570,7 +1570,7 @@ function wfHud(force) {
   $('#wbPlay').innerHTML = `<svg class="ic"><use href="#${WF.play ? 'i-pause' : 'i-play'}"/></svg>`;
   if (k !== WF.hr || force) { WF.hr = k; S.windHour = Math.min(k, 47); windChip(); renderWps(); drawCone();
     const st = S.wps.filter(w => (w.type === 'stand' || w.type === 'blind') && w.winds && w.winds.length); const wd = windAt(S.windHour);
-    const good = wd ? st.filter(w => HM.windFits(w.winds, wd.dir)).length : 0; $('#wbStands').textContent = st.length ? `${good} of ${st.length} stands good for this wind` : 'Set good winds on your stands to rate them here'; }
+    const good = wd ? st.filter(w => HM.windFits(w.winds, wd.dir)).length : 0; $('#wbStands').textContent = st.length ? `${good} of ${st.length} stands fit this wind` : 'Set good winds on stands to rate them'; }
 }
 function wfTicks() { const F = WF.field; if (!F) return ''; let h = ''; F.times.forEach((t, i) => { const d = new Date(t); if (d.getHours() === 0 && i > 0) h += `<span style="left:${i / (F.n - 1) * 100}%">${d.toLocaleDateString([], { weekday: 'short' })}</span>`; }); return h; }
 function windFlow(on) {
