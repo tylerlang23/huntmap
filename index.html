@@ -242,6 +242,14 @@ details.more{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}d
 pre.ctx{white-space:pre-wrap;font:13px/1.45 var(--f);color:var(--lichen);background:var(--field);border-radius:12px;padding:10px;max-height:220px;overflow:auto}
 .tool.ask .ti{background:rgba(255,107,26,.16);color:var(--blaze)}
 
+
+.qchips.wrap{flex-wrap:wrap;overflow:visible}.qchip.on{background:var(--blaze);color:#1B1F1A;border-color:var(--blaze)}
+.scp{width:34px;height:34px;border-radius:50%;background:var(--c);border:3px dashed #fff;display:grid;place-items:center;box-shadow:0 0 0 4px rgba(255,107,26,.35),0 2px 8px rgba(0,0,0,.55);cursor:pointer}
+.scp b{color:#fff;font:700 15px/1 var(--fc)}
+.scr{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}.scr.on{background:rgba(255,107,26,.08);border-radius:12px;padding:12px 8px}
+.scr .scn{flex:none;width:30px;height:30px;border-radius:50%;background:var(--c);border:2px dashed #fff;display:grid;place-items:center;font:700 14px/1 var(--fc);color:#fff}
+.scr .g{flex:1;min-width:0}.scr small{display:block;color:var(--lichen);font-size:13px;margin-top:1px}.scr p{margin:6px 0 0;font-size:14.5px;line-height:1.4}.scr .btns{margin-top:8px}
+
 /* ---------- tools hub ---------- */
 .tool{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--bone)}
 .tool:last-child{border-bottom:0}
@@ -1359,8 +1367,72 @@ async function syncPhotos() {
   return { up, down, gone };
 }
 
+/* ---------------- scout with Claude: suggested spots placed on the map ---------------- */
+let SC = { time: 'eve', focus: 'Stand and blind sites', pub: true, note: '', busy: false, res: null }, scMarkers = [];
+const SC_FOCUS = ['Stand and blind sites', 'Bedding areas', 'Travel routes and pinch points', 'Rut funnels and scrapes', 'Quiet access routes', 'Trail camera spots'];
+const SC_TYPE = { stand: 'stand', blind: 'blind', bed: 'bed', bedding: 'bed', food: 'food', feed: 'food', travel: 'sight', funnel: 'sight', pinch: 'sight', scrape: 'sign', rub: 'sign', access: 'access', parking: 'access', cam: 'cam', camera: 'cam' };
+function scTarget() {
+  const W = S.wind; if (!W || !W.daily) return { k: 0, label: 'now' };
+  const now = Date.now(), di = W.daily.time.indexOf(localKey(now).slice(0, 10)); if (di < 0) return { k: 0, label: 'now' };
+  const ss = d => new Date(W.daily.sunset[d]).getTime(), sr = d => new Date(W.daily.sunrise[d]).getTime();
+  let t, label;
+  if (SC.time === 'eve') { t = ss(di) - 2 * 36e5; label = 'this evening'; if (t < now - 36e5) { t = ss(di + 1) - 2 * 36e5; label = 'tomorrow evening'; } }
+  else if (SC.time === 'morn') { t = sr(di) + 36e5; label = 'this morning'; if (t < now - 36e5) { t = sr(di + 1) + 36e5; label = 'tomorrow morning'; } }
+  else { t = ss(di + 1) - 2 * 36e5; label = 'tomorrow evening'; }
+  return { k: Math.max(0, Math.round((t - now) / 36e5)), label };
+}
+function scLL(lat, x, y) { x = Math.max(0, Math.min(10, x / 100)); y = Math.max(0, Math.min(10, y / 100)); const i = Math.min(9, Math.floor(x)), j = Math.min(9, Math.floor(y)), fx = x - i, fy = y - j, A = lat[j][i], B = lat[j][i + 1], C = lat[j + 1][i], D = lat[j + 1][i + 1];
+  return [0, 1].map(q => (A[q] * (1 - fx) + B[q] * fx) * (1 - fy) + (C[q] * (1 - fx) + D[q] * fx) * fy); }
+function scPublicAt(ll) { const pl = ['wma-fill', 'padus-fill'].filter(l => map.getLayer(l)); if (!pl.length) return null; const f = map.queryRenderedFeatures(map.project(ll), { layers: pl })[0]; return f ? f.properties._name || 'public land' : ''; }
+async function scoutRun() {
+  if (SC.busy || !AK.key) return; SC.busy = true; scClear(); const out = $('#scOut'); out.innerHTML = '<div class="aa wait">Taking a picture of this map view…</div>'; out.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  try {
+    if (map.getZoom() < 13) throw new Error('Zoom in to a property or a few square miles first (the map is too far out to judge spots).');
+    const pic = await mapPicture(null, { grid: true }); if (!pic) throw new Error('Could not take the map picture.');
+    out.innerHTML = '<div class="aa wait">Claude is studying the map. This usually takes 20 to 40 seconds…</div>';
+    const T = scTarget(), w = windAt(T.k), CW = map.getContainer().clientWidth, CH = map.getContainer().clientHeight;
+    const pubs = [...new Set(map.queryRenderedFeatures({ layers: ['wma-fill', 'padus-fill'].filter(l => map.getLayer(l)) }).map(f => f.properties._name).filter(Boolean))].slice(0, 12);
+    const marks = S.wps.map(m => ({ m, p: map.project(m.p) })).filter(o => o.p.x >= 0 && o.p.y >= 0 && o.p.x <= CW && o.p.y <= CH).slice(0, 25).map(o => `- ${(WPT[o.m.type] || WPT.other)[0]}${o.m.name ? ' "' + o.m.name + '"' : ''} at x ${Math.round(o.p.x / CW * 1000)}, y ${Math.round(o.p.y / CH * 1000)}${o.m.notes ? ' (' + o.m.notes.replace(/\s+/g, ' ').slice(0, 100) + ')' : ''}`);
+    const L = [`I hunt whitetail deer in Minnesota. Help me decide where to go in this map view. Date: ${new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}. I plan to hunt ${T.label}.`,
+      `Focus: ${SC.focus}.` + (SC.note ? ` My notes: ${SC.note}` : ''),
+      `Picture: ${pic.styleN}${S.on.contour && S.base !== 'hyb' ? ' with contour lines in feet' : ''}, ${map.getBearing() ? 'rotated so the top faces ' + HM.compass(map.getBearing()) : 'north up'}, about ${pic.wYd.toLocaleString()} yards wide and ${pic.hYd.toLocaleString()} yards tall. A faint grid splits it into 10 columns (labelled 0 to 9 across the top) and 10 rows (0 to 9 down the left). Gold lines are parcel boundaries; orange, pink and green shaded areas are public land; colored dots are my existing marks.`,
+      pubs.length ? `Public land in view: ${pubs.join('; ')}.` : 'No public land is shaded in this view.',
+      SC.pub ? 'Only suggest spots on the shaded public land. Do not suggest private land.' : 'I may have permission on private land, but flag anything that looks like it needs permission.',
+      w ? `Forecast for my hunt: wind from ${HM.compass(w.dir)} ${Math.round(w.spd)} mph gusting ${Math.round(w.gust)}, ${Math.round(w.temp)}°F, ${WX(w.code)[0].toLowerCase()}.` : '',
+      (() => { const pt = w && presTrend(w.i); return pt ? `Pressure ${pt.word}.` : ''; })(),
+      (() => { try { const mo = moonInfo(localKey(Date.now()).slice(0, 10)); return `Moon ${mo.name}, ${mo.illum}% lit.`; } catch (e) { return ''; } })(),
+      marks.length ? 'My marks in view (x, y on a 0 to 1000 scale from the top-left corner):\n' + marks.join('\n') : '',
+      'Suggest 3 to 6 specific spots. For each, give its position as x and y on a 0 to 1000 scale from the top-left corner of the picture (use the grid; column 4 spans x 400 to 500). Be precise: put each spot exactly on the feature you mean (an edge, a point of cover, a saddle), not in open water or a field center unless that is the point. Keep spots at least 100 yards apart, and pick stand sites the wind will not blow my scent toward the bedding or food.',
+      'Answer with only JSON, no other text, in this shape: {"summary":"2 or 3 sentences on the overall plan","spots":[{"x":0,"y":0,"type":"stand|blind|bed|food|travel|scrape|access|cam","name":"short name, 3 to 5 words","why":"1 or 2 sentences on why here","winds":["NW","N"],"approach":"how to walk in and out","when":"morning|evening|all day"}]}'].filter(Boolean);
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': AK.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: AK.model, max_tokens: 3000, system: 'You are an experienced Minnesota whitetail hunter and scout reading aerial maps. You give practical, specific spot picks with exact positions on the picture. Follow Minnesota DNR rules; never suggest trespassing.', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: pic.url.split(',')[1] } }, { type: 'text', text: L.join('\n') }] }] }) });
+    let j = {}; try { j = await r.json(); } catch (e) { }
+    if (!r.ok) throw new Error(r.status === 401 ? 'The API key was not accepted. Check it in Ask Claude settings.' : r.status === 429 ? 'Too many requests. Wait a minute and try again.' : (j.error && j.error.message) || 'Claude could not answer (' + r.status + ').');
+    const txt = (j.content || []).filter(x => x.type === 'text').map(x => x.text).join('\n'), m = txt.match(/\{[\s\S]*\}/);
+    let d; try { d = JSON.parse(m[0]); } catch (e) { throw new Error('Claude answered in an unexpected format. Try again.'); }
+    const spots = (d.spots || []).filter(s => isFinite(s.x) && isFinite(s.y)).slice(0, 8).map((s, i) => { const ll = scLL(pic.lat, +s.x, +s.y), pub = scPublicAt(ll); return Object.assign(s, { n: i + 1, ll, pub, wt: SC_TYPE[String(s.type || '').toLowerCase()] || 'other' }); });
+    let dropped = 0; const keep = SC.pub ? spots.filter(s => { if (s.pub === '') { dropped++; return false; } return true; }) : spots; keep.forEach((s, i) => s.n = i + 1);
+    SC.res = { summary: d.summary || '', spots: keep, dropped, label: T.label, w }; scDraw(); scList(); setTimeout(() => out.scrollIntoView({ block: 'start', behavior: 'smooth' }), 80);
+  } catch (e) { out.innerHTML = `<div class="aa err">${esc(navigator.onLine === false ? 'No signal. Scouting needs service.' : e.message || 'Something went wrong.')}</div>`; }
+  SC.busy = false;
+}
+function scClear() { scMarkers.forEach(m => m.remove()); scMarkers = []; SC.res = null; }
+function scDraw() {
+  scMarkers.forEach(m => m.remove()); scMarkers = []; if (!SC.res) return;
+  SC.res.spots.forEach(s => { const el = document.createElement('div'); el.className = 'scp'; el.style.setProperty('--c', (WPT[s.wt] || WPT.other)[1]); el.innerHTML = `<b>${s.n}</b>`; el.addEventListener('click', ev => { ev.stopPropagation(); openSheet('scout'); scList(s.n); }); scMarkers.push(new maplibregl.Marker({ element: el }).setLngLat(s.ll).addTo(map)); });
+}
+function scList(focus) {
+  const out = $('#scOut'); if (!out || !SC.res) return; const R = SC.res;
+  out.innerHTML = (R.summary ? `<div class="aa">${esc(R.summary)}</div>` : '') + (R.dropped ? `<div class="mut">${R.dropped} suggestion${R.dropped > 1 ? 's were' : ' was'} on private land and left out.</div>` : '') +
+    (R.spots.length ? R.spots.map(s => `<div class="scr${s.n === focus ? ' on' : ''}" id="scr${s.n}"><div class="scn" style="--c:${(WPT[s.wt] || WPT.other)[1]}">${s.n}</div><div class="g"><b>${esc(s.name || (WPT[s.wt] || WPT.other)[0])}</b><small>${esc((WPT[s.wt] || WPT.other)[0])}${s.when ? ', ' + esc(s.when) : ''}${s.winds && s.winds.length ? ', winds ' + esc(s.winds.join('/')) : ''}${s.pub ? ', ' + esc(s.pub) : s.pub === '' ? ', private land' : ''}</small><p>${esc(s.why || '')}</p>${s.approach ? `<p><i>Getting in:</i> ${esc(s.approach)}</p>` : ''}<div class="btns"><button class="btn s" data-act="sc-go" data-n="${s.n}">Show</button><button class="btn s" data-act="sc-save" data-n="${s.n}">Save as mark</button></div></div></div>`).join('') : '<div class="note">No spots came back for this view. Try zooming to a smaller area or a different focus.</div>') +
+    `<div class="btns">${R.spots.length ? '<button class="btn p" data-act="sc-saveall">Save all as marks</button>' : ''}<button class="btn" data-act="sc-clear">Clear from map</button></div><div class="mut">Suggestions from Claude based on the picture and forecast. Check them on the ground, and confirm boundaries and the current regulations before you hunt.</div>`;
+  if (focus) setTimeout(() => { const el = document.getElementById('scr' + focus); if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 60);
+}
+function scSave(s) { if (s.saved) return; S.wps.push({ id: Date.now() + s.n, p: s.ll.map(v => +v.toFixed(6)), type: ['stand', 'blind', 'bed', 'food', 'sign', 'access', 'cam', 'sight'].includes(s.wt) ? s.wt : 'other', name: s.name || 'Claude pick ' + s.n, notes: [s.why, s.approach ? 'Getting in: ' + s.approach : '', s.winds && s.winds.length ? 'Good winds: ' + s.winds.join('/') : ''].filter(Boolean).join(' '), winds: ['stand', 'blind'].includes(s.wt) ? (s.winds || []).filter(x => HM.DIR8.includes(x)) : undefined, u: Date.now() }); s.saved = 1; }
+
 /* ---------------- ask Claude about a spot ---------------- */
 const AK = { key: store.get('akey', ''), model: 'claude-sonnet-5-5' };
+const KEYHELP = `<div class="mut">How to get one: sign in at <b>console.anthropic.com</b>, add a few dollars of credit under Billing, then create a key under API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>`;
 let ASK = null;
 function nearMarks(ll, maxM = 1600) {
   return S.wps.map(w => ({ w, d: HM.hav(ll, w.p) })).filter(x => x.d <= maxM && x.d > 3).sort((a, b) => a.d - b.d).slice(0, 15)
@@ -1391,8 +1463,8 @@ function askContext(c) {
   return L.join('\n');
 }
 function waitIdle(ms) { return new Promise(res => { let done = false; const f = () => { if (!done) { done = true; res(); } }; map.once('idle', f); setTimeout(f, ms); }); }
-async function mapPicture(ll) {
-  if (map.getZoom() < 14.5) map.jumpTo({ center: ll, zoom: 15.5 }); else map.jumpTo({ center: ll });
+async function mapPicture(ll, opt = {}) {
+  if (ll) { if (map.getZoom() < 14.5) map.jumpTo({ center: ll, zoom: 15.5 }); else map.jumpTo({ center: ll }); }
   await waitIdle(5000);
   const src = await new Promise(res => { map.once('render', () => { try { const c = map.getCanvas(), t = document.createElement('canvas'); t.width = c.width; t.height = c.height; t.getContext('2d').drawImage(c, 0, 0); res(t); } catch (e) { res(null); } }); map.triggerRepaint(); });
   if (!src) return null;
@@ -1401,11 +1473,15 @@ async function mapPicture(ll) {
   const dot = (x, y, col, lab) => { g.beginPath(); g.arc(x, y, 9 * r, 0, 7); g.fillStyle = col; g.fill(); g.lineWidth = 2.5 * r; g.strokeStyle = '#fff'; g.stroke(); if (lab) { g.font = `600 ${13 * r}px sans-serif`; g.lineWidth = 4 * r; g.strokeStyle = 'rgba(0,0,0,.8)'; g.strokeText(lab, x + 13 * r, y + 5 * r); g.fillStyle = '#fff'; g.fillText(lab, x + 13 * r, y + 5 * r); } };
   S.wps.forEach(w => { const p = map.project(w.p); if (p.x > 0 && p.y > 0 && p.x < map.getContainer().clientWidth && p.y < map.getContainer().clientHeight) dot(p.x * r, p.y * r, (WPT[w.type] || WPT.other)[1], (w.name || (WPT[w.type] || WPT.other)[0]).slice(0, 24)); });
   if (S.me) { const p = map.project(S.me); dot(p.x * r, p.y * r, '#2F8CFF', 'Me'); }
-  const c0 = map.project(ll); g.strokeStyle = '#FF6B1A'; g.lineWidth = 3.5 * r; g.beginPath(); g.arc(c0.x * r, c0.y * r, 16 * r, 0, 7); g.moveTo(c0.x * r - 26 * r, c0.y * r); g.lineTo(c0.x * r - 8 * r, c0.y * r); g.moveTo(c0.x * r + 8 * r, c0.y * r); g.lineTo(c0.x * r + 26 * r, c0.y * r); g.moveTo(c0.x * r, c0.y * r - 26 * r); g.lineTo(c0.x * r, c0.y * r - 8 * r); g.moveTo(c0.x * r, c0.y * r + 8 * r); g.lineTo(c0.x * r, c0.y * r + 26 * r); g.stroke();
+  const CW = map.getContainer().clientWidth, CH = map.getContainer().clientHeight;
+  if (opt.grid) { g.lineWidth = 1 * r; g.strokeStyle = 'rgba(255,255,255,.35)'; g.font = `700 ${12 * r}px sans-serif`; for (let k = 1; k < 10; k++) { const x = out.width * k / 10, y = out.height * k / 10; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, out.height); g.moveTo(0, y); g.lineTo(out.width, y); g.stroke(); } g.fillStyle = 'rgba(255,255,255,.85)'; for (let k = 0; k < 10; k++) { g.fillText(String(k), out.width * (k + .45) / 10, 14 * r); g.fillText(String(k), 4 * r, out.height * (k + .55) / 10); } }
+  const lat = []; for (let j = 0; j <= 10; j++) { const row = []; for (let i = 0; i <= 10; i++) row.push(map.unproject([CW * i / 10, CH * j / 10]).toArray()); lat.push(row); }
+  if (ll) { const c0 = map.project(ll); g.strokeStyle = '#FF6B1A'; g.lineWidth = 3.5 * r; g.beginPath(); g.arc(c0.x * r, c0.y * r, 16 * r, 0, 7); g.moveTo(c0.x * r - 26 * r, c0.y * r); g.lineTo(c0.x * r - 8 * r, c0.y * r); g.moveTo(c0.x * r + 8 * r, c0.y * r); g.lineTo(c0.x * r + 26 * r, c0.y * r); g.moveTo(c0.x * r, c0.y * r - 26 * r); g.lineTo(c0.x * r, c0.y * r - 8 * r); g.moveTo(c0.x * r, c0.y * r + 8 * r); g.lineTo(c0.x * r, c0.y * r + 26 * r); g.stroke(); }
   const wM = HM.hav(map.unproject([0, map.getContainer().clientHeight / 2]).toArray(), map.unproject([map.getContainer().clientWidth, map.getContainer().clientHeight / 2]).toArray());
   const brg = Math.round(map.getBearing()), styleN = { sat: 'satellite photo', hyb: 'satellite photo with contour lines in feet', spring: 'leaf-off spring aerial photo', topo: 'USGS topographic map' }[S.base] || 'map';
-  const blob = await new Promise(res => out.toBlob(res, 'image/jpeg', .82));
-  return { blob, url: out.toDataURL('image/jpeg', .82), note: `The attached picture is a ${styleN}${S.on.contour && S.base !== 'hyb' ? ' with contour lines in feet' : ''} centered on the spot (orange crosshair). ${brg ? 'Map is rotated; top of the picture faces ' + HM.compass(brg) + '.' : 'North is up.'} It is about ${Math.round(wM * 1.0936).toLocaleString()} yards across. Colored dots are my marks${S.me ? ', blue dot is me' : ''}. Gold lines are parcel boundaries${S.on.wma || S.on.padus ? ', shaded areas are public land' : ''}.` };
+  const blob = await new Promise(res => out.toBlob(res, 'image/jpeg', .82)), png = await new Promise(res => out.toBlob(res, 'image/png'));
+  const hY = HM.hav(map.unproject([CW / 2, 0]).toArray(), map.unproject([CW / 2, CH]).toArray());
+  return { blob, png, lat, wYd: Math.round(wM * 1.0936), hYd: Math.round(hY * 1.0936), styleN, url: out.toDataURL('image/jpeg', .82), note: `The attached picture is a ${styleN}${S.on.contour && S.base !== 'hyb' ? ' with contour lines in feet' : ''}${ll ? ' centered on the spot (orange crosshair)' : ''}. ${brg ? 'Map is rotated; top of the picture faces ' + HM.compass(brg) + '.' : 'North is up.'} It is about ${Math.round(wM * 1.0936).toLocaleString()} yards across. Colored dots are my marks${S.me ? ', blue dot is me' : ''}. Gold lines are parcel boundaries${S.on.wma || S.on.padus ? ', shaded areas are public land' : ''}.` };
 }
 const ASK_CHIPS = ['Where would deer bed and travel here?', 'Where should I hang a stand for this week\'s wind?', 'How should I walk in and out without spooking deer?', 'What does the terrain and cover tell you about this spot?', 'Best plan for a morning and an evening sit here?'];
 async function askStart(c) {
@@ -1423,6 +1499,12 @@ function askShare() {
   if (navigator.share && file && navigator.canShare && navigator.canShare({ files: [file] })) {
     navigator.share({ files: [file], text }).then(() => toast('Sent. If Claude opens without your question, tap the message box and Paste.', 5000)).catch(e => { if (e.name !== 'AbortError') askOpenWeb(); });
   } else askOpenWeb();
+}
+function askDirect() {
+  const text = askText();
+  try { if (ASK.pic && ASK.pic.png && navigator.clipboard && window.ClipboardItem) navigator.clipboard.write([new ClipboardItem({ 'image/png': ASK.pic.png })]).catch(() => { }); else if (navigator.clipboard) navigator.clipboard.writeText(text); } catch (e) { }
+  window.open('https://claude.ai/new?q=' + encodeURIComponent(text.slice(0, 6000)), '_blank', 'noopener');
+  toast(ASK.pic && ASK.pic.png ? 'Map picture copied. In Claude, tap the message box, Paste to add it, then send.' : 'Opening Claude with your question.', 6000);
 }
 function askOpenWeb() { const text = askText(); try { navigator.clipboard && navigator.clipboard.writeText(text); } catch (e) { } window.open('https://claude.ai/new?q=' + encodeURIComponent(text.slice(0, 6000)), '_blank', 'noopener'); toast('Question copied. Save the map picture and add it in Claude for the best answer.', 5000); }
 const mdLite = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#{1,4} (.+)$/gm, '<b>$1</b>').replace(/^\s*[-*] (.+)$/gm, '<li>$1</li>').replace(/^\s*\d+\. (.+)$/gm, '<li>$1</li>').replace(/(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g, '<ul>$1</ul>').replace(/\n{2,}/g, '<br><br>').replace(/\n/g, ' ').replace(/<\/li> <li>/g, '</li><li>').replace(/<\/ul>\s*(<br>)+/g, '</ul>').replace(/(<br>)+\s*<ul>/g, '<ul>');
@@ -1969,7 +2051,7 @@ const HELP = [
   { id: 'blood', g: 'In the field', t: 'Following a blood trail', b: `<ol><li>Open ${K('i-tools', 'Tools')} and tap Blood trail. Allow the camera.</li><li>Point the phone at the ground. In Highlight view, anything blood-colored turns bright blue.</li><li>Use the slider: lower for fresh red blood only, higher to catch dark or dried blood.</li><li>Tap Hit site where the deer was standing, Mark blood at each find, and Found it at the deer.</li><li>Tap Finish to save the trail you walked.</li></ol><p>Red leaves and some bark can light up too. Use it to help your eyes, not replace them.</p>` },
   { id: 'hot', g: 'In the field', t: 'Hot spots for scouting', b: `<p>Hot spots scores the area on your screen using land cover, terrain, distance from roads and today's wind. Pick the animal and the time of season, then tap Analyze this view.</p><p>Numbered pins show the best spots and why. Treat it as a short list to go look at, not a guarantee. Tap the red Clear hot spots button to remove them.</p>` },
   { id: 'offline', g: 'In the field', t: 'Using the map with no signal', b: `<ol><li>At home, with signal, zoom the map to the property.</li><li>Open ${K('i-tools', 'Tools')} and tap Offline maps.</li><li>Pick the map styles you want, then Standard detail.</li><li>Tap Download this area and keep the app open until it finishes.</li></ol><p>In the field, the saved area works with no bars: photos, parcels, public land and the last wind forecast. Turn on airplane mode at home once to check it.</p>` },
-  { id: 'ask', g: 'In the field', t: 'Ask Claude about a spot', b: `<p>Tap any spot on the map and choose <b>Ask Claude about this spot</b>, or open a waypoint and choose Ask Claude. You can also use ${K('i-tools', 'Tools')} for the middle of the map.</p><ol><li>The app takes a picture of the map with your marks on it and gathers the land type, wind, weather, sun, moon and your nearby marks.</li><li>Pick a suggested question or type your own.</li><li>Tap <b>Send to Claude</b>, pick Claude in the share menu, then tap send.</li></ol><p>If you have an Anthropic API key, you can save it in the optional settings so answers appear right in the app. Owner names are never sent.</p>` },
+  { id: 'ask', g: 'In the field', t: 'Ask Claude and Scout with Claude', b: `<p><b>Scout with Claude</b> (in ${K('i-tools', 'Tools')}): zoom to an area, choose when you are hunting and what you are looking for, and Claude places numbered suggested spots on the map with the reason for each. Save the ones you like as marks. This needs an Anthropic API key.</p><p>Tap any spot on the map and choose <b>Ask Claude about this spot</b>, or open a waypoint and choose Ask Claude. You can also use ${K('i-tools', 'Tools')} for the middle of the map.</p><ol><li>The app takes a picture of the map with your marks on it and gathers the land type, wind, weather, sun, moon and your nearby marks.</li><li>Pick a suggested question or type your own.</li><li>Tap <b>Open in Claude</b>. Your question is filled in and the map picture is copied, so tap the message box, Paste, then send. With an API key saved, the answer shows in the app instead.</li></ol><p>If you have an Anthropic API key, you can save it in the optional settings so answers appear right in the app. Owner names are never sent.</p>` },
   { id: 'party', g: 'Your group', t: 'Hunting as a party', b: `<p>${K('i-party', 'Party')} lets a group see each other on the map and send quick alerts.</p><ol><li>One person taps Start a party and shares the 6-letter code.</li><li>Everyone else taps Join with a code.</li><li>Members appear on the map with their initials. Grey means they have not updated in a while.</li><li>Tap Deer down, Coming your way, Need help and the rest to alert everyone with your location.</li><li>Turn on Share with the party on any mark or sit to share it.</li></ol><p>You can pause location sharing at any time. Right now the party runs in demo mode with sample hunters, until a group server is set up.</p>` },
   { id: 'log', g: 'Saving and syncing', t: 'Your hunt log', b: `<p>Log each sit so you learn which stands produce and on which winds.</p><ol><li>Open ${K('i-saved', 'Saved')} and tap Log a sit, or open a stand and tap Log a sit.</li><li>Pick the stand and times, and tap + for each deer you saw.</li><li>Tap Save sit. Wind, temperature, pressure and the moon are filled in for you.</li></ol><p>Saved shows deer per sit for each stand and which wind has been best.</p>` },
   { id: 'sync', g: 'Saving and syncing', t: 'Keeping phone and computer in sync', b: `<p>Your marks, tracks and log can stay the same on every device through a private file on your GitHub account.</p><ol><li>Open ${K('i-saved', 'Saved')} and scroll to Sync between devices.</li><li>Tap Make a token on GitHub, keep only the gist box ticked, and generate the token.</li><li>Paste it and tap Connect. Do the same on each device.</li></ol><p>Treat the token like a password.</p>` },
@@ -2010,7 +2092,7 @@ function renderIntro() {
 }
 
 /* ---------------- panels ---------------- */
-const SHEETS = { layers: ['i-layers', 'layers'], tools: ['i-tools', 'start'], mark: ['i-mark', 'mark'], party: ['i-party', 'party'], saved: ['i-saved', 'log'], wind: ['i-wind', 'wind'], wp: ['i-mark', 'mark'], track: ['i-track', 'track'], hot: ['i-hot', 'hot'], offline: ['i-offline', 'offline'], log: ['i-log', 'log'], access: ['i-guide', 'layers'], search: ['i-search', null], sharetxt: ['i-share', null], help: ['i-help', null], topic: ['i-help', null], pjoin: ['i-party', 'party'], alertmsg: ['i-chat', 'party'], ask: ['i-chat', 'ask'] };
+const SHEETS = { layers: ['i-layers', 'layers'], tools: ['i-tools', 'start'], mark: ['i-mark', 'mark'], party: ['i-party', 'party'], saved: ['i-saved', 'log'], wind: ['i-wind', 'wind'], wp: ['i-mark', 'mark'], track: ['i-track', 'track'], hot: ['i-hot', 'hot'], offline: ['i-offline', 'offline'], log: ['i-log', 'log'], access: ['i-guide', 'layers'], search: ['i-search', null], sharetxt: ['i-share', null], help: ['i-help', null], topic: ['i-help', null], pjoin: ['i-party', 'party'], alertmsg: ['i-chat', 'party'], ask: ['i-chat', 'ask'], scout: ['i-hot', 'ask'] };
 function closeSheet() { drawOffAreas(false); if ($('#sheet').dataset.p === 'place') clearPlace(); const s = $('#sheet'); s.classList.remove('open'); s.dataset.p = ''; document.querySelectorAll('#bar button').forEach(b => b.classList.remove('on')); }
 function openSheet(p, arg) {
   if ($('#sheet').dataset.p === 'place' && p !== 'place') clearPlace();
@@ -2026,7 +2108,7 @@ function openSheet(p, arg) {
   } else if (p === 'tools') {
     h = head('Tools') + toolRow('open', 'i-measure', 'Measure', 'Distance between points and the acres inside', ' data-p="measure"') + toolRow('open', 'i-track', 'Record a track', S.rec && !S.rec.blood ? 'Recording now. Tap to stop.' : 'Save your path in and out', ' data-p="track"') +
       toolRow('blood-open', 'i-blood', 'Blood trail', B.on ? 'In progress. Tap to go back to the camera.' : 'Camera view that makes blood stand out') + toolRow('open', 'i-hot', 'Hot spots', 'Likely spots for deer, turkey, pheasant and ducks', ' data-p="hot"') +
-      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('ask-center', 'i-chat', 'Ask Claude', 'Scouting help for the spot in the middle of the map') + toolRow('open', 'i-wind', 'Weather and wind', 'Conditions, 7-day forecast, wind, shooting light and moon', ' data-p="wind"') +
+      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('open', 'i-hot', 'Scout with Claude', 'Suggested stand, bedding and travel spots for this map view', ' data-p="scout"') + toolRow('ask-center', 'i-chat', 'Ask Claude', 'Scouting help for the spot in the middle of the map') + toolRow('open', 'i-wind', 'Weather and wind', 'Conditions, 7-day forecast, wind, shooting light and moon', ' data-p="wind"') +
       `<h3>Help</h3>` + toolRow('open', 'i-help', 'How to use ' + APP, 'Short guides for every part of the app', ' data-p="help"') + toolRow('intro', 'i-phone', 'Replay the welcome tour', 'The quick tour from the first time you opened the app');
   } else if (p === 'mark') h = head('Mark a spot') + toolRow('mark-me', 'i-loc', 'Where I am', 'Drops a mark at your GPS position') + toolRow('mark-tap', 'i-mark', 'Tap the map', 'Then tap the spot you want to mark') + toolRow('mark-center', 'i-north', 'Center of the screen', 'Marks the middle of what you are looking at') + `<div class="mut" style="margin-top:8px">You can also tap anything on the map and choose Mark this spot.</div>`;
   else if (p === 'measure') { setMode('measure'); return; }
@@ -2117,18 +2199,29 @@ function openSheet(p, arg) {
       `<div class="askimg" id="askImg">${ASK.pic ? `<img src="${ASK.pic.url}" alt="Map picture of the spot">` : '<span>Taking a picture of the map…</span>'}</div>` +
       `<div class="qchips">${ASK_CHIPS.map(q => `<button class="qchip" data-act="ask-chip">${esc(q)}</button>`).join('')}</div>` +
       `<label class="fld"><span>Your question</span><textarea id="askQ" rows="3" placeholder="Where would you set up here for an evening sit?">${esc(ASK.q)}</textarea></label>` +
-      (AK.key ? `<div class="btns"><button class="btn p" data-act="ask-here">${ico('i-chat')}Ask here</button><button class="btn" data-act="ask-share">${ico('i-share')}Send to Claude app</button></div>` :
-        `<div class="btns"><button class="btn p" data-act="ask-share" style="flex:1">${ico('i-share')}Send to Claude</button></div><div class="mut">Opens your phone's share menu. Pick <b>Claude</b>, then tap send. Your question is also copied, so you can paste it if needed. No Claude app? <a href="#" data-act="ask-web">Open Claude in the browser</a>.</div>`) +
+      (AK.key ? `<div class="btns"><button class="btn p" data-act="ask-here" style="flex:1">${ico('i-chat')}Ask</button></div><div class="mut">The answer shows up right here. <a href="#" data-act="ask-direct">Open in the Claude app instead</a></div>` :
+        `<div class="btns"><button class="btn p" data-act="ask-direct" style="flex:1">${ico('i-chat')}Open in Claude</button></div><div class="mut">Opens Claude with your question filled in. The map picture is copied: tap the message box, <b>Paste</b>, then send. <a href="#" data-act="ask-share">Use the share menu instead</a>. Want the answer right here with no switching apps? See the setting at the bottom.</div>`) +
       `<div id="askOut"></div>` +
       `<details class="more"><summary>What gets sent</summary><pre class="ctx" id="askCtx">${esc(ctxt)}</pre><div class="mut">Owner names are not sent. Nothing is sent until you tap a button.</div></details>` +
-      `<details class="more"${AK.key ? '' : ''}><summary>Answers right here in the app (optional)</summary><div class="mut">If you have an Anthropic API key, answers show up here without leaving the map. Questions are billed to your API account, usually a few cents each. The key stays on this phone and is never synced or shared.</div>` +
+      `<details class="more"${AK.key ? '' : ''}><summary>Answers right here in the app (optional)</summary><div class="mut">With an Anthropic API key, answers show up here without leaving the map, and you can use Scout with Claude to get suggested spots placed on the map.</div>` + `<div class="mut">How to get one: sign in at <b>console.anthropic.com</b>, add a few dollars of credit under Billing, then create a key under API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>` + `<div></div>` +
       (AK.key ? `<div class="note">Key saved on this phone (ends ${esc(AK.key.slice(-4))}).</div><div class="btns"><button class="btn" data-act="ask-key-del">Remove key</button></div>` : `<label class="fld"><span>API key</span><input id="askKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="btns"><button class="btn" data-act="ask-key">Save key</button></div>`) + `</details>`;
+  } else if (p === 'scout') {
+    const T = scTarget();
+    h = head('Scout with Claude') + `<div class="mut" style="margin:-4px 0 10px">Claude studies everything in the current map view with the forecast and suggests where to hunt. The spots appear on the map as numbered pins.</div>` +
+      (!AK.key ? `<div class="note">Scouting needs an Anthropic API key so the answers can come back into the map.</div><label class="fld"><span>API key</span><input id="askKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="btns"><button class="btn p" data-act="ask-key" data-back="scout">Save key</button></div>` + KEYHELP :
+      `<div class="fld"><span>When are you hunting?</span><div class="seg">${[['morn', 'Morning'], ['eve', 'Evening'], ['tom', 'Tomorrow eve']].map(([k, l]) => `<button data-act="sc-time" data-k="${k}" class="${SC.time === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>` +
+      `<div class="fld"><span>What are you looking for?</span><div class="qchips wrap">${SC_FOCUS.map(f => `<button class="qchip${SC.focus === f ? ' on' : ''}" data-act="sc-focus">${esc(f)}</button>`).join('')}</div></div>` +
+      `<label class="fld"><span>Anything else? (optional)</span><textarea id="scNote" rows="2" placeholder="Bow only, I can walk in from the north lot">${esc(SC.note)}</textarea></label>` +
+      `<label class="row"><span class="g">Public land only<br><small>Leaves out spots on private parcels</small></span><input type="checkbox" id="scPub" ${SC.pub ? 'checked' : ''}></label>` +
+      `<div class="btns"><button class="btn p" data-act="sc-run" style="flex:1">${ico('i-hot')}Scout this map view</button></div><div class="mut">Hunting ${T.label}. Zoom the map to the area you want first. Each scout costs a few cents on your API account.</div>`) +
+      `<div id="scOut"></div>`;
   } else if (p === 'sharetxt') { h = head('Share waypoint') + `<div class="mut">Copy this text and send it:</div><label class="fld"><textarea rows="6" readonly onclick="this.select()">${esc(arg)}</textarea></label>`;
   } else if (p === 'search') {
     h = head('Search results') + (arg.length ? arg.map(r => `<div class="row" data-act="go" data-ll="${r.lon},${r.lat}" data-z="13" style="cursor:pointer"><div class="g">${esc(r.display_name)}</div></div>`).join('') : '<div class="mut">Nothing found.</div>');
   }
   s.innerHTML = h; s.scrollTop = 0;
   if (p === 'wp') phStrip(arg);
+  if (p === 'scout' && SC.res) scList();
 }
 /* swipe a bottom sheet down to close it */
 (() => {
@@ -2186,14 +2279,22 @@ document.addEventListener('click', e => {
   else if (a === 'mode-clear') { S.measure = []; drawMeasure(); }
   else if (a === 'mode-undo') { S.measure.pop(); drawMeasure(); }
   else if (a === 'access') { const f = S.data[b.dataset.src].find(x => x.properties._id == b.dataset.id); if (f) findAccess(f); }
+  else if (a === 'sc-time') { SC.time = b.dataset.k; SC.note = ($('#scNote') || {}).value || SC.note; openSheet('scout'); }
+  else if (a === 'sc-focus') { SC.focus = b.textContent; sh.querySelectorAll('[data-act=sc-focus]').forEach(x => x.classList.toggle('on', x === b)); }
+  else if (a === 'sc-run') { SC.note = $('#scNote').value.trim(); SC.pub = $('#scPub').checked; scoutRun(); }
+  else if (a === 'sc-go') { const s = SC.res.spots.find(x => x.n == b.dataset.n); if (s) { map.easeTo({ center: s.ll, zoom: Math.max(map.getZoom(), 16) }); setTimeout(() => map.panBy([0, 160], { duration: 300 }), 600); } }
+  else if (a === 'sc-save') { const s = SC.res.spots.find(x => x.n == b.dataset.n); if (s) { scSave(s); drawWps(); b.textContent = 'Saved'; b.disabled = true; toast('Saved to your marks'); } }
+  else if (a === 'sc-saveall') { let n = 0; SC.res.spots.forEach(s => { if (!s.saved) { scSave(s); n++; } }); drawWps(); scClear(); closeSheet(); toast(n + ' marks saved'); }
+  else if (a === 'sc-clear') { scClear(); closeSheet(); }
   else if (a === 'ask-place') { const c = S.lastPlace; if (c) askStart(c); }
   else if (a === 'ask-center') { const ll = map.getCenter().toArray(); askStart({ ll }); }
   else if (a === 'ask-wp') { const w = sh._wp; askStart({ ll: w.p.slice(), wp: w }); }
   else if (a === 'ask-chip') { const q = $('#askQ'); q.value = b.textContent; ASK.q = q.value; }
-  else if (a === 'ask-share') { ASK.q = $('#askQ').value; askShare(); }
+  else if (a === 'ask-share') { e.preventDefault(); ASK.q = $('#askQ').value; askShare(); }
+  else if (a === 'ask-direct') { e.preventDefault(); ASK.q = $('#askQ').value; askDirect(); }
   else if (a === 'ask-web') { e.preventDefault(); ASK.q = $('#askQ').value; askOpenWeb(); }
   else if (a === 'ask-here') { if ($('#askQ')) ASK.q = $('#askQ').value; askHere(); }
-  else if (a === 'ask-key') { const k = $('#askKey').value.trim(); if (!/^sk-ant-/.test(k)) { toast('That does not look like an Anthropic API key (it starts with sk-ant-).', 3500); return; } AK.key = k; store.set('akey', k); toast('Key saved on this phone'); ASK.q = $('#askQ').value; openSheet('ask'); }
+  else if (a === 'ask-key') { const k = $('#askKey').value.trim(); if (!/^sk-ant-/.test(k)) { toast('That does not look like an Anthropic API key (it starts with sk-ant-).', 3500); return; } AK.key = k; store.set('akey', k); toast('Key saved on this phone'); if (b.dataset.back) { openSheet(b.dataset.back); return; } ASK.q = $('#askQ').value; openSheet('ask'); }
   else if (a === 'ask-key-del') { AK.key = ''; store.set('akey', ''); toast('Key removed'); openSheet('ask'); }
   else if (a === 'ph-view') { phView(sh._wp, b.dataset.id); }
   else if (a === 'pv-close') { $('#pv').classList.remove('open'); }
