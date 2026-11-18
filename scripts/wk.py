@@ -21,6 +21,8 @@ async def main():
             d = {"summary":"Test.","routes":[{"n":1,"from":"bedding","to":"field","pts":[{"x":300,"y":700},{"x":400,"y":550},{"x":500,"y":400},{"x":600,"y":250}]}],"trails":[{"pts":[[100,500],[300,480],[500,460]]}],"ambush":[{"x":520,"y":430,"label":"Pinch","winds":["NW"],"why":"x"}]}
             await route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin':'*'}, body=json.dumps({"usage":{"input_tokens":1,"output_tokens":1},"content":[{"type":"text","text":"```json\n"+json.dumps(d)+"\n```"}]}))
         await pg.route('https://api.anthropic.com/**', fake)
+        d = {"summary":"Test.","routes":[{"n":1,"from":"bedding","to":"field","pts":[{"x":300,"y":700},{"x":400,"y":550},{"x":500,"y":400},{"x":600,"y":250}]}],"trails":[{"pts":[[100,500],[300,480],[500,460]]}],"ambush":[{"x":520,"y":430,"label":"Pinch","winds":["NW"],"why":"x"}]}
+        await pg.evaluate("t => { claudeCall = async () => t; }", "```json\n"+json.dumps(d)+"\n```")
         await pg.evaluate("closeSheet(); map.jumpTo({zoom:15})"); await pg.wait_for_timeout(3000)
         await pg.evaluate("openSheet('move')"); await pg.wait_for_timeout(500)
         await pg.tap('[data-act=mv-run]'); await pg.wait_for_timeout(9000)
