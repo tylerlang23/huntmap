@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/pmtiles@3/dist/pmtiles.js"></script>
+<script src="https://unpkg.com/maplibre-contour@0.1.0/dist/index.min.js"></script>
 <style>
 :root{
  --bark:#1B1F1A;--moss:#262C24;--moss2:#313830;--lichen:#9BA594;--bone:#ECEADF;--blaze:#FF6B1A;--blaze-dk:#C9500D;--tag:#3FB56B;--rust:#E0563B;--sky:#6FB7F2;--gold:#F2C46B;
@@ -206,6 +207,18 @@ body.zmid .pin .pw{transform:scale(.72)}body.zfar .pin .pw{transform:scale(.42)}
 details.logs summary{cursor:pointer;color:var(--gold);font-weight:600;padding:10px 0}
 .prog{background:var(--field);border-radius:12px;height:38px;position:relative;overflow:hidden;margin:8px 0}.prog i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#1E6CC4,#4DA3FF);width:0}.prog span{position:relative;display:block;text-align:center;line-height:38px;font-size:14px;font-weight:600}
 
+/* ---------- weather ---------- */
+.wxi{width:26px;height:26px;fill:none;stroke-width:1.8;stroke-linecap:round;flex:none;display:block}
+.wxi.big{width:58px;height:58px}
+.now{display:flex;align-items:center;gap:12px;margin:2px 0 10px}
+.now .nt{flex:1;min-width:0;line-height:1.1}.now .nt b{display:block;font:700 46px/1 var(--fc)}.now .nt span{display:block;font-weight:600;font-size:16.5px;margin-top:2px}.now .nt small{color:var(--lichen);font-size:13.5px}
+.now .nw{text-align:center;background:var(--field);border:1px solid var(--line);border-radius:14px;padding:8px 12px;min-width:92px}.now .nw svg{width:24px;height:24px;display:block;margin:0 auto 2px}.now .nw b{display:block;font:700 20px/1.1 var(--fc)}.now .nw small{color:var(--lichen);font-size:12px}
+.hr.wx div{min-width:62px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 6px}.hr.wx .wxi{width:24px;height:24px;margin:0}.hr.wx b{font:700 16px/1 var(--fc);color:var(--bone)}.hr.wx svg:not(.wxi){width:16px;height:16px;margin:2px auto 0}.hr.wx em{font-style:normal;font-size:11.5px;color:var(--sky)}
+.day{display:grid;grid-template-columns:52px 28px 38px 34px 1fr 34px 52px;align-items:center;gap:6px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
+.day:last-child{border-bottom:0}.day .dn{font-weight:600}.day .pp{font-size:12.5px;color:var(--sky);text-align:right}.day .lo{color:var(--lichen);text-align:right;font:600 16px/1 var(--fc)}.day .hi{font:700 16px/1 var(--fc)}
+.day .tb{position:relative;height:6px;border-radius:3px;background:var(--moss2)}.day .tb i{position:absolute;top:0;bottom:0;border-radius:3px;background:linear-gradient(90deg,#6FB7F2,#F2C46B)}
+.day .dw{display:flex;align-items:center;gap:3px;color:var(--lichen);font:600 14px/1 var(--fc);justify-content:flex-end}.day .dw svg{width:15px;height:15px}
+
 /* ---------- tools hub ---------- */
 .tool{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--bone)}
 .tool:last-child{border-bottom:0}
@@ -323,6 +336,16 @@ body.guiding .loc{bottom:calc(var(--tab) + var(--sb) + 112px)}body.guiding .disc
   <symbol id="w-blood" viewBox="0 0 24 24"><path d="M12 3.5s6 6.6 6 11a6 6 0 01-12 0c0-4.4 6-11 6-11z" fill="currentColor" stroke="none"/></symbol>
   <symbol id="w-hit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><path d="M12 3v4.2M12 16.8V21M3 12h4.2M16.8 12H21"/></symbol>
   <symbol id="w-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="wx-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="#F2C46B" stroke="none"/><path d="M12 2.5v2.3M12 19.2v2.3M2.5 12h2.3M19.2 12h2.3M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="#F2C46B"/></symbol>
+  <symbol id="wx-night" viewBox="0 0 24 24"><path d="M19.5 14.2A7.5 7.5 0 1 1 9.8 4.5a6 6 0 0 0 9.7 9.7z" fill="#C9CFC2" stroke="none"/></symbol>
+  <symbol id="wx-partly" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.6" fill="#F2C46B" stroke="none"/><path d="M9 2.2v1.6M3 8.5h1.6M4.8 4.3l1.1 1.1M13.2 4.3l-1.1 1.1" stroke="#F2C46B"/><path d="M7.5 19.5h10a3.5 3.5 0 0 0 0-7 5 5 0 0 0-9.5 1.2A2.9 2.9 0 0 0 7.5 19.5z" fill="#B9C0B3" stroke="none"/></symbol>
+  <symbol id="wx-nightc" viewBox="0 0 24 24"><path d="M14 4.5a5 5 0 0 0 5.5 6.6A5.6 5.6 0 0 1 14 4.5z" fill="#C9CFC2" stroke="#C9CFC2"/><path d="M6.5 19.5h10a3.5 3.5 0 0 0 0-7 5 5 0 0 0-9.5 1.2A2.9 2.9 0 0 0 6.5 19.5z" fill="#8E978A" stroke="none"/></symbol>
+  <symbol id="wx-cloud" viewBox="0 0 24 24"><path d="M6.5 18.5h11a4 4 0 0 0 0-8 5.6 5.6 0 0 0-10.6 1.3A3.4 3.4 0 0 0 6.5 18.5z" fill="#A9B0A3" stroke="none"/></symbol>
+  <symbol id="wx-fog" viewBox="0 0 24 24"><path d="M4 9h16M3 13h18M5 17h14" stroke="#A9B0A3" stroke-width="2"/></symbol>
+  <symbol id="wx-rain" viewBox="0 0 24 24"><path d="M6.5 14.5h11a3.6 3.6 0 0 0 0-7.2 5.2 5.2 0 0 0-9.8 1.2A3 3 0 0 0 6.5 14.5z" fill="#A9B0A3" stroke="none"/><path d="M8 17.2l-1 2.6M12 17.2l-1 2.6M16 17.2l-1 2.6" stroke="#6FB7F2" stroke-width="2"/></symbol>
+  <symbol id="wx-snow" viewBox="0 0 24 24"><path d="M6.5 14.5h11a3.6 3.6 0 0 0 0-7.2 5.2 5.2 0 0 0-9.8 1.2A3 3 0 0 0 6.5 14.5z" fill="#A9B0A3" stroke="none"/><circle cx="8" cy="18.5" r="1.2" fill="#ECEADF" stroke="none"/><circle cx="12" cy="20" r="1.2" fill="#ECEADF" stroke="none"/><circle cx="16" cy="18.5" r="1.2" fill="#ECEADF" stroke="none"/></symbol>
+  <symbol id="wx-sleet" viewBox="0 0 24 24"><path d="M6.5 14.5h11a3.6 3.6 0 0 0 0-7.2 5.2 5.2 0 0 0-9.8 1.2A3 3 0 0 0 6.5 14.5z" fill="#A9B0A3" stroke="none"/><path d="M8 17.2l-1 2.6M16 17.2l-1 2.6" stroke="#6FB7F2" stroke-width="2"/><circle cx="12" cy="19" r="1.2" fill="#ECEADF" stroke="none"/></symbol>
+  <symbol id="wx-storm" viewBox="0 0 24 24"><path d="M6.5 13.5h11a3.6 3.6 0 0 0 0-7.2 5.2 5.2 0 0 0-9.8 1.2A3 3 0 0 0 6.5 13.5z" fill="#8E978A" stroke="none"/><path d="M12.5 13.5l-2.5 4h3l-2 4" stroke="#F2C46B" stroke-width="2"/></symbol>
   <symbol id="logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#1B1F1A"/><g fill="none" stroke="#ECEADF" stroke-linecap="round"><path d="M32 4.8c11.5 0 22.4 8.8 22.4 23.6 0 15.8-10 30.8-22.4 30.8S9.6 44.2 9.6 28.4C9.6 13.6 20.5 4.8 32 4.8z" stroke-opacity=".22" stroke-width="1.4"/><path d="M32 9.8c9 0 17.6 7.2 17.6 19 0 12.7-7.9 24.6-17.6 24.6S14.4 41.5 14.4 28.8C14.4 17 23 9.8 32 9.8z" stroke-opacity=".38" stroke-width="1.4"/></g><g fill="#FF6B1A"><path d="M30.2 48.6c-6.6.4-10.7-4.1-10.7-11.1 0-8.6 4.6-17.2 9.6-21.6.9-.8 1.9-.3 1.9.9l.6 30.2c0 .9-.6 1.5-1.4 1.6z"/><path d="M33.8 48.6c6.6.4 10.7-4.1 10.7-11.1 0-8.6-4.6-17.2-9.6-21.6-.9-.8-1.9-.3-1.9.9l-.6 30.2c0 .9.6 1.5 1.4 1.6z"/></g></symbol>
  </defs>
 </svg>
@@ -760,12 +783,21 @@ const LAYERS = [
   { id: 'access', name: 'Parking, gates and trails', sub: 'OpenStreetMap', min: 12, sw: '#4da3ff' },
   { id: 'refs', name: 'Road and place labels', sub: 'Esri reference', sw: '#fff' },
   { id: 'enh', name: 'Trail enhancer', sub: 'Sharpens the imagery so faint paths, edges and tracks stand out. Works on satellite and leaf-off.', sw: '#ddd' },
+  { id: 'contour', name: 'Contour lines', sub: 'Elevation lines in feet over any map. Hybrid turns these on with the satellite.', sw: '#F7D9A0' },
   { id: 'hill', name: 'Lidar hillshade', sub: 'MN 1 m lidar terrain: drainages, saddles, benches and low ground under the canopy', sw: '#888' },
   { id: 'nlcd', name: 'Land cover', sub: 'NLCD 2021: timber, crops, wetlands', sw: '#68ab5f' }
 ];
-const MAPL = { wma: ['wma-fill', 'wma-case', 'wma-line'], padus: ['padus-fill', 'padus-case', 'padus-line'], parcels: ['parcels-fill', 'parcels-line', 'parcels-lbl', 'regrid-fill', 'regrid-case', 'regrid-line', 'regrid-lbl', 'mine-fill', 'mine-case', 'mine-line', 'mine-lbl', 'pt-fill', 'pt-case', 'pt-line', 'pt-lbl', 'parcels-case'], access: ['access-ln', 'access-pt'], refs: ['roads', 'places'], hill: ['hill'], enh: ['enh'], nlcd: ['nlcd'] };
+const MAPL = { wma: ['wma-fill', 'wma-case', 'wma-line'], padus: ['padus-fill', 'padus-case', 'padus-line'], parcels: ['parcels-fill', 'parcels-line', 'parcels-lbl', 'regrid-fill', 'regrid-case', 'regrid-line', 'regrid-lbl', 'mine-fill', 'mine-case', 'mine-line', 'mine-lbl', 'pt-fill', 'pt-case', 'pt-line', 'pt-lbl', 'parcels-case'], access: ['access-ln', 'access-pt'], refs: ['roads', 'places'], hill: ['hill'], enh: ['enh'], nlcd: ['nlcd'], contour: ['contour-ln', 'contour-lbl'] };
 
-const rt = (u, mz, at) => ({ type: 'raster', tiles: [u], tileSize: 256, maxzoom: mz, attribution: at || '' });
+const rt = (u, mz, at, ts) => ({ type: 'raster', tiles: [u], tileSize: ts || 256, maxzoom: mz, attribution: at || '' });
+/* sharper photos: ask for one zoom level more detail than the screen needs, so 3x iPhone screens get crisp pixels */
+const HD = store.get('hd', false), PX = HD ? 128 : 256;
+/* contour lines in feet, drawn on the phone from the elevation tiles (falls back to USGS contour images) */
+let contourSrc;
+try {
+  const dem = new mlcontour.DemSource({ url: SRC.dem, encoding: 'terrarium', maxzoom: 14, worker: true, cacheSize: 120 }); dem.setupMaplibre(maplibregl);
+  contourSrc = { type: 'vector', tiles: [dem.contourProtocolUrl({ multiplier: 3.28084, thresholds: { 11: [100, 500], 12: [50, 250], 13: [20, 100], 14: [10, 50], 16: [5, 25] }, elevationKey: 'ele', levelKey: 'level', contourLayer: 'contours', buffer: 1 })], maxzoom: 16, attribution: 'Contours from USGS 3DEP elevation' };
+} catch (e) { console.warn('contours fallback', e); contourSrc = null; }
 const empty = () => ({ type: 'FeatureCollection', features: [] });
 /* trail enhancer: fetch the imagery tile, run local-contrast normalisation, hand MapLibre the result */
 const baseTile = (b, z, x, y) => b === 'spring' ? HM.wmsUrl(SRC.spring, +z, +x, +y) : (SRC.esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}').replace('{z}', z).replace('{x}', x).replace('{y}', y);
@@ -782,11 +814,12 @@ const map = new maplibregl.Map({
   style: {
     version: 8, glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
     sources: {
-      sat: rt(SRC.esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', 18, 'Imagery &copy; Esri, Maxar, Earthstar Geographics'),
+      sat: rt(SRC.esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', 19, 'Imagery &copy; Esri, Maxar, Earthstar Geographics', PX),
       topo: rt(SRC.topo, 16, 'USGS The National Map'),
-      spring: rt(SRC.spring, 19, 'Leaf-off: MnGeo spring and fall flights'),
+      spring: rt(SRC.spring, 19, 'Leaf-off: MnGeo spring and fall flights', PX),
+      contour: contourSrc || rt('https://carto.nationalmap.gov/arcgis/rest/services/contours/MapServer/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png32&transparent=true&f=image', 20, 'Contours: USGS'),
       lidar: rt(SRC.lidar, 18, 'Lidar hillshade: MnGeo, MN DNR'),
-      enh: rt('enh://' + store.get('base', 'sat') + '/{z}/{x}/{y}', 18),
+      enh: rt('enh://' + ({ topo: 'sat', hyb: 'sat' }[store.get('base', 'sat')] || store.get('base', 'sat')) + '/{z}/{x}/{y}', 19, '', PX),
       roads: rt(SRC.esri + 'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', 18),
       places: rt(SRC.esri + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', 18),
       nlcd: rt(SRC.nlcd + '/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png32&transparent=true&layers=show:2&f=image', 22, 'NLCD (USGS/MRLC)'),
@@ -801,6 +834,10 @@ const map = new maplibregl.Map({
       { id: 'enh', type: 'raster', source: 'enh', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 0 } },
       { id: 'hill', type: 'raster', source: 'lidar', layout: { visibility: 'none' }, paint: { 'raster-opacity': .6 } },
       { id: 'nlcd', type: 'raster', source: 'nlcd', layout: { visibility: 'none' }, paint: { 'raster-opacity': .55 } },
+      ...(contourSrc ? [
+        { id: 'contour-ln', type: 'line', source: 'contour', 'source-layer': 'contours', minzoom: 11, layout: { visibility: 'none', 'line-join': 'round' }, paint: { 'line-color': ['case', ['>', ['get', 'level'], 0], '#F7D9A0', '#F2E6C8'], 'line-opacity': ['case', ['>', ['get', 'level'], 0], .95, .6], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, ['case', ['>', ['get', 'level'], 0], 1, .5], 16, ['case', ['>', ['get', 'level'], 0], 1.8, .9]] } },
+        { id: 'contour-lbl', type: 'symbol', source: 'contour', 'source-layer': 'contours', minzoom: 13, filter: ['>', ['get', 'level'], 0], layout: { visibility: 'none', 'symbol-placement': 'line', 'text-field': ['concat', ['number-format', ['get', 'ele'], {}], '\u2032'], 'text-font': ['Open Sans Bold'], 'text-size': 11, 'text-max-angle': 30, 'symbol-spacing': 320 }, paint: { 'text-color': '#FFF1D2', 'text-halo-color': 'rgba(27,31,26,.85)', 'text-halo-width': 1.4 } }
+      ] : [{ id: 'contour-ln', type: 'raster', source: 'contour', minzoom: 12, layout: { visibility: 'none' } }]),
       { id: 'roads', type: 'raster', source: 'roads' }, { id: 'places', type: 'raster', source: 'places' }
     ]
   }
@@ -955,7 +992,7 @@ function stylePublic(id) {
   map.addLayer({ id: id + '-case', type: 'line', source: id, layout: { 'line-join': 'round' }, paint: { 'line-color': '#0C0E0B', 'line-opacity': .55, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 2, 15, 6, 18, 9] } }, id + '-line');
   map.setLayoutProperty(id + '-line', 'line-join', 'round');
   map.setPaintProperty(id + '-line', 'line-width', ['interpolate', ['linear'], ['zoom'], 8, 1.2, 15, 3, 18, 4.5]);
-  map.setPaintProperty(id + '-fill', 'fill-opacity', ['case', ['==', ['get', '_closed'], 1], .1, ['interpolate', ['linear'], ['zoom'], 10, .34, 16, .22]]);
+  map.setPaintProperty(id + '-fill', 'fill-opacity', ['interpolate', ['linear'], ['zoom'], 10, ['case', ['==', ['get', '_closed'], 1], .1, .34], 16, ['case', ['==', ['get', '_closed'], 1], .1, .22]]);
 }
 function addSelLayers() {
   if (map.getSource('psel')) return; map.addSource('psel', { type: 'geojson', data: empty() });
@@ -1004,14 +1041,15 @@ function placeHtml(c) {
 function selectShape(f) { const s = map.getSource && map.getSource('psel'); if (s) s.setData(f && f.geometry ? { type: 'Feature', properties: {}, geometry: f.geometry } : empty()); }
 
 /* ---------------- basemap + layer visibility ---------------- */
-const BASES = ['sat', 'spring', 'topo'], BASEN = { sat: 'Sat', spring: 'Leaf-off', topo: 'Topo' };
+const BASES = ['sat', 'hyb', 'spring', 'topo'], BASEN = { sat: 'Sat', hyb: 'Hybrid', spring: 'Leaf-off', topo: 'Topo' };
 function applyBase() {
   if (!BASES.includes(S.base)) S.base = 'sat';
-  BASES.forEach(b => map.setLayoutProperty(b, 'visibility', S.base === b ? 'visible' : 'none'));
+  ['sat', 'spring', 'topo'].forEach(b => map.setLayoutProperty(b, 'visibility', (S.base === 'hyb' ? 'sat' : S.base) === b ? 'visible' : 'none'));
+  applyVis('contour');
   $('#fBase span').textContent = BASEN[S.base]; store.set('base', S.base);
-  const src = map.getSource('enh'); if (src && src.setTiles) { const want = 'enh://' + (S.base === 'topo' ? 'sat' : S.base) + '/{z}/{x}/{y}'; if (src.tiles[0] !== want) src.setTiles([want]); }
+  const src = map.getSource('enh'); if (src && src.setTiles) { const want = 'enh://' + (S.base === 'topo' || S.base === 'hyb' ? 'sat' : S.base) + '/{z}/{x}/{y}'; if (src.tiles[0] !== want) src.setTiles([want]); }
 }
-function applyVis(id) { (MAPL[id] || []).forEach(l => map.getLayer(l) && map.setLayoutProperty(l, 'visibility', S.on[id] ? 'visible' : 'none')); }
+function applyVis(id) { const on = S.on[id] || (id === 'contour' && S.base === 'hyb') || (id === 'hill' && S.base === 'hyb' && S.on.hill !== false && S.hybHill); (MAPL[id] || []).forEach(l => map.getLayer(l) && map.setLayoutProperty(l, 'visibility', on ? 'visible' : 'none')); }
 $('#fBase').onclick = () => { S.base = BASES[(BASES.indexOf(S.base) + 1) % BASES.length]; applyBase(); };
 $('#f3d').onclick = e => {
   const on = !e.currentTarget.classList.contains('on'); e.currentTarget.classList.toggle('on', on);
@@ -1377,7 +1415,7 @@ function recChip() { const c = $('#recChip'); if (!c) return; const on = S.rec &
 async function loadWind(force) {
   const c = map.getCenter(); if (!force && S.wind && HM.hav(S.wind.at, [c.lng, c.lat]) < 15000 && Date.now() - S.wind.t < 18e5) return;
   try {
-    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat.toFixed(3)}&longitude=${c.lng.toFixed(3)}&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation_probability,pressure_msl&daily=sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&past_days=1&forecast_days=3`);
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat.toFixed(3)}&longitude=${c.lng.toFixed(3)}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,cloud_cover,is_day,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation_probability,pressure_msl,weather_code,is_day&daily=sunrise,sunset,weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&past_days=1&forecast_days=7`);
     const j = await r.json(); if (!j.hourly) throw new Error('no data');
     const now = j.current ? j.current.time : j.hourly.time[0]; let i0 = j.hourly.time.findIndex(t => t >= now.slice(0, 13)); if (i0 < 0) i0 = 0;
     S.wind = { at: [c.lng, c.lat], t: Date.now(), cur: j.current, h: j.hourly, i0, daily: j.daily }; S.windHour = 0; store.set('wind', S.wind); windChip(); drawCone(); renderWps();
@@ -1388,7 +1426,9 @@ async function loadWind(force) {
     else if (!S.wind) $('#windTxt').textContent = 'wind n/a';
   }
 }
-const windAt = k => { const w = S.wind; if (!w) return null; const i = Math.min(w.h.time.length - 1, w.i0 + k); return { time: w.h.time[i], dir: w.h.wind_direction_10m[i], spd: w.h.wind_speed_10m[i], gust: w.h.wind_gusts_10m[i], temp: w.h.temperature_2m[i], pop: w.h.precipitation_probability ? w.h.precipitation_probability[i] : null, pres: w.h.pressure_msl ? w.h.pressure_msl[i] : null, i }; };
+const windAt = k => { const w = S.wind; if (!w) return null; const i = Math.min(w.h.time.length - 1, w.i0 + k); return { time: w.h.time[i], dir: w.h.wind_direction_10m[i], spd: w.h.wind_speed_10m[i], gust: w.h.wind_gusts_10m[i], temp: w.h.temperature_2m[i], pop: w.h.precipitation_probability ? w.h.precipitation_probability[i] : null, pres: w.h.pressure_msl ? w.h.pressure_msl[i] : null, code: w.h.weather_code ? w.h.weather_code[i] : null, day: w.h.is_day ? w.h.is_day[i] : 1, i }; };
+const WX = c => c == null ? ['', 'wx-cloud'] : c === 0 ? ['Clear', 'wx-sun'] : c === 1 ? ['Mostly clear', 'wx-sun'] : c === 2 ? ['Partly cloudy', 'wx-partly'] : c === 3 ? ['Overcast', 'wx-cloud'] : c <= 48 ? ['Fog', 'wx-fog'] : c <= 55 ? ['Drizzle', 'wx-rain'] : c <= 57 ? ['Freezing drizzle', 'wx-sleet'] : c <= 65 ? [c === 61 ? 'Light rain' : c === 63 ? 'Rain' : 'Heavy rain', 'wx-rain'] : c <= 67 ? ['Freezing rain', 'wx-sleet'] : c <= 77 ? [c === 71 ? 'Light snow' : c === 75 ? 'Heavy snow' : 'Snow', 'wx-snow'] : c <= 82 ? ['Rain showers', 'wx-rain'] : c <= 86 ? ['Snow showers', 'wx-snow'] : ['Thunderstorms', 'wx-storm'];
+const wxIcon = (c, day) => { let i = WX(c)[1]; if (!day && (i === 'wx-sun' || i === 'wx-partly')) i = i === 'wx-sun' ? 'wx-night' : 'wx-nightc'; return `<svg class="wxi"><use href="#${i}"/></svg>`; };
 function presTrend(i) {
   const P = S.wind && S.wind.h.pressure_msl; if (!P || P[i] == null) return null; const j = Math.max(0, i - 3), d = P[i] - P[j];
   const word = d >= 2.5 ? 'rising fast' : d >= 1 ? 'rising' : d <= -2.5 ? 'falling fast' : d <= -1 ? 'falling' : 'steady';
@@ -1414,7 +1454,7 @@ function sunToday() {
 }
 const hm = d => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s?([AP])M/i, (m, x) => x.toLowerCase());
 function windChip() {
-  const w = windAt(S.windHour); if (!w) return; $('#windArrow').style.transform = `rotate(${w.dir + 180}deg)`; $('#windTxt').textContent = `${HM.compass(w.dir)} ${Math.round(w.spd)} mph`;
+  const w = windAt(S.windHour); if (!w) return; $('#windArrow').style.transform = `rotate(${w.dir + 180}deg)`; $('#windTxt').innerHTML = `${w.temp != null ? Math.round(S.windHour || !S.wind.cur ? w.temp : S.wind.cur.temperature_2m) + '&deg; ' : ''}${HM.compass(w.dir)} ${Math.round(w.spd)}`;
   const s = sunToday(); $('#sunTxt').textContent = s ? `↑${hm(s.sr)} ↓${hm(s.ss)}` : '';
 }
 function drawCone() {
@@ -1757,7 +1797,7 @@ const HELP = [
   { id: 'home', g: 'Getting started', t: 'Put ' + APP + ' on your Home Screen', b: `<p>On a home screen the app opens full screen like a regular app, and your saved marks and maps are kept safely.</p><p><b>iPhone</b></p><ol><li>Open the app in Safari.</li><li>Tap the Share button (the square with an arrow pointing up).</li><li>Scroll down and tap Add to Home Screen, then Add.</li><li>From now on, open ${APP} from the new icon.</li></ol><p><b>Android</b></p><ol><li>Open the app in Chrome.</li><li>Tap the three dots at the top right.</li><li>Tap Install app or Add to Home screen.</li></ol>` },
   { id: 'perm', g: 'Getting started', t: 'Turn on location and compass', b: `<p>The app asks the first time you use your location or the compass. Tap Allow.</p><p>If you tapped Don't Allow on an iPhone:</p><ol><li>Open Settings, then Privacy & Security, then Location Services.</li><li>Make sure Location Services is on, tap Safari Websites, and choose While Using the App.</li><li>For the compass, open Settings, then Apps, then Safari, and turn on Motion & Orientation Access.</li><li>Come back to ${APP} and pull down to reload.</li></ol>` },
   { id: 'layers', g: 'Reading the map', t: 'Public land and private owners', b: `<p>Shaded areas are public land you can usually hunt. Orange is a state Wildlife Management Area, pink is federal land like a Waterfowl Production Area, blue is other state land, and purple is county or city land.</p><p>Yellow lines are private parcels. Zoom in and tap inside one to see the owner's name and acres. Owner names come from county records shared by the state and cover 60 of Minnesota's 87 counties.</p><p>Tap a public unit and choose How to get in to find parking and places where a public road touches the boundary.</p><p>Boundaries are close but not a survey. Watch for posted signs, and check the DNR's rules for each unit.</p>` },
-  { id: 'basemaps', g: 'Reading the map', t: 'Satellite, leaf-off, topo and lidar', b: `<p>Switch styles with the map button on the right or in ${K('i-layers', 'Layers')}.</p><ul><li><b>Satellite</b>: recent summer photos.</li><li><b>Leaf-off</b>: spring photos before the leaves come out. Trails, edges and beds show through the timber.</li><li><b>Topo</b>: contour lines, creeks and roads.</li></ul><p>In Layers you can add <b>Lidar hillshade</b>, which shows the ground's shape under the trees: drainages, saddles and benches. <b>Trail enhancer</b> sharpens the photos so faint paths stand out.</p>` },
+  { id: 'basemaps', g: 'Reading the map', t: 'Satellite, hybrid, leaf-off, topo and lidar', b: `<p>Switch styles with the map button on the right or in ${K('i-layers', 'Layers')}.</p><ul><li><b>Satellite</b>: recent summer photos.</li><li><b>Hybrid</b>: satellite with contour lines in feet.</li><li><b>Leaf-off</b>: spring photos before the leaves come out. Trails, edges and beds show through the timber.</li><li><b>Topo</b>: contour lines, creeks and roads.</li></ul><p>In Layers you can add <b>Lidar hillshade</b>, which shows the ground's shape under the trees: drainages, saddles and benches. <b>Trail enhancer</b> sharpens the photos so faint paths stand out. <b>Contour lines</b> can go over any map. For the clearest photos turn on <b>Extra-sharp photos</b>, and try Leaf-off: the state's spring flights are usually sharper than the satellite.</p>` },
   { id: 'wind', g: 'Reading the map', t: 'Wind, sun, moon and pressure', b: `<p>Tap the wind button at the top. The arrow points the way the wind is blowing; the letters say where it is coming from.</p><ul><li>Tap an hour in the strip to see the wind for a morning or evening sit.</li><li>Place scent cone shows where your scent drifts from a spot.</li><li>Shooting light is half an hour before sunrise to half an hour after sunset. Always confirm in the current regulations.</li><li>Pressure shows whether the barometer is rising, steady or falling.</li><li>The moon section shows phase and when the moon rises, sets, and is overhead or underfoot.</li><li>Your stands are listed as good or bad for the hour you picked.</li></ul>` },
   { id: 'mark', g: 'In the field', t: 'Marking stands, sign and the truck', b: `<ol><li>Tap the orange ${K('i-mark', 'Mark')} button.</li><li>Choose Where I am, Tap the map, or Center of the screen.</li><li>Give it a name, pick a type such as Stand or Rub, and tap Save.</li></ol><p>For a stand or blind you can also tick the winds it hunts well on and turn on range rings for bow or gun distances.</p><p>Tap any mark later to edit it, get directions, share it, or have the app guide you to it.</p>` },
   { id: 'guide', g: 'In the field', t: 'Guide me back to a spot', b: `<p>Open a mark and tap Guide me, or tap Guide next to it in ${K('i-saved', 'Saved')}. You can also tap any spot on the map and choose Guide me here.</p><p>A card at the bottom shows a big arrow, how many yards are left, and the direction. Hold the phone flat in front of you. The arrow uses the compass when it is on, and otherwise the direction you are walking.</p><p>When you arrive it says You're there. Tap Stop to close it.</p>` },
@@ -1813,7 +1853,8 @@ function openSheet(p, arg) {
   const s = $('#sheet'); s.dataset.p = p; s.classList.add('open'); document.querySelectorAll('#bar button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
   const meta = SHEETS[p] || ['i-info', null], head = t => `<h2><span class="hi"><svg class="ic"><use href="#${meta[0]}"/></svg></span><span class="ht">${t}</span>${meta[1] ? `<button class="hq" data-act="help" data-t="${meta[1]}" aria-label="How this works"><svg class="ic"><use href="#i-help"/></svg></button>` : ''}<button class="x" data-act="close" aria-label="Close">&times;</button></h2>`; let h = '';
   if (p === 'layers') {
-    h = head('Map layers') + `<div class="seg"><button data-act="base" data-b="sat" class="${S.base === 'sat' ? 'on' : ''}">Satellite</button><button data-act="base" data-b="spring" class="${S.base === 'spring' ? 'on' : ''}">Leaf-off</button><button data-act="base" data-b="topo" class="${S.base === 'topo' ? 'on' : ''}">Topo</button></div><div class="mut" style="margin-bottom:6px">${S.base === 'spring' ? 'Spring photos with no leaves on the trees, so trails, edges and beds show through the timber.' : S.base === 'topo' ? 'USGS topographic map with contour lines, creeks and roads.' : 'Current satellite photos.'}</div>` +
+    h = head('Map layers') + `<div class="seg">${BASES.map(b => `<button data-act="base" data-b="${b}" class="${S.base === b ? 'on' : ''}">${{ sat: 'Satellite', hyb: 'Hybrid', spring: 'Leaf-off', topo: 'Topo' }[b]}</button>`).join('')}</div><div class="mut" style="margin-bottom:6px">${{ sat: 'Current satellite photos.', hyb: 'Satellite photos with contour lines in feet, so you see the cover and the lay of the land together.', spring: 'Spring photos with no leaves on the trees, so trails, edges and beds show through the timber. In most of Minnesota these are also the sharpest photos, flown at 6 inches to 1 foot.', topo: 'USGS topographic map with contour lines, creeks and roads.' }[S.base]}</div>` +
+      `<label class="row"><span class="sw" style="background:linear-gradient(135deg,#6b7f5a,#c9b98a)"></span><span class="g">Extra-sharp photos<br><small>Loads the next level of detail, which can look crisper on iPhone screens where the source has it. Uses about 4 times the data, so leave it off on a weak signal.</small></span><input type="checkbox" data-act="hd" ${HD ? 'checked' : ''}></label>` +
       `<h3>Who owns it</h3><div class="row"><span class="sw" style="background:#ff9f1c"></span><span class="g">State Wildlife Management Area</span></div><div class="row"><span class="sw" style="background:#ff4fa3"></span><span class="g">Federal: Waterfowl Production Area, refuge</span></div><div class="row"><span class="sw" style="background:#3fa9ff"></span><span class="g">Other state land, state forest</span></div><div class="row"><span class="sw" style="background:#b388ff"></span><span class="g">County or city land</span></div><div class="row"><span class="sw" style="border:2px solid #ffe45c;background:none"></span><span class="g">Private parcel. Tap it to see the owner.</span></div>` +
       `<h3>Show on the map</h3>` + LAYERS.map(l => `<label class="row"><span class="sw" style="background:${l.sw}"></span><span class="g">${l.name}<br><small>${l.sub}</small>${S.status[l.id] ? `<br><small data-st="${l.id}" style="color:var(--gold)">${esc(S.status[l.id])}</small>` : `<small data-st="${l.id}" style="color:var(--gold)"></small>`}</span><input type="checkbox" data-layer="${l.id}" ${S.on[l.id] ? 'checked' : ''}></label>`).join('') +
       `<h3>Without signal</h3>` + toolRow('offline-open', 'i-offline', 'Offline maps', S.offAreas.length ? S.offAreas.length + ' area' + (S.offAreas.length > 1 ? 's' : '') + ' saved on this phone' : 'Save a property so the map works with no bars') +
@@ -1821,7 +1862,7 @@ function openSheet(p, arg) {
   } else if (p === 'tools') {
     h = head('Tools') + toolRow('open', 'i-measure', 'Measure', 'Distance between points and the acres inside', ' data-p="measure"') + toolRow('open', 'i-track', 'Record a track', S.rec && !S.rec.blood ? 'Recording now. Tap to stop.' : 'Save your path in and out', ' data-p="track"') +
       toolRow('blood-open', 'i-blood', 'Blood trail', B.on ? 'In progress. Tap to go back to the camera.' : 'Camera view that makes blood stand out') + toolRow('open', 'i-hot', 'Hot spots', 'Likely spots for deer, turkey, pheasant and ducks', ' data-p="hot"') +
-      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('open', 'i-wind', 'Wind, sun and moon', 'Hourly wind, shooting light, pressure and moon', ' data-p="wind"') +
+      toolRow('open', 'i-offline', 'Offline maps', 'Save a property so the map works with no signal', ' data-p="offline"') + toolRow('open', 'i-wind', 'Weather and wind', 'Conditions, 7-day forecast, wind, shooting light and moon', ' data-p="wind"') +
       `<h3>Help</h3>` + toolRow('open', 'i-help', 'How to use ' + APP, 'Short guides for every part of the app', ' data-p="help"') + toolRow('intro', 'i-phone', 'Replay the welcome tour', 'The quick tour from the first time you opened the app');
   } else if (p === 'mark') h = head('Mark a spot') + toolRow('mark-me', 'i-loc', 'Where I am', 'Drops a mark at your GPS position') + toolRow('mark-tap', 'i-mark', 'Tap the map', 'Then tap the spot you want to mark') + toolRow('mark-center', 'i-north', 'Center of the screen', 'Marks the middle of what you are looking at') + `<div class="mut" style="margin-top:8px">You can also tap anything on the map and choose Mark this spot.</div>`;
   else if (p === 'measure') { setMode('measure'); return; }
@@ -1833,18 +1874,26 @@ function openSheet(p, arg) {
       `<h3>Saved tracks</h3>` + (S.tracks.length ? S.tracks.map((t, i) => `<div class="row"><div class="g" data-act="trk-go" data-i="${i}" style="cursor:pointer">${esc(t.name)}<br><small>${fmtDist(HM.lineLen(t.pts))}</small></div><input type="checkbox" data-trk="${i}" ${t.hide ? '' : 'checked'}><button class="btn s" data-act="trk-del" data-i="${i}">&times;</button></div>`).join('') : '<div class="mut">None yet.</div>');
   } else if (p === 'wind') {
     const w = windAt(S.windHour), W = S.wind;
-    if (!w) h = head('Wind') + '<div class="note">Wind forecast not loaded yet.</div><div class="btns"><button class="btn" data-act="wind-reload">Retry</button></div>';
+    if (!w) h = head('Weather and wind') + '<div class="note">The forecast has not loaded yet. It needs a signal the first time.</div><div class="btns"><button class="btn" data-act="wind-reload">Try again</button></div>';
     else {
-      const strip = []; for (let k = 0; k < 36; k += 1) { const x = windAt(k); strip.push(`<div class="${k === S.windHour ? 'on' : ''}" data-act="wind-hr" data-k="${k}">${hlabel(x.time)}<svg viewBox="0 0 24 24" style="transform:rotate(${x.dir + 180}deg)"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#7cc4ff"/></svg>${Math.round(x.spd)}</div>`); }
+      const cur = W.cur || {}, now = !S.windHour && cur.temperature_2m != null, code = now ? cur.weather_code : w.code, day = now ? cur.is_day : w.day, temp = now ? cur.temperature_2m : w.temp;
+      const strip = []; for (let k = 0; k < 48; k++) { const x = windAt(k); if (!x) break; strip.push(`<div class="${k === S.windHour ? 'on' : ''}" data-act="wind-hr" data-k="${k}">${k ? hlabel(x.time) : 'Now'}${k || cur.temperature_2m == null ? wxIcon(x.code, x.day) + `<b>${Math.round(x.temp)}&deg;</b>` : wxIcon(cur.weather_code, cur.is_day) + `<b>${Math.round(cur.temperature_2m)}&deg;</b>`}<svg viewBox="0 0 24 24" style="transform:rotate(${x.dir + 180}deg)"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#6FB7F2"/></svg>${Math.round(x.spd)}${x.pop >= 20 ? `<em>${x.pop}%</em>` : ''}</div>`); }
       const di = W.daily ? Math.max(0, W.daily.time.indexOf(w.time.slice(0, 10))) : -1, sr = di >= 0 && new Date(W.daily.sunrise[di]), ss = di >= 0 && new Date(W.daily.sunset[di]);
-      h = head('Wind and light') + `<div style="font-size:19px;font-weight:600">From ${HM.compass(w.dir)} (${Math.round(w.dir)}&deg;) at ${Math.round(w.spd)} mph</div><div class="mut">Gusts ${Math.round(w.gust)} mph &middot; ${Math.round(w.temp)}&deg;F${w.pop != null ? ' &middot; ' + w.pop + '% precip' : ''} &middot; ${S.windHour ? '+' + S.windHour + ' h' : 'now'}. Your scent blows toward the ${HM.compass(w.dir + 180)}.</div><div class="hr">${strip.join('')}</div>` +
+      const D = W.daily, todayKey = localKey(Date.now()).slice(0, 10), d0 = D && D.temperature_2m_max ? Math.max(0, D.time.indexOf(todayKey)) : -1;
+      let week = '';
+      if (d0 >= 0) { const lo = Math.min(...D.temperature_2m_min.slice(d0)), hi = Math.max(...D.temperature_2m_max.slice(d0)), sp = Math.max(1, hi - lo);
+        week = '<h3>Next 7 days</h3>' + D.time.slice(d0).map((t, k) => { const i = d0 + k, a0 = (D.temperature_2m_min[i] - lo) / sp * 100, a1 = (D.temperature_2m_max[i] - lo) / sp * 100, dn = k === 0 ? 'Today' : new Date(t + 'T12:00').toLocaleDateString([], { weekday: 'short' });
+          return `<div class="day"><span class="dn">${dn}</span>${wxIcon(D.weather_code[i], 1)}<span class="pp">${D.precipitation_probability_max[i] >= 20 ? D.precipitation_probability_max[i] + '%' : ''}</span><span class="lo">${Math.round(D.temperature_2m_min[i])}&deg;</span><span class="tb"><i style="left:${a0}%;right:${100 - a1}%"></i></span><span class="hi">${Math.round(D.temperature_2m_max[i])}&deg;</span><span class="dw"><svg viewBox="0 0 24 24" style="transform:rotate(${D.wind_direction_10m_dominant[i] + 180}deg)"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#6FB7F2"/></svg>${Math.round(D.wind_speed_10m_max[i])}</span></div>`; }).join(''); }
+      h = head('Weather and wind') +
+        `<div class="now">${wxIcon(code, day).replace('class="wxi"', 'class="wxi big"')}<div class="nt"><b>${Math.round(temp)}&deg;</b><span>${WX(code)[0]}${now ? '' : ', ' + hlabel(w.time)}</span><small>${now ? `Feels like ${Math.round(cur.apparent_temperature)}&deg;, humidity ${Math.round(cur.relative_humidity_2m)}%` : (w.pop != null ? w.pop + '% chance of rain or snow' : '')}</small></div><div class="nw"><svg viewBox="0 0 24 24" style="transform:rotate(${w.dir + 180}deg)"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#6FB7F2"/></svg><b>${HM.compass(w.dir)} ${Math.round(w.spd)}</b><small>gusts ${Math.round(w.gust)} mph</small></div></div>` +
+        `<div class="mut">${S.windHour ? 'In ' + S.windHour + ' h' : 'Right now'}, wind from the ${HM.compass(w.dir)} carries your scent toward the ${HM.compass(w.dir + 180)}. Tap an hour to plan a sit.</div><div class="hr wx">${strip.join('')}</div>` +
         (sr ? `<div class="sun"><div><small>Sunrise</small><b>${hm(new Date(sr))}</b></div><div><small>Sunset</small><b>${hm(new Date(ss))}</b></div><div><small>Shooting light</small><b>${hm(new Date(sr - 18e5))} – ${hm(new Date(+ss + 18e5))}</b></div></div><div class="mut" style="margin:-2px 0 8px">For ${new Date(sr).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}. Half hour before sunrise to half hour after sunset; confirm in the current MN regulations.</div>` : '') +
         (() => { const pt = presTrend(w.i), mo = moonInfo(w.time.slice(0, 10)), t = x => x ? hm(new Date(x)) : '—';
-          return (pt ? `<div class="wx2"><div><small>Pressure</small><b>${pt.inHg.toFixed(2)} inHg</b><span class="${pt.word.startsWith('fall') ? 'dn' : pt.word.startsWith('ris') ? 'up' : ''}">${Math.abs(pt.d3) < .005 ? pt.word + ', no change in 3 h' : pt.word + ' ' + (pt.d3 > 0 ? '+' : '\u2212') + Math.abs(pt.d3).toFixed(2) + ' in 3 h'}</span></div>${presSpark(w.i)}</div>` : '') +
-            `<div class="moon"><span class="mg">${moonGlyph(mo.p)}</span><div><b>${mo.name}, ${mo.illum}% lit</b><small>Rise ${t(mo.rise)} · set ${t(mo.set)} · overhead ${t(mo.over)} · underfoot ${t(mo.under)}</small></div></div>` +
-            (S.wind.stale ? `<div class="mut" style="color:#ffcf7a">No signal: showing the forecast saved ${hm(new Date(S.wind.t))}.</div>` : ''); })() +
-        standsForHour(w.dir) +
-        `<div class="btns"><button class="btn p" data-act="cone-place">${S.cone ? 'Move scent cone' : 'Place scent cone'}</button>${S.cone ? '<button class="btn" data-act="cone-clear">Remove cone</button>' : ''}</div><div class="mut">The blue cone shows where your scent drifts from a sit for the selected hour. Tap an hour above to check a morning or evening sit.</div>`;
+          return (pt ? `<div class="wx2"><div><small>Pressure</small><b>${pt.inHg.toFixed(2)} inHg</b><span class="${pt.word.startsWith('fall') ? 'dn' : pt.word.startsWith('ris') ? 'up' : ''}">${Math.abs(pt.d3) < .005 ? pt.word + ', no change in 3 h' : pt.word + ' ' + (pt.d3 > 0 ? '+' : '−') + Math.abs(pt.d3).toFixed(2) + ' in 3 h'}</span></div>${presSpark(w.i)}</div>` : '') +
+            `<div class="moon"><span class="mg">${moonGlyph(mo.p)}</span><div><b>${mo.name}, ${mo.illum}% lit</b><small>Rise ${t(mo.rise)}, set ${t(mo.set)}, overhead ${t(mo.over)}, underfoot ${t(mo.under)}</small></div></div>` +
+            (S.wind.stale ? `<div class="mut" style="color:var(--gold)">No signal: showing the forecast saved ${hm(new Date(S.wind.t))}.</div>` : ''); })() +
+        week + standsForHour(w.dir) +
+        `<div class="btns"><button class="btn p" data-act="cone-place">${S.cone ? 'Move scent cone' : 'Place scent cone'}</button>${S.cone ? '<button class="btn" data-act="cone-clear">Remove cone</button>' : ''}</div><div class="mut">The blue cone shows where your scent drifts from a sit for the selected hour.</div>`;
     }
   } else if (p === 'hot') {
     const hs = S.hot;
@@ -1940,6 +1989,7 @@ $('#q').addEventListener('keydown', async e => {
 document.addEventListener('input', e => { if (e.target.id === 'helpQ') { $('#helpList').innerHTML = helpList(e.target.value); return; } if (e.target.id === 'bsens') { B.sens = e.target.value / 100; bel('bsensv').textContent = B.sens < .25 ? 'fresh red only' : B.sens < .65 ? 'fresh to dried' : 'dark and dried too'; } });
 document.addEventListener('change', e => {
   const t = e.target;
+  if (t.dataset.act === 'hd') { store.set('hd', t.checked); toast(t.checked ? 'Loading sharper photos' : 'Back to standard photos'); setTimeout(() => location.reload(), 350); return; }
   if (t.dataset.layer) { const id = t.dataset.layer; S.on[id] = t.checked; store.set('on', S.on); applyVis(id); if (t.checked) { delete loaded[id]; loadLayer(id); } if (id === 'wma') { delete loaded.padus; loadLayer('padus'); } }
   else if (t.dataset.trk) { S.tracks[+t.dataset.trk].hide = !t.checked; saveTracks(); drawTracks(); }
   else if (t.dataset.off) { offState.pick[t.dataset.off] = t.checked; store.set('offPick', offState.pick); openSheet('offline'); }
