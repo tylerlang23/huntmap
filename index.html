@@ -1832,8 +1832,11 @@ async function moveRun(force) {
       'Give every position as x and y on a 0 to 1000 scale from the top-left corner of the picture (use the grid; column 4 spans x 400 to 500). Routes need 4 to 12 points each, in the direction deer travel.',
       'Give your answer by calling the deer_movement tool. Keep every route to 4 to 12 points.'].filter(Boolean);
     const res0 = await claudeCall({ max_tokens: 16000, tools: [MV_TOOL], system: 'You are an experienced Minnesota whitetail hunter who reads aerial photos and topo for deer movement. Be realistic and specific, and say how confident you are. Never suggest trespassing.', messages: [{ role: 'user', content: [...(pic.halves ? [{ type: 'text', text: 'Top half (y 0 to 500):' }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: pic.halves[0].split(',')[1] } }, { type: 'text', text: 'Bottom half (y 500 to 1000):' }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: pic.halves[1].split(',')[1] } }] : [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: pic.url.split(',')[1] } }]), ...photoBlocks(ps), { type: 'text', text: L.join('\n') }] }] }), txt = res0.text || JSON.stringify(res0.input || {}), m = res0.input ? null : txt.match(/\{[\s\S]*\}/);
-    if (res0.stop === 'max_tokens') { MV.raw = txt; throw new Error('Claude\'s answer was too long and got cut off. Zoom in a little so there is less to map, then try again.'); }
-    let d = res0.input; if (!d) try { d = JSON.parse(m[0].replace(/,\s*([\]}])/g, '$1')); } catch (e) { MV.raw = txt; throw new Error('Claude answered in an unexpected format. Try again.' + (/max_tokens|\.\.\.$/.test(txt) ? '' : '')); }
+    if ((res0.stop === 'max_tokens' || res0.stop === 'cut') && !res0.input) { MV.raw = txt; throw new Error(res0.stop === 'cut' ? 'The connection dropped while Claude was answering. Try again when the signal is steadier.' : 'Claude\'s answer was too long and got cut off. Zoom in a little so there is less to map, then try again.'); }
+    let d = res0.input;
+    if (!d && m) try { d = JSON.parse(m[0].replace(/,\s*([\]}])/g, '$1')); } catch (e) { d = null; }
+    if (!d && txt.trim().length > 50) { jobShow('run', 'Reading deer movement', 'Tidying up Claude\'s answer…', true); try { const fix = await claudeCall({ model: 'claude-haiku-5-5', max_tokens: 16000, tools: [MV_TOOL], messages: [{ role: 'user', content: 'Here is a deer movement analysis written as text. Call the deer_movement tool with exactly the same content, keeping every coordinate as given. Do not add or change anything.\n\n' + txt.slice(0, 60000) }] }); d = fix.input; if (!d && fix.text) { const m2 = fix.text.match(/\{[\s\S]*\}/); if (m2) d = JSON.parse(m2[0]); } } catch (e) { console.warn('repair', e); } }
+    if (!d) try { throw new Error('unreadable'); } catch (e) { MV.raw = txt; throw new Error('Claude answered in an unexpected format. Try again.' + (/max_tokens|\.\.\.$/.test(txt) ? '' : '')); }
     const xy = p => Array.isArray(p) ? [+p[0], +p[1]] : p && typeof p === 'object' ? [+(p.x ?? p[0]), +(p.y ?? p[1])] : typeof p === 'string' ? p.split(/[ ,]+/).map(Number) : [NaN, NaN];
     const line = pts => (Array.isArray(pts) ? pts : []).map(xy).filter(p => isFinite(p[0]) && isFinite(p[1])).map(p => scLL(pic.lat, p[0], p[1]));
     const per = {}, routes = [], P = d.periods || {};
@@ -1863,15 +1866,37 @@ function auRoll() { const d = localKey(Date.now()).slice(0, 10), m = d.slice(0, 
 function auCheck() { auRoll(); if (AU.n >= AU.maxDay) throw new Error(`You have used today's limit of ${AU.maxDay} Claude requests on this phone. It resets tomorrow, or raise it in the Claude limits setting.`); if (AU.usd >= AU.maxMon) throw new Error(`This phone has reached its monthly Claude budget of $${AU.maxMon.toFixed(2)}. It resets on the 1st, or raise it in the Claude limits setting.`); }
 function auAdd(u) { auRoll(); u = u || {}; const c = (u.input_tokens || 0) * 2e-6 + (u.cache_creation_input_tokens || 0) * 2.5e-6 + (u.cache_read_input_tokens || 0) * 2e-7 + (u.output_tokens || 0) * 1e-5; AU.n++; AU.usd += c; AU.all += c; store.set('ausage', AU); }
 const auLine = () => { auRoll(); return `<div class="aul">${AU.n} of ${AU.maxDay} requests today · $${AU.usd.toFixed(2)} of $${AU.maxMon.toFixed(2)} this month <a href="#" data-act="au-set">Limits</a></div>`; };
-async function claudeCall(body) {
+/* Calls Claude with streaming so a dropped connection keeps what already arrived.
+   Retries on its own, for free, when Anthropic is busy or the request never reached it. */
+async function claudeCall(body, onText) {
   auCheck();
-  const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': AK.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify(Object.assign({ model: AK.model }, body)) });
-  let j = {}; try { j = await r.json(); } catch (e) { }
-  if (!r.ok) throw new Error(r.status === 401 ? 'The API key was not accepted. Check it in the Ask Claude settings.' : r.status === 429 ? 'Too many requests at once. Wait a minute and try again.' : r.status === 400 && /credit/i.test((j.error && j.error.message) || '') ? 'Your Anthropic account is out of credit. Add credit at platform.claude.com.' : (j.error && j.error.message) || 'Claude could not answer (' + r.status + ').');
-  auAdd(j.usage); document.querySelectorAll('.aul').forEach(el => el.outerHTML = auLine());
-  const text = (j.content || []).filter(x => x.type === 'text').map(x => x.text).join('\n');
-  if (body.tools) { const tu = (j.content || []).find(x => x.type === 'tool_use'); return { input: tu ? tu.input : null, text, stop: j.stop_reason }; }
-  if (!text.trim()) throw new Error(j.stop_reason === 'max_tokens' ? 'Claude ran out of room before it finished answering. Try again.' : 'Claude sent back an empty answer. Try again.');
+  const errMsg = (st, j) => st === 401 ? 'The API key was not accepted. Check it in the Ask Claude settings.' : st === 429 ? 'Too many requests at once. Wait a minute and try again.' : st === 400 && /credit/i.test((j.error && j.error.message) || '') ? 'Your Anthropic account is out of credit. Add credit at platform.claude.com.' : (j.error && j.error.message) || 'Claude could not answer (' + st + ').';
+  let r, tries = 0;
+  for (;;) {
+    try { r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': AK.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify(Object.assign({ model: AK.model, stream: true }, body)) }); }
+    catch (e) { if (tries++ < 2 && navigator.onLine !== false) { await new Promise(z => setTimeout(z, 1500 * tries)); continue; } throw new Error(navigator.onLine === false ? 'No signal. Nothing was charged; try again when you have service.' : 'Could not reach Claude. Nothing was charged; try again.'); }
+    if (!r.ok) { let j = {}; try { j = await r.json(); } catch (e) { } if ((r.status === 529 || r.status >= 500 || (r.status === 429 && tries < 1)) && tries++ < 3) { await new Promise(z => setTimeout(z, 2500 * tries)); continue; } throw new Error(errMsg(r.status, j)); }
+    break;
+  }
+  const ct = r.headers.get('content-type') || '';
+  let blocks = [], stop = null, usage = { input_tokens: 0, output_tokens: 0 }, cut = false;
+  if (!ct.includes('event-stream')) { const j = await r.json(); blocks = (j.content || []).map(x => x.type === 'tool_use' ? { type: 'tool_use', json: JSON.stringify(x.input || {}) } : { type: x.type, text: x.text || '' }); stop = j.stop_reason; usage = j.usage || usage; }
+  else {
+    const rd = r.body.getReader(), dec = new TextDecoder(); let buf = '';
+    const handle = ev => { let d; try { d = JSON.parse(ev); } catch (e) { return; }
+      if (d.type === 'message_start' && d.message && d.message.usage) Object.assign(usage, d.message.usage);
+      else if (d.type === 'content_block_start') blocks[d.index] = d.content_block.type === 'tool_use' ? { type: 'tool_use', json: '' } : { type: d.content_block.type, text: d.content_block.text || '' };
+      else if (d.type === 'content_block_delta') { const b = blocks[d.index]; if (!b) return; if (d.delta.type === 'text_delta') { b.text += d.delta.text; if (onText) try { onText(blocks.filter(x => x && x.type === 'text').map(x => x.text).join('\n')); } catch (e) { } } else if (d.delta.type === 'input_json_delta') b.json += d.delta.partial_json; }
+      else if (d.type === 'message_delta') { if (d.delta && d.delta.stop_reason) stop = d.delta.stop_reason; if (d.usage) Object.assign(usage, d.usage); }
+      else if (d.type === 'error') throw new Error((d.error && d.error.message) || 'Claude stopped with an error.'); };
+    try { for (;;) { const { done, value } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true }); let k; while ((k = buf.indexOf('\n\n')) >= 0) { const chunk = buf.slice(0, k); buf = buf.slice(k + 2); const line = chunk.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).trim()).join(''); if (line) handle(line); } } }
+    catch (e) { cut = true; console.warn('stream cut', e); }
+  }
+  auAdd(usage); document.querySelectorAll('.aul').forEach(el => el.outerHTML = auLine());
+  const text = blocks.filter(x => x && x.type === 'text').map(x => x.text).join('\n');
+  if (body.tools) { const tb = blocks.find(x => x && x.type === 'tool_use'); let input = null; if (tb) try { input = JSON.parse(tb.json || '{}'); } catch (e) { input = null; } return { input, text, stop: cut ? 'cut' : stop }; }
+  if (!text.trim()) throw new Error(cut ? 'The connection dropped before Claude could answer. Try again when the signal is steadier.' : stop === 'max_tokens' ? 'Claude ran out of room before it finished answering. Try again.' : 'Claude sent back an empty answer. Try again.');
+  if (cut || stop === 'max_tokens') return text + '\n\n_(The answer was cut off ' + (cut ? 'because the connection dropped' : 'at the length limit') + '. What came through is shown above.)_';
   return text;
 }
 const KEYHELP = `<div class="mut">How to get one: sign in at <b>platform.claude.com</b> (the Claude Console), buy a few dollars of credit under Settings, Billing, then create a key under Settings, API keys and paste it here. A question costs a few cents. The key stays on this phone and is never synced or shared.</div>`;
@@ -2009,7 +2034,7 @@ async function askHere(follow) {
   ASK.conv.push({ role: 'user', content });
   out.insertAdjacentHTML('beforeend', `<div class="aa wait">${ASK.c.view ? 'Claude is studying the whole map. This takes about 20 to 40 seconds…' : 'Claude is looking at the spot…'}</div>`); const box = out.lastElementChild; box.scrollIntoView({ block: 'nearest' });
   try {
-    const txt = await claudeCall({ max_tokens: ASK.c.view ? 12000 : 8000, system: 'You are an experienced Minnesota whitetail hunter and scout helping a hunter read a spot on their map. Be practical and specific to the picture and details given. Use short paragraphs or brief bullet lists that read well on a phone. Mention wind and scent, access routes, and likely bedding, feeding and travel. Say when something needs checking on the ground, and remind them to follow Minnesota DNR regulations and get landowner permission on private land when relevant.', messages: ASK.conv });
+    const txt = await claudeCall({ max_tokens: ASK.c.view ? 12000 : 8000, system: 'You are an experienced Minnesota whitetail hunter and scout helping a hunter read a spot on their map. Be practical and specific to the picture and details given. Use short paragraphs or brief bullet lists that read well on a phone. Mention wind and scent, access routes, and likely bedding, feeding and travel. Say when something needs checking on the ground, and remind them to follow Minnesota DNR regulations and get landowner permission on private land when relevant.', messages: ASK.conv }, t => { if (box.isConnected) { box.classList.remove('wait'); box.innerHTML = mdLite(t.replace(/```[\s\S]*$/, '')); } ASK.partial = t; });
     ASK.conv.push({ role: 'assistant', content: txt }); box.classList.remove('wait');
     let show = txt;
     if (ASK.c.view && ASK.pic) { const jm = txt.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || txt.match(/(\{\s*"points"[\s\S]*\})\s*$/); if (jm) { show = txt.replace(jm[0], '').trim(); try { const pts = (JSON.parse(jm[1]).points || []).filter(p => isFinite(p.x) && isFinite(p.y)).slice(0, 15); if (pts.length) { let all = pts.map(p => { const ll = scLL(ASK.pic.lat, +p.x, +p.y); return { n: +p.n, label: p.label || '', wt: SC_TYPE[String(p.type || '').toLowerCase()] || 'other', ll, pub: scPublicAt(ll) }; }); if (SC.pub) { const huntable = ['stand', 'blind']; const off = all.filter(p => huntable.includes(p.wt) && p.pub === ''); all = all.filter(p => !off.includes(p)); if (off.length) ASK.dropped = off.length; } VW.pts = all; vwDraw(); } } catch (e) { console.warn('points', e); } } }
